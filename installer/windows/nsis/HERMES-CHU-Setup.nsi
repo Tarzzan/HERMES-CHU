@@ -1,498 +1,416 @@
-; =============================================================================
-; HERMES CHU Desktop — Installateur Windows (NSIS)
-; =============================================================================
-; Génère : HERMES-CHU-Setup-1.0.0.exe
-;
-; Prérequis pour compiler :
-;   NSIS 3.09+ (https://nsis.sourceforge.io)
-;   Plugins : NsisMultiUser, nsProcess, UAC, MUI2
-;
-; Compilation :
-;   makensis HERMES-CHU-Setup.nsi
-; =============================================================================
+; ============================================================
+;  HERMES CHU — Installateur Windows
+;  Système Agentique Hospitalier Souverain
+;  Version : 1.0.0
+;  Compilé avec NSIS 3.09 (Linux/makensis)
+; ============================================================
 
 Unicode True
-ManifestSupportedOS all
-ManifestDPIAware true
 
-; ---------------------------------------------------------------------------
-; Métadonnées
-; ---------------------------------------------------------------------------
-!define APP_NAME        "HERMES CHU"
-!define APP_VERSION     "1.0.0"
-!define APP_PUBLISHER   "CHU — Système Agentique Hospitalier"
-!define APP_URL         "https://github.com/Tarzzan/HERMES-CHU"
-!define APP_EXE         "hermes-chu.exe"
-!define APP_GUID        "{A8F3C2D1-4E7B-4F9A-8C2D-1E3F5A7B9C0D}"
-!define UNINSTALL_KEY   "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_GUID}"
-!define INSTALL_REG_KEY "Software\HERMES-CHU"
-
-; Répertoire d'installation par défaut
-!define DEFAULT_INSTALL_DIR "$PROGRAMFILES64\HERMES CHU"
-
-; ---------------------------------------------------------------------------
-; Inclusions NSIS
-; ---------------------------------------------------------------------------
+;--------------------------------
+; Includes
+;--------------------------------
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
-!include "WinVer.nsh"
-!include "x64.nsh"
 !include "FileFunc.nsh"
-!include "nsDialogs.nsh"
-!include "WordFunc.nsh"
 
-; ---------------------------------------------------------------------------
-; Configuration générale
-; ---------------------------------------------------------------------------
-Name                "${APP_NAME} ${APP_VERSION}"
-OutFile             "..\HERMES-CHU-Setup-${APP_VERSION}.exe"
-InstallDir          "${DEFAULT_INSTALL_DIR}"
-InstallDirRegKey    HKLM "${INSTALL_REG_KEY}" "InstallPath"
+;--------------------------------
+; Métadonnées
+;--------------------------------
+Name              "HERMES CHU 1.0.0"
+OutFile           "/home/ubuntu/nsis_build/output/HERMES-CHU-Setup-1.0.0.exe"
+InstallDir        "$PROGRAMFILES64\HERMES CHU"
+InstallDirRegKey  HKLM "Software\HERMES CHU" "InstallDir"
 RequestExecutionLevel admin
-ShowInstDetails     show
-ShowUninstDetails   show
-SetCompressor       /SOLID lzma
-SetCompressorDictSize 64
+SetCompressor     /SOLID lzma
+SetCompressorDictSize 32
 
-; ---------------------------------------------------------------------------
-; Variables
-; ---------------------------------------------------------------------------
-Var InstallMode         ; "all" ou "current"
-Var PythonFound
-Var NodeFound
-Var GitFound
-Var AzureEndpoint
-Var AzureApiKey
-Var PrivacyEnabled
-Var CHUApiPort
-Var Dialog
-Var Label
-Var TextField
-Var CheckBox
+;--------------------------------
+; Informations de version
+;--------------------------------
+VIProductVersion  "1.0.0.0"
+VIAddVersionKey   "ProductName"      "HERMES CHU"
+VIAddVersionKey   "ProductVersion"   "1.0.0"
+VIAddVersionKey   "CompanyName"      "Centre Hospitalier Universitaire"
+VIAddVersionKey   "FileDescription"  "Système Agentique Hospitalier Souverain"
+VIAddVersionKey   "FileVersion"      "1.0.0"
+VIAddVersionKey   "LegalCopyright"   "© 2025 CHU — Licence Apache 2.0"
+VIAddVersionKey   "Comments"         "Basé sur NousResearch Hermes Agent"
 
-; ---------------------------------------------------------------------------
-; Interface MUI2 — Thème CHU
-; ---------------------------------------------------------------------------
+;--------------------------------
+; Interface MUI2
+;--------------------------------
 !define MUI_ABORTWARNING
-!define MUI_ICON                    "..\assets\hermes-chu.ico"
-!define MUI_UNICON                  "..\assets\hermes-chu.ico"
+!define MUI_ICON                    "/usr/share/nsis/Contrib/Graphics/Icons/modern-install-blue.ico"
+!define MUI_UNICON                  "/usr/share/nsis/Contrib/Graphics/Icons/modern-uninstall-blue.ico"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "/home/ubuntu/nsis_build/assets/sidebar.bmp"
 !define MUI_HEADERIMAGE
-!define MUI_HEADERIMAGE_BITMAP      "..\assets\header-chu.bmp"
+!define MUI_HEADERIMAGE_BITMAP      "/home/ubuntu/nsis_build/assets/banner.bmp"
 !define MUI_HEADERIMAGE_RIGHT
-!define MUI_WELCOMEFINISHPAGE_BITMAP "..\assets\welcome-chu.bmp"
-!define MUI_WELCOMEPAGE_TITLE       "Bienvenue dans l'installation de HERMES CHU"
-!define MUI_WELCOMEPAGE_TEXT        "HERMES CHU est un système agentique hospitalier souverain basé sur Hermes Agent (NousResearch).$\r$\n$\r$\nCet assistant vous guidera dans l'installation complète, incluant la configuration du Privacy Engine RGPD et la connexion à votre fournisseur IA.$\r$\n$\r$\nFermez toutes les applications avant de continuer."
-!define MUI_FINISHPAGE_RUN          "$INSTDIR\${APP_EXE}"
-!define MUI_FINISHPAGE_RUN_TEXT     "Lancer HERMES CHU"
-!define MUI_FINISHPAGE_SHOWREADME   "$INSTDIR\README.md"
-!define MUI_FINISHPAGE_SHOWREADME_TEXT "Afficher le guide de démarrage"
-!define MUI_FINISHPAGE_LINK         "Documentation en ligne"
-!define MUI_FINISHPAGE_LINK_LOCATION "${APP_URL}/wiki"
 
-; Couleurs CHU (bleu médical)
-!define MUI_BGCOLOR                 "FFFFFF"
-!define MUI_TEXTCOLOR               "1A2B4A"
+!define MUI_WELCOMEPAGE_TITLE       "Bienvenue dans HERMES CHU 1.0.0"
+!define MUI_WELCOMEPAGE_TEXT        "Cet assistant va installer HERMES CHU — Système Agentique Hospitalier Souverain.$\r$\n$\r$\nHERMES CHU est basé sur Hermes Agent de NousResearch, adapté pour les établissements de santé avec :$\r$\n$\r$\n• Privacy Engine RGPD (anonymisation des données de santé)$\r$\n• Support multi-LLM (Azure OpenAI, OpenAI, Ollama, vLLM)$\r$\n• Agents spécialisés (Clinique, Administratif, Logistique, Recherche)$\r$\n• Conformité ISO 27001 et HDS$\r$\n$\r$\nIl est recommandé de fermer toutes les autres applications avant de continuer."
 
-; ---------------------------------------------------------------------------
-; Pages d'installation
-; ---------------------------------------------------------------------------
+!define MUI_FINISHPAGE_TITLE        "Installation terminée !"
+!define MUI_FINISHPAGE_TEXT         "HERMES CHU 1.0.0 a été installé avec succès.$\r$\n$\r$\nProchaines étapes :$\r$\n1. Lancez l'assistant de configuration via le Menu Démarrer$\r$\n2. Renseignez vos paramètres Azure OpenAI ou Ollama$\r$\n3. Activez le Privacy Engine RGPD$\r$\n4. Ouvrez HERMES CHU depuis le bureau$\r$\n$\r$\nDocumentation : github.com/Tarzzan/HERMES-CHU/wiki"
+!define MUI_FINISHPAGE_RUN          "$INSTDIR\scripts\Configure-CHU.bat"
+!define MUI_FINISHPAGE_RUN_TEXT     "Lancer l'assistant de configuration CHU"
+!define MUI_FINISHPAGE_LINK         "Consulter le Wiki HERMES CHU"
+!define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/Tarzzan/HERMES-CHU/wiki"
+
+;--------------------------------
+; Pages de l'installateur
+;--------------------------------
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE       "..\assets\LICENSE.txt"
-Page custom PagePrerequis PagePrerequis_Leave
+!insertmacro MUI_PAGE_LICENSE       "/home/ubuntu/nsis_build/assets/LICENSE.txt"
+Page custom PagePrerequisites PagePrerequisitesLeave
+Page custom PageCHUConfig PageCHUConfigLeave
 !insertmacro MUI_PAGE_DIRECTORY
-Page custom PageConfigCHU PageConfigCHU_Leave
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
-; Pages de désinstallation
+;--------------------------------
+; Pages du désinstallateur
+;--------------------------------
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 
+;--------------------------------
 ; Langues
+;--------------------------------
 !insertmacro MUI_LANGUAGE "French"
 
-; ---------------------------------------------------------------------------
-; Page personnalisée — Vérification des prérequis
-; ---------------------------------------------------------------------------
-Function PagePrerequis
-    nsDialogs::Create 1018
-    Pop $Dialog
-    ${If} $Dialog == error
-        Abort
-    ${EndIf}
+;--------------------------------
+; Variables personnalisées
+;--------------------------------
+Var AzureEndpoint
+Var AzureApiKey
+Var AzureDeployment
+Var PrivacyEnabled
+Var ProviderChoice
+Var NodeFound
+Var PythonFound
+Var GitFound
 
-    ${NSD_CreateLabel} 0 0 100% 20u "Vérification des prérequis système…"
-    Pop $Label
-    CreateFont $0 "Segoe UI" 10 700
-    SendMessage $Label ${WM_SETFONT} $0 1
+;--------------------------------
+; Page Prérequis (personnalisée)
+;--------------------------------
+Function PagePrerequisites
+    nsDialogs::Create 1018
+    Pop $0
+
+    ${NSD_CreateLabel} 0 0 100% 20u "Vérification des prérequis système"
+    Pop $0
 
     ; Vérifier Node.js
-    nsExec::ExecToStack 'node --version'
-    Pop $0
-    Pop $NodeFound
-    ${If} $0 == 0
-        ${NSD_CreateLabel} 10 30 100% 12u "✅  Node.js : $NodeFound (requis ≥ 22)"
-        Pop $Label
+    nsExec::ExecToStack "node --version"
+    Pop $1  ; code retour
+    Pop $2  ; sortie
+    ${If} $1 == 0
+        StrCpy $NodeFound "1"
+        ${NSD_CreateLabel} 0 30u 100% 12u "✓ Node.js détecté : $2"
+        Pop $0
     ${Else}
-        ${NSD_CreateLabel} 10 30 100% 12u "❌  Node.js non trouvé — sera installé automatiquement"
-        Pop $Label
-        StrCpy $NodeFound ""
+        StrCpy $NodeFound "0"
+        ${NSD_CreateLabel} 0 30u 100% 12u "✗ Node.js non trouvé — sera installé automatiquement"
+        Pop $0
     ${EndIf}
 
     ; Vérifier Python
-    nsExec::ExecToStack 'python --version'
-    Pop $0
-    Pop $PythonFound
-    ${If} $0 == 0
-        ${NSD_CreateLabel} 10 50 100% 12u "✅  Python : $PythonFound (requis ≥ 3.11)"
-        Pop $Label
+    nsExec::ExecToStack "python --version"
+    Pop $1
+    Pop $2
+    ${If} $1 == 0
+        StrCpy $PythonFound "1"
+        ${NSD_CreateLabel} 0 50u 100% 12u "✓ Python détecté : $2"
+        Pop $0
     ${Else}
-        ${NSD_CreateLabel} 10 50 100% 12u "❌  Python non trouvé — sera installé automatiquement"
-        Pop $Label
-        StrCpy $PythonFound ""
+        StrCpy $PythonFound "0"
+        ${NSD_CreateLabel} 0 50u 100% 12u "✗ Python non trouvé — sera installé automatiquement"
+        Pop $0
     ${EndIf}
 
     ; Vérifier Git
-    nsExec::ExecToStack 'git --version'
-    Pop $0
-    Pop $GitFound
-    ${If} $0 == 0
-        ${NSD_CreateLabel} 10 70 100% 12u "✅  Git : $GitFound"
-        Pop $Label
+    nsExec::ExecToStack "git --version"
+    Pop $1
+    Pop $2
+    ${If} $1 == 0
+        StrCpy $GitFound "1"
+        ${NSD_CreateLabel} 0 70u 100% 12u "✓ Git détecté : $2"
+        Pop $0
     ${Else}
-        ${NSD_CreateLabel} 10 70 100% 12u "❌  Git non trouvé — sera installé automatiquement"
-        Pop $Label
-        StrCpy $GitFound ""
+        StrCpy $GitFound "0"
+        ${NSD_CreateLabel} 0 70u 100% 12u "✗ Git non trouvé — sera installé automatiquement"
+        Pop $0
     ${EndIf}
 
-    ${NSD_CreateLabel} 0 100 100% 30u "Les prérequis manquants seront téléchargés et installés automatiquement. Une connexion Internet est requise."
-    Pop $Label
+    ${NSD_CreateLabel} 0 95u 100% 30u "Les prérequis manquants seront téléchargés et installés automatiquement pendant l'installation. Une connexion Internet est requise."
+    Pop $0
 
     nsDialogs::Show
 FunctionEnd
 
-Function PagePrerequis_Leave
+Function PagePrerequisitesLeave
 FunctionEnd
 
-; ---------------------------------------------------------------------------
-; Page personnalisée — Configuration CHU
-; ---------------------------------------------------------------------------
-Function PageConfigCHU
+;--------------------------------
+; Page Configuration CHU (personnalisée)
+;--------------------------------
+Function PageCHUConfig
     nsDialogs::Create 1018
-    Pop $Dialog
-    ${If} $Dialog == error
-        Abort
-    ${EndIf}
-
-    ${NSD_CreateLabel} 0 0 100% 20u "Configuration HERMES CHU"
-    Pop $Label
-    CreateFont $0 "Segoe UI" 10 700
-    SendMessage $Label ${WM_SETFONT} $0 1
-
-    ; --- Fournisseur IA ---
-    ${NSD_CreateGroupBox} 0 25 100% 65u "Fournisseur IA (modifiable après installation)"
     Pop $0
 
-    ${NSD_CreateLabel} 10 42 90u 12u "Azure OpenAI Endpoint :"
-    Pop $Label
-    ${NSD_CreateText} 105 40 185u 12u "https://votre-ressource.openai.azure.com/"
-    Pop $TextField
-    ${NSD_OnChange} $TextField PageConfigCHU_EndpointChange
-
-    ${NSD_CreateLabel} 10 62 90u 12u "Clé API Azure :"
-    Pop $Label
-    ${NSD_CreatePassword} 105 60 185u 12u ""
-    Pop $TextField
-    ${NSD_OnChange} $TextField PageConfigCHU_ApiKeyChange
-
-    ${NSD_CreateLabel} 10 82 280u 10u "💡 Laissez vide pour configurer après l'installation via l'interface."
-    Pop $Label
-
-    ; --- Privacy Engine ---
-    ${NSD_CreateGroupBox} 0 100 100% 40u "Privacy Engine RGPD"
+    ${NSD_CreateLabel} 0 0 100% 12u "Configuration du fournisseur IA"
     Pop $0
 
-    ${NSD_CreateCheckBox} 10 115 280u 12u "Activer l'anonymisation RGPD dès le démarrage (recommandé)"
-    Pop $CheckBox
-    ${NSD_Check} $CheckBox
-    StrCpy $PrivacyEnabled "1"
-
-    ${NSD_CreateLabel} 10 130 280u 10u "Le Privacy Engine anonymise les données de santé avant envoi au LLM."
-    Pop $Label
-
-    ; --- Port API CHU ---
-    ${NSD_CreateGroupBox} 0 150 100% 30u "Port de l'API CHU"
+    ${NSD_CreateLabel} 0 18u 100% 10u "Fournisseur LLM :"
     Pop $0
 
-    ${NSD_CreateLabel} 10 165 80u 12u "Port (défaut 8001) :"
-    Pop $Label
-    ${NSD_CreateNumber} 95 163 50u 12u "8001"
-    Pop $TextField
-    ${NSD_OnChange} $TextField PageConfigCHU_PortChange
-    StrCpy $CHUApiPort "8001"
+    ${NSD_CreateDropList} 0 30u 200u 60u ""
+    Pop $1
+    ${NSD_CB_AddString} $1 "Azure OpenAI (recommandé — certifié HDS)"
+    ${NSD_CB_AddString} $1 "OpenAI (GPT-4o, GPT-4-turbo)"
+    ${NSD_CB_AddString} $1 "Ollama (modèles locaux)"
+    ${NSD_CB_AddString} $1 "vLLM On-Premise (Hermes-3-70B)"
+    ${NSD_CB_AddString} $1 "Configurer plus tard"
+    ${NSD_CB_SelectString} $1 "Azure OpenAI (recommandé — certifié HDS)"
+    GetFunctionAddress $2 OnProviderChange
+    nsDialogs::OnChange $1 $2
+
+    ${NSD_CreateLabel} 0 55u 80u 10u "Endpoint Azure OpenAI :"
+    Pop $0
+    ${NSD_CreateText} 0 67u 100% 12u "https://votre-ressource.openai.azure.com/"
+    Pop $AzureEndpoint
+
+    ${NSD_CreateLabel} 0 85u 80u 10u "Clé API :"
+    Pop $0
+    ${NSD_CreatePassword} 0 97u 100% 12u ""
+    Pop $AzureApiKey
+
+    ${NSD_CreateLabel} 0 115u 80u 10u "Nom du déploiement :"
+    Pop $0
+    ${NSD_CreateText} 0 127u 100% 12u "gpt-4o"
+    Pop $AzureDeployment
+
+    ${NSD_CreateLabel} 0 150u 100% 10u "Privacy Engine RGPD :"
+    Pop $0
+    ${NSD_CreateCheckbox} 0 163u 100% 12u "Activer l'anonymisation des données de santé (recommandé)"
+    Pop $PrivacyEnabled
+    ${NSD_Check} $PrivacyEnabled
+
+    ${NSD_CreateLabel} 0 185u 100% 25u "Note : Le Privacy Engine anonymise les données PHI (noms, NIR, IPP, adresses) avant tout envoi au modèle IA, conformément au RGPD."
+    Pop $0
 
     nsDialogs::Show
 FunctionEnd
 
-Function PageConfigCHU_EndpointChange
-    Pop $TextField
-    ${NSD_GetText} $TextField $AzureEndpoint
+Function OnProviderChange
+    ; Callback simplifié — la configuration détaillée se fait via Configure-CHU.ps1
 FunctionEnd
 
-Function PageConfigCHU_ApiKeyChange
-    Pop $TextField
-    ${NSD_GetText} $TextField $AzureApiKey
+Function PageCHUConfigLeave
+    ${NSD_GetText} $AzureEndpoint $0
+    StrCpy $AzureEndpoint $0
+    ${NSD_GetText} $AzureApiKey $0
+    StrCpy $AzureApiKey $0
+    ${NSD_GetText} $AzureDeployment $0
+    StrCpy $AzureDeployment $0
+    ${NSD_GetState} $PrivacyEnabled $0
+    StrCpy $PrivacyEnabled $0
 FunctionEnd
 
-Function PageConfigCHU_PortChange
-    Pop $TextField
-    ${NSD_GetText} $TextField $CHUApiPort
-FunctionEnd
-
-Function PageConfigCHU_Leave
-    ${NSD_GetState} $CheckBox $PrivacyEnabled
-FunctionEnd
-
-; ---------------------------------------------------------------------------
-; Section principale — Installation
-; ---------------------------------------------------------------------------
-Section "HERMES CHU Desktop" SecMain
-    SectionIn RO  ; Obligatoire
-
+;--------------------------------
+; Section principale d'installation
+;--------------------------------
+Section "HERMES CHU (requis)" SecMain
+    SectionIn RO
     SetOutPath "$INSTDIR"
-    SetOverwrite on
 
-    DetailPrint "Installation de HERMES CHU ${APP_VERSION}…"
+    ; --- Copie des fichiers principaux ---
+    File /r "/home/ubuntu/nsis_build/payload\*.*"
 
-    ; --- Fichiers principaux ---
-    File /r "..\dist\win-unpacked\*.*"
-
-    ; --- Scripts CHU ---
-    SetOutPath "$INSTDIR\chu"
-    File /r "..\..\..\chu\*.*"
-
-    ; --- Documentation ---
-    SetOutPath "$INSTDIR\docs"
-    File "..\..\..\README.md"
-    File "..\..\..\HERMES_CHU_Livrable\HERMES_CHU_Dossier_Technique.md"
-
-    ; --- Fichier de configuration CHU ---
-    SetOutPath "$INSTDIR\chu"
+    ; --- Créer le fichier .env.chu ---
     FileOpen $0 "$INSTDIR\chu\.env.chu" w
-    FileWrite $0 "# HERMES CHU — Configuration générée par l'installateur$\r$\n"
-    FileWrite $0 "# Date d'installation : $\r$\n"
+
+    FileWrite $0 "# HERMES CHU — Configuration$\r$\n"
+    FileWrite $0 "# Généré automatiquement par l'installateur$\r$\n"
     FileWrite $0 "$\r$\n"
-    FileWrite $0 "# === Fournisseur IA ===$\r$\n"
+    FileWrite $0 "# Fournisseur LLM actif$\r$\n"
     FileWrite $0 "FOURNISSEUR_ACTIF=azure_openai$\r$\n"
+    FileWrite $0 "$\r$\n"
+    FileWrite $0 "# Azure OpenAI$\r$\n"
     FileWrite $0 "AZURE_OPENAI_ENDPOINT=$AzureEndpoint$\r$\n"
     FileWrite $0 "AZURE_OPENAI_API_KEY=$AzureApiKey$\r$\n"
-    FileWrite $0 "AZURE_OPENAI_DEPLOYMENT=gpt-4o$\r$\n"
+    FileWrite $0 "AZURE_OPENAI_DEPLOYMENT=$AzureDeployment$\r$\n"
+    FileWrite $0 "AZURE_OPENAI_API_VERSION=2024-02-01$\r$\n"
     FileWrite $0 "$\r$\n"
-    FileWrite $0 "# === Privacy Engine ===$\r$\n"
-    FileWrite $0 "PRIVACY_ENGINE_ACTIF=$PrivacyEnabled$\r$\n"
-    FileWrite $0 "CHU_API_PORT=$CHUApiPort$\r$\n"
+    FileWrite $0 "# OpenAI (alternatif)$\r$\n"
+    FileWrite $0 "OPENAI_API_KEY=$\r$\n"
+    FileWrite $0 "OPENAI_MODEL=gpt-4o$\r$\n"
     FileWrite $0 "$\r$\n"
-    FileWrite $0 "# === Base de données ===$\r$\n"
+    FileWrite $0 "# Ollama (local)$\r$\n"
+    FileWrite $0 "OLLAMA_BASE_URL=http://localhost:11434$\r$\n"
+    FileWrite $0 "OLLAMA_MODEL=hermes3:70b$\r$\n"
+    FileWrite $0 "$\r$\n"
+    FileWrite $0 "# vLLM On-Premise$\r$\n"
+    FileWrite $0 "VLLM_BASE_URL=http://vllm-service:8000/v1$\r$\n"
+    FileWrite $0 "VLLM_MODEL=NousResearch/Hermes-3-Llama-3.1-70B-Instruct$\r$\n"
+    FileWrite $0 "$\r$\n"
+    FileWrite $0 "# Privacy Engine RGPD$\r$\n"
+
+    ${If} $PrivacyEnabled == ${BST_CHECKED}
+        FileWrite $0 "PRIVACY_ENGINE_ACTIF=true$\r$\n"
+    ${Else}
+        FileWrite $0 "PRIVACY_ENGINE_ACTIF=false$\r$\n"
+    ${EndIf}
+
+    FileWrite $0 "PRIVACY_LOG_LEVEL=INFO$\r$\n"
+    FileWrite $0 "$\r$\n"
+    FileWrite $0 "# API CHU$\r$\n"
+    FileWrite $0 "CHU_API_PORT=8001$\r$\n"
+    FileWrite $0 "CHU_API_HOST=127.0.0.1$\r$\n"
+    FileWrite $0 "$\r$\n"
+    FileWrite $0 "# Base de données$\r$\n"
     FileWrite $0 "DATABASE_URL=sqlite:///$INSTDIR\chu\data\hermes_chu.db$\r$\n"
-    FileWrite $0 "$\r$\n"
-    FileWrite $0 "# === Journalisation ISO 27001 ===$\r$\n"
-    FileWrite $0 "AUDIT_LOG_PATH=$INSTDIR\chu\logs\audit.jsonl$\r$\n"
-    FileWrite $0 "LOG_LEVEL=INFO$\r$\n"
     FileClose $0
 
-    ; --- Créer les dossiers de données ---
-    CreateDirectory "$INSTDIR\chu\data"
-    CreateDirectory "$INSTDIR\chu\logs"
-    CreateDirectory "$INSTDIR\chu\cache"
+    ; --- Créer les scripts .bat de lancement ---
+    FileOpen $0 "$INSTDIR\scripts\Configure-CHU.bat" w
+    FileWrite $0 "@echo off$\r$\n"
+    FileWrite $0 "cd /d $\"%~dp0..$\"$\r$\n"
+    FileWrite $0 "PowerShell -ExecutionPolicy Bypass -File $\"scripts\Configure-CHU.ps1$\"$\r$\n"
+    FileWrite $0 "pause$\r$\n"
+    FileClose $0
+
+    FileOpen $0 "$INSTDIR\scripts\Start-API-CHU.bat" w
+    FileWrite $0 "@echo off$\r$\n"
+    FileWrite $0 "cd /d $\"%~dp0..$\"$\r$\n"
+    FileWrite $0 "PowerShell -ExecutionPolicy Bypass -File $\"scripts\Start-API-CHU.ps1$\" -Mode background$\r$\n"
+    FileClose $0
+
+    FileOpen $0 "$INSTDIR\scripts\Install-Prerequisites.bat" w
+    FileWrite $0 "@echo off$\r$\n"
+    FileWrite $0 "cd /d $\"%~dp0..$\"$\r$\n"
+    FileWrite $0 "PowerShell -ExecutionPolicy Bypass -File $\"scripts\Install-Prerequisites.ps1$\"$\r$\n"
+    FileWrite $0 "pause$\r$\n"
+    FileClose $0
 
     ; --- Raccourcis Bureau ---
-    CreateShortcut "$DESKTOP\HERMES CHU.lnk" \
-        "$INSTDIR\${APP_EXE}" "" \
-        "$INSTDIR\${APP_EXE}" 0 \
-        SW_SHOWNORMAL "" \
-        "Système Agentique Hospitalier HERMES CHU"
-
-    ; --- Menu Démarrer ---
     CreateDirectory "$SMPROGRAMS\HERMES CHU"
+    CreateShortcut "$DESKTOP\HERMES CHU.lnk" \
+        "$INSTDIR\scripts\Start-API-CHU.bat" "" \
+        "$INSTDIR\assets\icon.ico" 0 \
+        SW_SHOWMINIMIZED "" "Lancer HERMES CHU"
+
+    ; --- Raccourcis Menu Démarrer ---
     CreateShortcut "$SMPROGRAMS\HERMES CHU\HERMES CHU.lnk" \
-        "$INSTDIR\${APP_EXE}" "" \
-        "$INSTDIR\${APP_EXE}" 0
-    CreateShortcut "$SMPROGRAMS\HERMES CHU\Démarrer l'API CHU.lnk" \
-        "powershell.exe" \
-        '-ExecutionPolicy Bypass -File "$INSTDIR\chu\scripts\start-api-chu.ps1"' \
-        "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" 0
-    CreateShortcut "$SMPROGRAMS\HERMES CHU\Documentation.lnk" \
-        "$INSTDIR\docs\README.md"
+        "$INSTDIR\scripts\Start-API-CHU.bat" "" \
+        "$INSTDIR\assets\icon.ico" 0 \
+        SW_SHOWMINIMIZED "" "Lancer HERMES CHU"
+
+    CreateShortcut "$SMPROGRAMS\HERMES CHU\Configurer HERMES CHU.lnk" \
+        "$INSTDIR\scripts\Configure-CHU.bat" "" \
+        "$INSTDIR\assets\icon.ico" 0 \
+        SW_SHOWNORMAL "" "Configurer HERMES CHU"
+
+    CreateShortcut "$SMPROGRAMS\HERMES CHU\Installer les prérequis.lnk" \
+        "$INSTDIR\scripts\Install-Prerequisites.bat" "" \
+        "$INSTDIR\assets\icon.ico" 0 \
+        SW_SHOWNORMAL "" "Installer les prérequis (Node.js, Python, Git)"
+
+    CreateShortcut "$SMPROGRAMS\HERMES CHU\Documentation Wiki.lnk" \
+        "https://github.com/Tarzzan/HERMES-CHU/wiki" "" "" 0
+
     CreateShortcut "$SMPROGRAMS\HERMES CHU\Désinstaller HERMES CHU.lnk" \
-        "$INSTDIR\Uninstall.exe"
+        "$INSTDIR\Uninstall.exe" "" "" 0
 
     ; --- Registre Windows ---
-    WriteRegStr   HKLM "${UNINSTALL_KEY}" "DisplayName"          "${APP_NAME}"
-    WriteRegStr   HKLM "${UNINSTALL_KEY}" "DisplayVersion"       "${APP_VERSION}"
-    WriteRegStr   HKLM "${UNINSTALL_KEY}" "Publisher"            "${APP_PUBLISHER}"
-    WriteRegStr   HKLM "${UNINSTALL_KEY}" "URLInfoAbout"         "${APP_URL}"
-    WriteRegStr   HKLM "${UNINSTALL_KEY}" "InstallLocation"      "$INSTDIR"
-    WriteRegStr   HKLM "${UNINSTALL_KEY}" "UninstallString"      "$INSTDIR\Uninstall.exe"
-    WriteRegStr   HKLM "${UNINSTALL_KEY}" "QuietUninstallString" "$INSTDIR\Uninstall.exe /S"
-    WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoModify"             1
-    WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoRepair"             0
-    WriteRegStr   HKLM "${INSTALL_REG_KEY}" "InstallPath"        "$INSTDIR"
-    WriteRegStr   HKLM "${INSTALL_REG_KEY}" "Version"            "${APP_VERSION}"
+    WriteRegStr HKLM "Software\HERMES CHU" "InstallDir" "$INSTDIR"
+    WriteRegStr HKLM "Software\HERMES CHU" "Version"    "1.0.0"
 
-    ; Taille estimée (en KB)
+    WriteRegStr HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "DisplayName"          "HERMES CHU 1.0.0"
+    WriteRegStr HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "DisplayVersion"       "1.0.0"
+    WriteRegStr HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "Publisher"            "Centre Hospitalier Universitaire"
+    WriteRegStr HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "UninstallString"      "$INSTDIR\Uninstall.exe"
+    WriteRegStr HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "InstallLocation"      "$INSTDIR"
+    WriteRegStr HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "URLInfoAbout"         "https://github.com/Tarzzan/HERMES-CHU"
+    WriteRegStr HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "HelpLink"             "https://github.com/Tarzzan/HERMES-CHU/wiki"
+    WriteRegDWORD HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "NoModify" 1
+    WriteRegDWORD HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "NoRepair"  1
+
+    ; Calculer la taille installée
     ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
     IntFmt $0 "0x%08X" $0
-    WriteRegDWORD HKLM "${UNINSTALL_KEY}" "EstimatedSize" "$0"
+    WriteRegDWORD HKLM \
+        "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
+        "EstimatedSize" "$0"
 
-    ; --- Désinstalleur ---
+    ; --- Écrire le désinstallateur ---
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-    DetailPrint "Installation terminée !"
 SectionEnd
 
-; ---------------------------------------------------------------------------
-; Section optionnelle — Prérequis automatiques
-; ---------------------------------------------------------------------------
-Section "Installer les prérequis manquants" SecPrerequis
-    SetOutPath "$TEMP\hermes-chu-prereqs"
-
-    ; Installer Node.js si absent
-    ${If} $NodeFound == ""
-        DetailPrint "Téléchargement de Node.js 22 LTS…"
-        inetc::get /CAPTION "Téléchargement Node.js" \
-            "https://nodejs.org/dist/v22.13.0/node-v22.13.0-x64.msi" \
-            "$TEMP\hermes-chu-prereqs\node-setup.msi" /END
-        Pop $0
-        ${If} $0 == "OK"
-            DetailPrint "Installation de Node.js…"
-            ExecWait 'msiexec /i "$TEMP\hermes-chu-prereqs\node-setup.msi" /quiet /norestart'
-        ${Else}
-            MessageBox MB_ICONEXCLAMATION "Impossible de télécharger Node.js. Installez-le manuellement depuis https://nodejs.org"
-        ${EndIf}
-    ${EndIf}
-
-    ; Installer Python si absent
-    ${If} $PythonFound == ""
-        DetailPrint "Téléchargement de Python 3.11…"
-        inetc::get /CAPTION "Téléchargement Python" \
-            "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe" \
-            "$TEMP\hermes-chu-prereqs\python-setup.exe" /END
-        Pop $0
-        ${If} $0 == "OK"
-            DetailPrint "Installation de Python…"
-            ExecWait '"$TEMP\hermes-chu-prereqs\python-setup.exe" /quiet InstallAllUsers=1 PrependPath=1 Include_pip=1'
-        ${Else}
-            MessageBox MB_ICONEXCLAMATION "Impossible de télécharger Python. Installez-le manuellement depuis https://python.org"
-        ${EndIf}
-    ${EndIf}
-
-    ; Installer Git si absent
-    ${If} $GitFound == ""
-        DetailPrint "Téléchargement de Git…"
-        inetc::get /CAPTION "Téléchargement Git" \
-            "https://github.com/git-for-windows/git/releases/download/v2.47.0.windows.1/Git-2.47.0-64-bit.exe" \
-            "$TEMP\hermes-chu-prereqs\git-setup.exe" /END
-        Pop $0
-        ${If} $0 == "OK"
-            DetailPrint "Installation de Git…"
-            ExecWait '"$TEMP\hermes-chu-prereqs\git-setup.exe" /VERYSILENT /NORESTART'
-        ${EndIf}
-    ${EndIf}
-
-    ; Installer les dépendances Python CHU
-    DetailPrint "Installation des dépendances Python CHU…"
-    ExecWait 'python -m pip install --quiet fastapi uvicorn spacy redis sqlalchemy python-jose cryptography 2>&1'
-
-    ; Télécharger le modèle spaCy français
-    DetailPrint "Téléchargement du modèle NLP français (fr_core_news_lg)…"
-    ExecWait 'python -m spacy download fr_core_news_lg --quiet 2>&1'
-
-    RMDir /r "$TEMP\hermes-chu-prereqs"
+;--------------------------------
+; Section : Variables d'environnement
+;--------------------------------
+Section "Variables d'environnement système" SecEnv
+    WriteRegExpandStr HKLM \
+        "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" \
+        "HERMES_CHU_HOME" "$INSTDIR"
+    SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
 SectionEnd
 
-; ---------------------------------------------------------------------------
-; Descriptions des sections
-; ---------------------------------------------------------------------------
-!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-    !insertmacro MUI_DESCRIPTION_TEXT ${SecMain}     "Application HERMES CHU Desktop, Privacy Engine RGPD et API CHU."
-    !insertmacro MUI_DESCRIPTION_TEXT ${SecPrerequis} "Installe automatiquement Node.js 22, Python 3.11 et Git s'ils sont absents."
-!insertmacro MUI_FUNCTION_DESCRIPTION_END
-
-; ---------------------------------------------------------------------------
-; Fonctions d'initialisation
-; ---------------------------------------------------------------------------
-Function .onInit
-    ; Vérifier Windows 10 minimum
-    ${IfNot} ${AtLeastWin10}
-        MessageBox MB_ICONSTOP "HERMES CHU requiert Windows 10 ou supérieur."
-        Abort
-    ${EndIf}
-
-    ; Vérifier architecture 64 bits
-    ${IfNot} ${RunningX64}
-        MessageBox MB_ICONSTOP "HERMES CHU requiert un système Windows 64 bits."
-        Abort
-    ${EndIf}
-
-    ; Vérifier si déjà installé
-    ReadRegStr $0 HKLM "${INSTALL_REG_KEY}" "InstallPath"
-    ${If} $0 != ""
-        MessageBox MB_YESNO|MB_ICONQUESTION \
-            "HERMES CHU est déjà installé dans $0.$\r$\nVoulez-vous mettre à jour l'installation ?" \
-            IDYES +2
-        Abort
-    ${EndIf}
-
-    ; Initialiser les variables
-    StrCpy $AzureEndpoint ""
-    StrCpy $AzureApiKey ""
-    StrCpy $PrivacyEnabled "1"
-    StrCpy $CHUApiPort "8001"
-FunctionEnd
-
-Function .onInstSuccess
-    ; Ouvrir le guide de démarrage rapide
-    ExecShell "open" "$INSTDIR\docs\README.md"
-FunctionEnd
-
-; ---------------------------------------------------------------------------
-; Section de désinstallation
-; ---------------------------------------------------------------------------
+;--------------------------------
+; Désinstallateur
+;--------------------------------
 Section "Uninstall"
-    ; Arrêter les processus en cours
-    nsProcess::_FindProcess "${APP_EXE}"
-    Pop $0
-    ${If} $0 == 0
-        nsProcess::_KillProcess "${APP_EXE}"
-        Sleep 1000
-    ${EndIf}
+    ; Arrêter l'API CHU si en cours
+    nsExec::Exec "taskkill /F /IM python.exe /FI $\"WINDOWTITLE eq HERMES CHU*$\""
 
-    nsProcess::_FindProcess "python.exe"
-    Pop $0
-    ${If} $0 == 0
-        ; Arrêter l'API CHU proprement
-        nsExec::Exec 'taskkill /F /FI "WINDOWTITLE eq HERMES CHU API*"'
-    ${EndIf}
-
-    ; Supprimer les fichiers
-    RMDir /r "$INSTDIR\resources"
-    RMDir /r "$INSTDIR\locales"
-    RMDir /r "$INSTDIR\chu"
-    RMDir /r "$INSTDIR\docs"
-    Delete "$INSTDIR\${APP_EXE}"
-    Delete "$INSTDIR\*.dll"
-    Delete "$INSTDIR\*.pak"
-    Delete "$INSTDIR\*.dat"
+    ; Supprimer les fichiers (conserver les données utilisateur)
+    RMDir /r "$INSTDIR\upstream"
+    RMDir /r "$INSTDIR\chu\api"
+    RMDir /r "$INSTDIR\chu\privacy_engine"
+    RMDir /r "$INSTDIR\chu\skills"
+    RMDir /r "$INSTDIR\chu-desktop"
+    RMDir /r "$INSTDIR\scripts"
+    RMDir /r "$INSTDIR\assets"
     Delete "$INSTDIR\Uninstall.exe"
-    RMDir "$INSTDIR"
+    Delete "$INSTDIR\README.md"
+
+    ; Conserver : chu\.env.chu, chu\data\, chu\logs\
+    DetailPrint "Les données utilisateur (logs, configuration) sont conservées dans $INSTDIR\chu\"
 
     ; Supprimer les raccourcis
     Delete "$DESKTOP\HERMES CHU.lnk"
     RMDir /r "$SMPROGRAMS\HERMES CHU"
 
-    ; Supprimer le registre
-    DeleteRegKey HKLM "${UNINSTALL_KEY}"
-    DeleteRegKey HKLM "${INSTALL_REG_KEY}"
+    ; Nettoyer le registre
+    DeleteRegKey HKLM "Software\HERMES CHU"
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU"
+    DeleteRegValue HKLM \
+        "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" \
+        "HERMES_CHU_HOME"
 
-    MessageBox MB_ICONINFORMATION "HERMES CHU a été désinstallé avec succès.$\r$\nVos données (logs, configuration) ont été conservées dans $APPDATA\HERMES-CHU."
+    ; Tenter de supprimer le répertoire (échouera si des données sont présentes)
+    RMDir "$INSTDIR"
+
 SectionEnd
