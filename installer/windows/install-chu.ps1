@@ -2352,9 +2352,10 @@ function New-DesktopShortcuts {
             $iconLocation = "$TargetExe,0"
         }
 
+        # ── Raccourci Desktop PULSAR (application native) ──────────────────────
         $targets = @(
-            (Join-Path ([Environment]::GetFolderPath('Programs')) 'Hermes.lnk'),
-            (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Hermes.lnk')
+            (Join-Path ([Environment]::GetFolderPath('Programs')) 'PULSAR Desktop.lnk'),
+            (Join-Path ([Environment]::GetFolderPath('Desktop')) 'PULSAR Desktop.lnk')
         )
 
         foreach ($lnkPath in $targets) {
@@ -2367,11 +2368,67 @@ function New-DesktopShortcuts {
                 $sc.TargetPath = $TargetExe
                 $sc.WorkingDirectory = $workDir
                 $sc.IconLocation = $iconLocation
-                $sc.Description = 'Hermes Agent'
+                $sc.Description = 'PULSAR Desktop - DSIO CHU de Guyane'
                 $sc.Save()
-                Write-Success "Shortcut created: $lnkPath"
+                Write-Success "Raccourci cree : $lnkPath"
             } catch {
-                Write-Warn "Could not create shortcut $lnkPath : $($_.Exception.Message)"
+                Write-Warn "Impossible de creer le raccourci $lnkPath : $($_.Exception.Message)"
+            }
+        }
+
+        # ── Raccourci PULSAR Web (dashboard navigateur via systray) ─────────────
+        $pulsarHome = Join-Path $env:LOCALAPPDATA 'hermes\hermes-chu'
+        $startScript = Join-Path $pulsarHome 'Pulsar-Start.bat'
+        $updateScript = Join-Path $pulsarHome 'Pulsar-Update.bat'
+        $scriptsSource = Join-Path $pulsarHome 'installer\windows\scripts'
+
+        # Copier les scripts de lancement depuis le dépôt cloné
+        if (Test-Path $scriptsSource) {
+            $filesToCopy = @('Pulsar-Start.bat', 'Pulsar-Update.bat', 'pulsar-tray.py')
+            foreach ($f in $filesToCopy) {
+                $src = Join-Path $scriptsSource $f
+                $dst = Join-Path $pulsarHome $f
+                if (Test-Path $src) {
+                    Copy-Item $src $dst -Force
+                    Write-Success "Script copie : $dst"
+                }
+            }
+        }
+
+        # Raccourci PULSAR (Web dashboard)
+        if (Test-Path $startScript) {
+            $webLnks = @(
+                (Join-Path ([Environment]::GetFolderPath('Programs')) 'PULSAR.lnk'),
+                (Join-Path ([Environment]::GetFolderPath('Desktop')) 'PULSAR.lnk')
+            )
+            foreach ($lnkPath in $webLnks) {
+                try {
+                    $parent = Split-Path -Parent $lnkPath
+                    if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
+                    $sc = $shell.CreateShortcut($lnkPath)
+                    $sc.TargetPath = $startScript
+                    $sc.WorkingDirectory = $pulsarHome
+                    $sc.Description = 'PULSAR - DSIO CHU de Guyane'
+                    $sc.Save()
+                    Write-Success "Raccourci cree : $lnkPath"
+                } catch {
+                    Write-Warn "Impossible de creer le raccourci PULSAR : $($_.Exception.Message)"
+                }
+            }
+        }
+
+        # Raccourci Mise à jour PULSAR
+        if (Test-Path $updateScript) {
+            try {
+                $updLnk = Join-Path ([Environment]::GetFolderPath('Desktop')) 'PULSAR - Mise a jour.lnk'
+                $sc = $shell.CreateShortcut($updLnk)
+                $sc.TargetPath = $updateScript
+                $sc.WorkingDirectory = $pulsarHome
+                $sc.Description = 'Mettre a jour PULSAR - DSIO CHU de Guyane'
+                $sc.Save()
+                Write-Success "Raccourci cree : $updLnk"
+            } catch {
+                Write-Warn "Impossible de creer le raccourci mise a jour : $($_.Exception.Message)"
             }
         }
 
