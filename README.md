@@ -10,8 +10,8 @@
 
 <br/>
 
-[![ISO 27001](https://img.shields.io/badge/Conformité-ISO_27001-blue?style=for-the-badge&logo=shield)](https://github.com/Tarzzan/HERMES-CHU/wiki/06-Conformite-ISO-27001)
-[![HDS](https://img.shields.io/badge/Certification-HDS-green?style=for-the-badge&logo=hospital)](https://github.com/Tarzzan/HERMES-CHU/wiki/05-SAS-Anonymisation)
+[![ISO 27001](https://img.shields.io/badge/Conformité-ISO_27001-blue?style=for-the-badge&logo=shield)](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/06-Conformite-ISO-27001.md)
+[![HDS](https://img.shields.io/badge/Certification-HDS-green?style=for-the-badge&logo=hospital)](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/05-SAS-Anonymisation.md)
 [![Hermes](https://img.shields.io/badge/Basé_sur-Hermes_Agent-purple?style=for-the-badge&logo=github)](https://github.com/NousResearch/hermes-agent)
 [![License](https://img.shields.io/badge/Licence-Propriétaire_CHU-red?style=for-the-badge)](LICENSE)
 
@@ -111,17 +111,17 @@ HERMES-CHU/
 
 La documentation complète est disponible dans le [Wiki](https://github.com/Tarzzan/HERMES-CHU/wiki) :
 
-1. [Accueil & Vision](https://github.com/Tarzzan/HERMES-CHU/wiki/01-Accueil)
-2. [Architecture Technique](https://github.com/Tarzzan/HERMES-CHU/wiki/02-Architecture-Technique)
-3. [Cœur Agentique Hermes](https://github.com/Tarzzan/HERMES-CHU/wiki/03-Coeur-Agentique)
-4. [Réseau d'Agents Spécialisés](https://github.com/Tarzzan/HERMES-CHU/wiki/04-Agents-Specialises)
-5. [SAS d'Anonymisation](https://github.com/Tarzzan/HERMES-CHU/wiki/05-SAS-Anonymisation)
-6. [Conformité ISO 27001](https://github.com/Tarzzan/HERMES-CHU/wiki/06-Conformite-ISO-27001)
-7. [Garde-Fous & Sécurité](https://github.com/Tarzzan/HERMES-CHU/wiki/07-Garde-Fous)
-8. [Interface Web de Pilotage](https://github.com/Tarzzan/HERMES-CHU/wiki/08-Interface-Web)
-9. [APIs Suivi Qualité](https://github.com/Tarzzan/HERMES-CHU/wiki/09-APIs-Qualite)
-10. [Déploiement & Infrastructure](https://github.com/Tarzzan/HERMES-CHU/wiki/10-Deploiement)
-11. [Roadmap Détaillée](https://github.com/Tarzzan/HERMES-CHU/wiki/11-Roadmap)
+1. [Accueil & Vision](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/01-Accueil.md)
+2. [Architecture Technique](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/02-Architecture-Technique.md)
+3. [Cœur Agentique Hermes](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/03-Coeur-Agentique.md)
+4. [Réseau d'Agents Spécialisés](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/04-Agents-Specialises.md)
+5. [SAS d'Anonymisation](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/05-SAS-Anonymisation.md)
+6. [Conformité ISO 27001](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/06-Conformite-ISO-27001.md)
+7. [Garde-Fous & Sécurité](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/07-Garde-Fous.md)
+8. [Interface Web de Pilotage](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/08-Interface-Web.md)
+9. [APIs Suivi Qualité](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/09-APIs-Qualite.md)
+10. [Déploiement & Infrastructure](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/10-Deploiement.md)
+11. [Roadmap Détaillée](https://github.com/Tarzzan/HERMES-CHU/blob/main/docs/wiki/11-Roadmap.md)
 
 ---
 
