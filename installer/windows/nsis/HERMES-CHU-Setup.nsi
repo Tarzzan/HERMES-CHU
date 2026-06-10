@@ -1,7 +1,7 @@
 ; ============================================================
 ;  HERMES CHU — Installateur Windows
 ;  Système Agentique Hospitalier Souverain
-;  Version : 1.1.0 — Couverture RGPD totale (7 flux)
+;  Version : 1.2.0 — Couverture RGPD totale (7 flux)
 ;  Compilé avec NSIS 3.09 (Linux/makensis)
 ; ============================================================
 
@@ -17,8 +17,8 @@ Unicode True
 ;--------------------------------
 ; Métadonnées
 ;--------------------------------
-Name              "HERMES CHU 1.1.0"
-OutFile           "/home/ubuntu/nsis_build/output/HERMES-CHU-Setup-1.1.0.exe"
+Name              "HERMES CHU 1.2.0"
+OutFile           "/home/ubuntu/nsis_build/output/HERMES-CHU-Setup-1.2.0.exe"
 InstallDir        "$PROGRAMFILES64\HERMES CHU"
 InstallDirRegKey  HKLM "Software\HERMES CHU" "InstallDir"
 RequestExecutionLevel admin
@@ -28,19 +28,24 @@ SetCompressorDictSize 32
 ;--------------------------------
 ; Informations de version
 ;--------------------------------
-VIProductVersion  "1.1.0.0"
+VIProductVersion  "1.2.0.0"
 VIAddVersionKey   "ProductName"      "HERMES CHU"
-VIAddVersionKey   "ProductVersion"   "1.1.0"
-VIAddVersionKey   "CompanyName"      "Centre Hospitalier Universitaire"
+VIAddVersionKey   "ProductVersion"   "1.2.0"
+VIAddVersionKey   "CompanyName"      "William MERI — CHU de Guyane"
 VIAddVersionKey   "FileDescription"  "Système Agentique Hospitalier Souverain"
-VIAddVersionKey   "FileVersion"      "1.1.0"
+VIAddVersionKey   "FileVersion"      "1.2.0"
 VIAddVersionKey   "LegalCopyright"   "© 2025-2026 CHU — Licence Apache 2.0"
-VIAddVersionKey   "Comments"         "Basé sur NousResearch Hermes Agent"
+VIAddVersionKey   "Comments"         "Conçu par William MERI (CHU-Guyane) — Basé sur NousResearch Hermes Agent"
 
 ;--------------------------------
 ; Interface MUI2
 ;--------------------------------
 !define MUI_ABORTWARNING
+!define MUI_ABORTWARNING_TEXT        "Annuler l'installation de HERMES CHU ?"
+
+; --- À propos ---
+!define MUI_COMPONENTSPAGE_NODESC
+!define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_ICON                    "/usr/share/nsis/Contrib/Graphics/Icons/modern-install-blue.ico"
 !define MUI_UNICON                  "/usr/share/nsis/Contrib/Graphics/Icons/modern-uninstall-blue.ico"
 !define MUI_WELCOMEFINISHPAGE_BITMAP "/home/ubuntu/nsis_build/assets/sidebar.bmp"
@@ -48,11 +53,11 @@ VIAddVersionKey   "Comments"         "Basé sur NousResearch Hermes Agent"
 !define MUI_HEADERIMAGE_BITMAP      "/home/ubuntu/nsis_build/assets/banner.bmp"
 !define MUI_HEADERIMAGE_RIGHT
 
-!define MUI_WELCOMEPAGE_TITLE       "Bienvenue dans HERMES CHU 1.1.0"
+!define MUI_WELCOMEPAGE_TITLE       "Bienvenue dans HERMES CHU 1.2.0"
 !define MUI_WELCOMEPAGE_TEXT        "Cet assistant va installer HERMES CHU — Système Agentique Hospitalier Souverain.$\r$\n$\r$\nHERMES CHU est basé sur Hermes Agent de NousResearch, adapté pour les établissements de santé avec :$\r$\n$\r$\n• Privacy Engine RGPD — 7 flux couverts (NER médical, mémoire, skills, contexte)$\r$\n• Support multi-LLM (Azure OpenAI, OpenAI, Ollama, vLLM)$\r$\n• Agents spécialisés (Clinique, Administratif, Logistique, Recherche)$\r$\n• Conformité ISO 27001 et HDS$\r$\n$\r$\nIl est recommandé de fermer toutes les autres applications avant de continuer."
 
 !define MUI_FINISHPAGE_TITLE        "Installation terminée !"
-!define MUI_FINISHPAGE_TEXT         "HERMES CHU 1.1.0 a été installé avec succès.$\r$\n$\r$\nProchaines étapes :$\r$\n1. Lancez l'assistant de configuration via le Menu Démarrer$\r$\n2. Renseignez vos paramètres Azure OpenAI ou Ollama$\r$\n3. Activez le Privacy Engine RGPD$\r$\n4. Ouvrez HERMES CHU depuis le bureau$\r$\n$\r$\nDocumentation : github.com/Tarzzan/HERMES-CHU/wiki"
+!define MUI_FINISHPAGE_TEXT         "HERMES CHU 1.2.0 a été installé avec succès.$\r$\n$\r$\nConçu par William MERI — CHU de Guyane$\r$\n$\r$\nProchaines étapes :$\r$\n1. Lancez l'assistant de configuration via le Menu Démarrer$\r$\n2. Renseignez vos paramètres Azure OpenAI ou Ollama$\r$\n3. Activez le Privacy Engine RGPD$\r$\n4. Ouvrez HERMES CHU depuis le bureau$\r$\n$\r$\nDocumentation : github.com/Tarzzan/HERMES-CHU/wiki"
 !define MUI_FINISHPAGE_RUN          "$INSTDIR\scripts\Configure-CHU.bat"
 !define MUI_FINISHPAGE_RUN_TEXT     "Lancer l'assistant de configuration CHU"
 !define MUI_FINISHPAGE_LINK         "Consulter le Wiki HERMES CHU"
@@ -63,6 +68,7 @@ VIAddVersionKey   "Comments"         "Basé sur NousResearch Hermes Agent"
 ;--------------------------------
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE       "/home/ubuntu/nsis_build/assets/LICENSE.txt"
+Page custom PageAPropos
 Page custom PagePrerequisites PagePrerequisitesLeave
 Page custom PageCHUConfig PageCHUConfigLeave
 !insertmacro MUI_PAGE_DIRECTORY
@@ -91,6 +97,54 @@ Var ProviderChoice
 Var NodeFound
 Var PythonFound
 Var GitFound
+
+
+;--------------------------------
+; Page À propos — Crédits William MERI
+;--------------------------------
+Function PageAPropos
+    nsDialogs::Create 1018
+    Pop $0
+
+    ${NSD_CreateLabel} 0 0 100% 14u "HERMES CHU — Système Agentique Hospitalier Souverain"
+    Pop $0
+    SetCtlColors $0 0x003366 transparent
+
+    ${NSD_CreateLabel} 0 20u 100% 1u ""
+    Pop $0
+
+    ${NSD_CreateGroupBox} 0 25u 100% 80u "Conception & Développement"
+    Pop $0
+
+    ${NSD_CreateLabel} 10u 40u 100% 12u "Concepteur & Porteur de projet :"
+    Pop $0
+
+    ${NSD_CreateLabel} 10u 55u 100% 14u "William MERI — CHU de Guyane"
+    Pop $0
+
+    ${NSD_CreateLabel} 10u 75u 100% 10u "Architecte du système agentique hospitalier"
+    Pop $0
+
+    ${NSD_CreateLabel} 10u 88u 100% 10u "github.com/Tarzzan/HERMES-CHU"
+    Pop $0
+
+    ${NSD_CreateGroupBox} 0 115u 100% 50u "Technologie de base"
+    Pop $0
+
+    ${NSD_CreateLabel} 10u 130u 100% 10u "Basé sur Hermes Agent — NousResearch"
+    Pop $0
+
+    ${NSD_CreateLabel} 10u 145u 100% 10u "Modèle : Hermes-3-Llama-3.1-70B-Instruct"
+    Pop $0
+
+    ${NSD_CreateLabel} 10u 158u 100% 10u "Licence Apache 2.0 — Open Source"
+    Pop $0
+
+    ${NSD_CreateLabel} 0 175u 100% 10u "Version 1.2.0 — Juin 2026 — Conformité ISO 27001 & HDS & RGPD"
+    Pop $0
+
+    nsDialogs::Show
+FunctionEnd
 
 ;--------------------------------
 ; Page Prérequis (personnalisée)
@@ -326,17 +380,17 @@ Section "HERMES CHU (requis)" SecMain
 
     ; --- Registre Windows ---
     WriteRegStr HKLM "Software\HERMES CHU" "InstallDir" "$INSTDIR"
-    WriteRegStr HKLM "Software\HERMES CHU" "Version"    "1.1.0"
+    WriteRegStr HKLM "Software\HERMES CHU" "Version"    "1.2.0"
 
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
-        "DisplayName"          "HERMES CHU 1.1.0"
+        "DisplayName"          "HERMES CHU 1.2.0"
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
-        "DisplayVersion"       "1.1.0"
+        "DisplayVersion"       "1.2.0"
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
-        "Publisher"            "Centre Hospitalier Universitaire"
+        "Publisher"            "William MERI — CHU de Guyane"
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
         "UninstallString"      "$INSTDIR\Uninstall.exe"

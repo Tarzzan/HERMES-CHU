@@ -94,3 +94,16 @@ L'ambition de HERMES CHU n'est pas d'être un simple assistant conversationnel, 
 <div align="center">
   <small><em>Wiki généré et maintenu par l'équipe HERMES CHU — 2026</em></small>
 </div>
+
+
+## 👤 À propos & Crédits
+
+Ce projet a été conçu et initié par **William MERI** (CHU de Guyane).
+
+- **Rôle** : Concepteur, Porteur de projet et Architecte du système agentique hospitalier
+- **Profil GitHub** : [@Tarzzan](https://github.com/Tarzzan)
+- **Objectif** : Doté d'une forte ambition pour l'innovation en santé, ce projet vise à fournir aux établissements de santé français un système agentique souverain, sécurisé (HDS) et strictement conforme au RGPD.
+
+*HERMES CHU est basé sur le code source original de [Hermes Agent](https://github.com/NousResearch/hermes-agent) par NousResearch, adapté et étendu pour le contexte médical.*
+
+---
