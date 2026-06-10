@@ -91,6 +91,9 @@ Var Radio_Desinstaller
 ; Est-ce que PULSAR est déjà installé ?
 Var DejaInstalle
 
+; Variables pour les raccourcis
+Var ShortcutParams
+
 ; ============================================================================
 ; Détection d'une installation existante
 ; ============================================================================
@@ -361,26 +364,20 @@ Function CreerRaccourcis
 
     ; PULSAR Dashboard (Web)
     ${If} $ModeInstall != "2"
-        CreateShortCut "$DESKTOP\PULSAR.lnk" \
-            "cmd.exe" \
-            '/c start "" "http://localhost:9119" && powershell -ExecutionPolicy Bypass -Command "& { cd ''$LOCALAPPDATA\hermes\hermes-chu''; .venv\Scripts\pulsar.exe dashboard }"' \
-            "$INSTDIR\favicon.ico" 0
+        StrCpy $ShortcutParams "/c start http://localhost:9119"
+        CreateShortCut "$DESKTOP\PULSAR.lnk" "cmd.exe" "$ShortcutParams"
     ${EndIf}
 
     ; PULSAR Desktop (Electron)
     ${If} $ModeInstall != "1"
         ${If} ${FileExists} "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"
-            CreateShortCut "$DESKTOP\PULSAR Desktop.lnk" \
-                "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe" \
-                "" "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe" 0
+            CreateShortCut "$DESKTOP\PULSAR Desktop.lnk" "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"
         ${EndIf}
     ${EndIf}
 
     ; PULSAR CLI (terminal)
-    CreateShortCut "$DESKTOP\PULSAR CLI.lnk" \
-        "cmd.exe" \
-        '/k "$LOCALAPPDATA\hermes\hermes-chu\.venv\Scripts\pulsar.exe" chat' \
-        "" 0
+    StrCpy $ShortcutParams "/k pulsar chat"
+    CreateShortCut "$DESKTOP\PULSAR CLI.lnk" "cmd.exe" "$ShortcutParams"
 FunctionEnd
 
 ; ============================================================================
