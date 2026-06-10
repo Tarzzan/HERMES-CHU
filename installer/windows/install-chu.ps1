@@ -1269,17 +1269,17 @@ function Install-Repository {
                 # for.  GitHub supports archive URLs for commits, tags, and
                 # branches; we honour Commit > Tag > Branch.
                 if ($Commit) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/$Commit.zip"
+                    $zipUrl = "https://github.com/Tarzzan/PULSAR-CHU/archive/$Commit.zip"
                     $zipLabel = $Commit
                 } elseif ($Tag) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/$Tag.zip"
+                    $zipUrl = "https://github.com/Tarzzan/PULSAR-CHU/archive/refs/tags/$Tag.zip"
                     $zipLabel = $Tag
                 } else {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/heads/$Branch.zip"
+                    $zipUrl = "https://github.com/Tarzzan/PULSAR-CHU/archive/refs/heads/$Branch.zip"
                     $zipLabel = $Branch
                 }
-                $zipPath = "$env:TEMP\hermes-agent-$zipLabel.zip"
-                $extractPath = "$env:TEMP\hermes-agent-extract"
+                $zipPath = "$env:TEMP\pulsar-chu-$zipLabel.zip"
+                $extractPath = "$env:TEMP\pulsar-chu-extract"
 
                 Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
                 if (Test-Path $extractPath) { Remove-Item -Recurse -Force $extractPath }
@@ -1493,7 +1493,7 @@ try:
     specs = data['project']['optional-dependencies']['all']
     out = []
     for s in specs:
-        m = re.search(r'hermes-agent\[([\w-]+)\]', s)
+        m = re.search(r'pulsar-chu\[([\w-]+)\]', s)
         if m: out.append(m.group(1))
     print(','.join(out))
 except Exception:
@@ -2682,7 +2682,7 @@ function Write-Completion {
     Write-Host "   Data:      " -NoNewline -ForegroundColor Yellow
     Write-Host "$PulsarHome\cron\, sessions\, logs\"
     Write-Host "   Code:      " -NoNewline -ForegroundColor Yellow
-    Write-Host "$PulsarHome\hermes-agent\"
+    Write-Host "$PulsarHome\pulsar-chu\"
     Write-Host ""
     
     Write-Host "---------------------------------------------------------" -ForegroundColor Cyan
@@ -2913,7 +2913,7 @@ function Stage-ChuPatches {
     }
 
     # 3. Modifier les fichiers i18n (brand, footer)
-    $hermesAgentDir = Join-Path $InstallDir "hermes-agent"
+    $hermesAgentDir = Join-Path $InstallDir "pulsar-chu"
     if (-not (Test-Path $hermesAgentDir)) {
         $hermesAgentDir = $InstallDir
     }
