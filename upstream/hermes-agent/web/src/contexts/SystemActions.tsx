@@ -86,7 +86,7 @@ export function SystemActionsProvider({
               type: "success",
               message:
                 (resp.message ??
-                  "Updates don't apply inside Docker — re-pull the image instead.") +
+                  "Les mises a jour ne s'appliquent pas dans Docker — re-tirez l'image PULSAR.") +
                 cmd,
             });
             return;

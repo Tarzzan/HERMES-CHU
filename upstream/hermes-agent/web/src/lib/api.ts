@@ -85,7 +85,7 @@ export async function fetchJSON<T>(
       // fallback the post-login handler can read.
       try {
         sessionStorage.setItem(
-          "hermes.lastLocation",
+          "pulsar.lastLocation",
           window.location.pathname + window.location.search,
         );
       } catch {
@@ -108,13 +108,13 @@ export async function fetchJSON<T>(
       let alreadyReloaded = false;
       try {
         alreadyReloaded =
-          sessionStorage.getItem("hermes.tokenReloadAttempted") === "1";
+          sessionStorage.getItem("pulsar.tokenReloadAttempted") === "1";
       } catch {
         /* SSR / privacy mode — fall through to throw */
       }
       if (!alreadyReloaded) {
         try {
-          sessionStorage.setItem("hermes.tokenReloadAttempted", "1");
+          sessionStorage.setItem("pulsar.tokenReloadAttempted", "1");
         } catch {
           /* SSR / privacy mode — best effort */
         }
@@ -128,7 +128,7 @@ export async function fetchJSON<T>(
     // current ``window.__HERMES_SESSION_TOKEN__`` is valid, so the next
     // 401 — if any — should be allowed to trigger its own reload cycle.
     try {
-      sessionStorage.removeItem("hermes.tokenReloadAttempted");
+      sessionStorage.removeItem("pulsar.tokenReloadAttempted");
     } catch {
       /* SSR / privacy mode — ignore */
     }
@@ -152,7 +152,7 @@ async function getSessionToken(): Promise<string> {
     _sessionToken = injected;
     return _sessionToken;
   }
-  throw new Error("Session token not available — page must be served by the Hermes dashboard server");
+  throw new Error("Session token not available — page must be served by the PULSAR dashboard server");
 }
 
 /**
@@ -983,7 +983,7 @@ export const api = {
  *
  * Returned by the dashboard's gated middleware when a valid session cookie
  * is attached. ``email`` and ``display_name`` are empty strings under the
- * Nous Portal contract V1 (the access token has no email/name claims —
+ * PULSAR Portal contract V1 (the access token has no email/name claims —
  * see Contract Anchor C4 in the plan). The AuthWidget surfaces a
  * truncated ``user_id`` instead.
  */

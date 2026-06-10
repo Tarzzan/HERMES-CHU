@@ -40,8 +40,8 @@ const DEFAULT_LAYOUT: ThemeLayout = {
 
 export const defaultTheme: DashboardTheme = {
   name: "default",
-  label: "Hermes Teal",
-  description: "Classic dark teal — the canonical Hermes look",
+  label: "PULSAR Nuit",
+  description: "Theme sombre officiel PULSAR — bleu medical et cyan",
   palette: {
     background: { hex: "#041c1c", alpha: 1 },
     midground: { hex: "#ffe6cb", alpha: 1 },
@@ -185,7 +185,7 @@ export const roseTheme: DashboardTheme = {
 };
 
 /**
- * Nous Blue — the inverted "light mode" Hermes look, ported from the
+ * PULSAR Lumiere — the inverted "light mode" PULSAR look, ported from the
  * LENS_5I overlay preset in `@nous-research/ui`.
  *
  * Unlike the other built-ins (which paint dark color directly on the
@@ -194,11 +194,11 @@ export const roseTheme: DashboardTheme = {
  * that flips the entire stack below it. Authoring colors stay dark
  * (`#170d02` brown background, `#FFAC02` orange midground), and the
  * inversion converts them to their visual complements at paint time —
- * the orange midground reads as #0053FD Nous-blue on screen, against a
+ * the orange midground reads as #0053FD PULSAR-teal on screen, against a
  * cream `#E8F2FD` canvas.
  *
  * Note on bg blend mode: the DS Lens uses `multiply` for LENS_5I because
- * nousnet-web's <body> is white; hermes-agent's App root is `bg-black`,
+ * pulsar-web's <body> is white; pulsar's App root is `bg-black`,
  * so we leave the bg layer's blend mode at the `difference` default —
  * `difference(#170d02, #000)` passes the bg through unchanged, and the
  * subsequent FG-difference layer then inverts it to cream. Using
@@ -211,13 +211,13 @@ export const roseTheme: DashboardTheme = {
  */
 export const nousBlueTheme: DashboardTheme = {
   name: "nous-blue",
-  label: "Nous Blue",
-  description: "Light mode — vivid Nous-blue accents on cream canvas",
+  label: "PULSAR Lumiere",
+  description: "Mode clair PULSAR — accents teal sur fond blanc medical",
   palette: {
     background: { hex: "#170d02", alpha: 1 },
     midground: { hex: "#FFAC02", alpha: 1 },
     foreground: { hex: "#FFFFFF", alpha: 1 },
-    // Same warm-amber as nousnet-web's overlay glow; after the FG
+    // Same warm-amber as pulsar-web's overlay glow; after the FG
     // inversion it reads as a cool ultraviolet vignette in the top-left.
     warmGlow: "rgba(255, 172, 2, 0.18)",
     // Noise sits above the FG inversion and is NOT flipped, so a softer
@@ -258,13 +258,13 @@ export const nousBlueTheme: DashboardTheme = {
   // Pre-inverted data-series accents for the Analytics/Models token
   // charts. The defaults (#ffe6cb cream + #34d399 emerald) would render
   // through the FG difference layer as dark navy + hot-coral on the
-  // bright Nous-blue canvas — the coral is the "red" users see for
+  // bright PULSAR-teal canvas — the coral is the "red" users see for
   // Output values without these overrides. Source → on-screen:
   //   Input:  #ffe6cb → #001934 (dark navy)        ← unchanged
-  //   Output: #ffac02 → #0053fd (vivid Nous-blue)  ← brand accent
+  //   Output: #ffac02 → #0053fd (vivid PULSAR-teal)  ← brand accent
   // Input keeps the cream source so it stays a neutral, low-contrast
   // dark-blue against the cream canvas; output paints as the brand
-  // Nous-blue so the "primary" series in token-flow charts reads as
+  // PULSAR-teal so the "primary" series in token-flow charts reads as
   // the highlight color, matching the rest of the inverted UI chrome.
   seriesColors: {
     inputTokenAccent: "#ffe6cb",
@@ -273,7 +273,7 @@ export const nousBlueTheme: DashboardTheme = {
   // Explicit picker swatch — the raw palette hex (`#170d02`, `#FFAC02`,
   // amber rgba) doesn't reflect what users see after the FG inversion,
   // so we paint the post-inversion visual triplet directly:
-  //   white → vivid Nous-blue → cream/light-blue
+  //   white → vivid PULSAR-teal → cream/light-blue
   // matching the actual on-screen rendering of the theme.
   swatchColors: ["#FFFFFF", "#0053FD", "#E8F2FD"],
 };
@@ -285,8 +285,8 @@ export const nousBlueTheme: DashboardTheme = {
  */
 export const defaultLargeTheme: DashboardTheme = {
   name: "default-large",
-  label: "Hermes Teal (Large)",
-  description: "Hermes Teal with bigger fonts and roomier spacing",
+  label: "PULSAR Nuit (Grand)",
+  description: "PULSAR Nuit avec polices agrandies et espacement confortable",
   palette: defaultTheme.palette,
   typography: {
     ...DEFAULT_TYPOGRAPHY,

@@ -1,5 +1,5 @@
 """
-Hermes Agent — Web UI server.
+PULSAR — Web UI server.
 
 Provides a FastAPI backend serving the Vite/React frontend and REST API
 endpoints for managing configuration, environment variables, and sessions.
@@ -170,7 +170,7 @@ def _get_event_state(app: "FastAPI"):
         return app.state.event_channels, app.state.event_lock
 
 
-app = FastAPI(title="Hermes Agent", version=__version__, lifespan=_lifespan)
+app = FastAPI(title="PULSAR - DSIO CHU de Guyane", version=__version__, lifespan=_lifespan)
 
 # ---------------------------------------------------------------------------
 # Session token for protecting sensitive endpoints (reveal).
@@ -977,7 +977,7 @@ async def get_status():
 
     # Dashboard auth gate (Phase 7): surface whether the gate is engaged
     # and which providers are registered so ``hermes status`` and the
-    # SPA's StatusPage can show "OAuth gate ON via Nous Research" or
+    # SPA's StatusPage can show "OAuth gate ON via PULSAR Portal" or
     # "loopback only — no auth gate" with no extra round trips.
     auth_required = bool(getattr(app.state, "auth_required", False))
     auth_providers: list[str] = []
@@ -1149,7 +1149,7 @@ def _safe_call(mod, fn_name: str, default):
 
 
 # ---------------------------------------------------------------------------
-# Portal endpoint — Nous Portal auth + Tool Gateway routing status (read-only).
+# Portal endpoint — PULSAR Portal auth + Tool Gateway routing status (read-only).
 # ---------------------------------------------------------------------------
 
 
@@ -1172,7 +1172,7 @@ async def get_portal_status():
         if feats is not None:
             for feat in feats.items():
                 if getattr(feat, "managed_by_nous", False):
-                    state = "via Nous Portal"
+                    state = "via PULSAR Portal"
                 elif getattr(feat, "active", False) and getattr(feat, "current_provider", None):
                     state = feat.current_provider
                 elif getattr(feat, "active", False):
@@ -1189,7 +1189,7 @@ async def get_portal_status():
         "portal_url": auth.get("portal_base_url"),
         "inference_url": auth.get("inference_base_url"),
         "provider": str((model_cfg or {}).get("provider") or ""),
-        "subscription_url": "https://portal.nousresearch.com/manage-subscription",
+        "subscription_url": "https://github.com/Tarzzan/HERMES-CHU",
         "features": features,
     }
 
@@ -2918,7 +2918,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "email": {
         "name": "Email",
         "description": "Talk to Hermes through an IMAP/SMTP mailbox.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/",
+        "docs_url": "https://github.com/Tarzzan/HERMES-CHU/wiki",
         "env_vars": (
             "EMAIL_ADDRESS",
             "EMAIL_PASSWORD",
@@ -3016,7 +3016,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "api_server": {
         "name": "API server",
         "description": "Expose Hermes as an OpenAI-compatible HTTP API for tools like Open WebUI.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/",
+        "docs_url": "https://github.com/Tarzzan/HERMES-CHU/wiki",
         "env_vars": (
             "API_SERVER_ENABLED",
             "API_SERVER_KEY",
@@ -3029,7 +3029,7 @@ _PLATFORM_OVERRIDES: dict[str, dict[str, Any]] = {
     "webhook": {
         "name": "Webhooks",
         "description": "Receive events from GitHub, GitLab, and other webhook sources.",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/user-guide/messaging/webhooks/",
+        "docs_url": "https://github.com/Tarzzan/HERMES-CHU/wiki",
         "env_vars": ("WEBHOOK_ENABLED", "WEBHOOK_PORT", "WEBHOOK_SECRET"),
         "required_env": (),
     },
@@ -3473,8 +3473,8 @@ def _write_platform_enabled(platform_id: str, enabled: bool) -> None:
     save_config(config)
 
 
-_TELEGRAM_ONBOARDING_DEFAULT_URL = "https://setup.hermes-agent.nousresearch.com"
-_TELEGRAM_ONBOARDING_USER_AGENT = f"HermesDashboard/{__version__}"
+_TELEGRAM_ONBOARDING_DEFAULT_URL = "https://github.com/Tarzzan/HERMES-CHU/wiki"
+_TELEGRAM_ONBOARDING_USER_AGENT = f"PULSARDashboard/{__version__}"
 _TELEGRAM_USER_ID_RE = re.compile(r"^\d+$")
 
 
@@ -3628,7 +3628,7 @@ async def _telegram_onboarding_request(
 
 @app.post("/api/messaging/telegram/onboarding/start")
 async def start_telegram_onboarding(body: TelegramOnboardingStart):
-    bot_name = (body.bot_name or "Hermes Agent").strip() or "Hermes Agent"
+    bot_name = (body.bot_name or "PULSAR").strip() or "PULSAR"
     payload = await _telegram_onboarding_request(
         "POST",
         "/v1/telegram/pairings",
@@ -4044,7 +4044,7 @@ def _claude_code_only_status() -> Dict[str, Any]:
 _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
     {
         "id": "nous",
-        "name": "Nous Portal",
+        "name": "PULSAR Portal",
         "flow": "device_code",
         "cli_command": "hermes auth add nous",
         "docs_url": "https://portal.nousresearch.com",
@@ -4087,7 +4087,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         # lands back on the loopback listener — no code to copy/paste.
         "flow": "loopback",
         "cli_command": "hermes auth add xai-oauth",
-        "docs_url": "https://hermes-agent.nousresearch.com/docs/guides/xai-grok-oauth",
+        "docs_url": "https://github.com/Tarzzan/HERMES-CHU/wiki",
         "status_fn": None,  # dispatched via auth.get_xai_oauth_auth_status
     },
     # ── Anthropic / Claude entries sit at the bottom: the API-key path
@@ -7043,7 +7043,7 @@ async def update_skills_hub():
 # provenance).  Keep in sync with create_source_router()'s source list.
 _SKILL_HUB_SOURCE_LABELS = {
     "official": "Official (Nous)",
-    "hermes-index": "Hermes Index",
+    "hermes-index": "PULSAR Index",
     "skills-sh": "skills.sh",
     "well-known": "Well-Known",
     "url": "Direct URL",
@@ -9118,9 +9118,9 @@ def mount_spa(application: FastAPI):
 # Built-in dashboard themes — label + description only.  The actual color
 # definitions live in the frontend (web/src/themes/presets.ts).
 _BUILTIN_DASHBOARD_THEMES = [
-    {"name": "default",       "label": "Hermes Teal",         "description": "Classic dark teal — the canonical Hermes look"},
-    {"name": "default-large", "label": "Hermes Teal (Large)", "description": "Hermes Teal with bigger fonts and roomier spacing"},
-    {"name": "nous-blue",     "label": "Nous Blue",           "description": "Light mode — vivid Nous-blue accents on cream canvas"},
+    {"name": "default",       "label": "PULSAR Nuit",         "description": "Theme sombre officiel PULSAR"},
+    {"name": "default-large", "label": "PULSAR Nuit (Grand)", "description": "PULSAR Nuit avec polices agrandies"},
+    {"name": "nous-blue",     "label": "PULSAR Lumiere",           "description": "Mode clair PULSAR"},
     {"name": "midnight",      "label": "Midnight",            "description": "Deep blue-violet with cool accents"},
     {"name": "ember",     "label": "Ember",          "description": "Warm crimson and bronze — forge vibes"},
     {"name": "mono",      "label": "Mono",           "description": "Clean grayscale — minimal and focused"},
