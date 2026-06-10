@@ -65,8 +65,10 @@ colorOverrides:
   popoverForeground: "#1a2e3a"
 
 # ── Assets visuels ───────────────────────────────────────────
-# Pas d'image de fond pour le theme clair -- fond uni blanc medical
 assets:
+  # Image de fond : atrium hospitalier lumineux + jardin tropical guyanais
+  # Affichee a 5% d'opacite -- effet watermark tres discret
+  bg: "https://files.manuscdn.com/user_upload_by_module/session_file/92503813/BqacOZMBRgTDlMur.jpg"
   logo: "https://files.manuscdn.com/user_upload_by_module/session_file/92503813/SdncNYjBufzocSVS.png"
 
 # ── Styles de composants ─────────────────────────────────────
@@ -89,9 +91,11 @@ componentStyles:
 customCSS: |
   /* ── PULSAR Lumiere -- CSS personnalise ── */
 
-  /* Supprimer completement l'image de fond */
+  /* Image de fond : opacite 5% watermark, sans mix-blend-mode */
   .pointer-events-none.fixed.inset-0 {
-    display: none !important;
+    opacity: 0.05 !important;
+    mix-blend-mode: normal !important;
+    filter: none !important;
   }
 
   /* Fond general : blanc medical */
