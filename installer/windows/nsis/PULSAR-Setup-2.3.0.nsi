@@ -29,7 +29,7 @@ SetCompressor /SOLID lzma
 
 Name "${PRODUCT_FULLNAME} ${PRODUCT_VERSION}"
 OutFile "output\PULSAR-Setup-2.3.0.exe"
-InstallDir "$LOCALAPPDATA\hermes"
+InstallDir "$LOCALAPPDATA\pulsar-chu"
 RequestExecutionLevel user
 ShowInstDetails show
 
@@ -41,8 +41,8 @@ ShowInstDetails show
 ; MUI — Apparence
 ; ============================================================================
 !define MUI_ABORTWARNING
-!define MUI_ICON    "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-!define MUI_UNICON  "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_ICON    "..\assets\pulsar.ico"
+!define MUI_UNICON  "..\assets\pulsar.ico"
 
 !define MUI_WELCOMEPAGE_TITLE "PULSAR ${PRODUCT_VERSION}"
 !define MUI_WELCOMEPAGE_TEXT "Bienvenue dans l'assistant d'installation de PULSAR.$\r$\n$\r$\nPlateforme Unifiee de Liaison, de Surveillance et d'Assistance en temps Reel$\r$\nDSIO - CHU de Guyane$\r$\n$\r$\nCet assistant va vous proposer de choisir le type d'installation.$\r$\n$\r$\nConcu par William MERI - DSIO CHU de Guyane"
@@ -94,10 +94,10 @@ Var DejaInstalle
 ; ============================================================================
 Function DetecterInstallation
     StrCpy $DejaInstalle "0"
-    ${If} ${FileExists} "$LOCALAPPDATA\hermes\hermes-chu\hermes_cli\__init__.py"
+    ${If} ${FileExists} "$LOCALAPPDATA\pulsar-chu\hermes_cli\__init__.py"
         StrCpy $DejaInstalle "1"
     ${EndIf}
-    ${If} ${FileExists} "$LOCALAPPDATA\hermes\hermes-agent\hermes_cli\__init__.py"
+    ${If} ${FileExists} "$LOCALAPPDATA\pulsar-chu\hermes_cli\__init__.py"
         StrCpy $DejaInstalle "1"
     ${EndIf}
 FunctionEnd
@@ -267,7 +267,7 @@ Section "PULSAR" SecMain
 
     ${If} $ModeInstall == "4"
         DetailPrint "Mode : Mise a jour (git pull + rebuild)"
-        nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -Command "& { Set-Location \"$LOCALAPPDATA\hermes\hermes-chu\"; git pull origin main; Set-Location web; npm run build }"'
+        nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -Command "& { Set-Location \"$LOCALAPPDATA\pulsar-chu\"; git pull origin main; Set-Location web; npm run build }"'
         Pop $0
         Goto CheckResult
     ${EndIf}
@@ -307,8 +307,8 @@ Function CreerRaccourcis
     ${EndIf}
 
     ${If} $ModeInstall != "1"
-        ${If} ${FileExists} "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"
-            CreateShortCut "$DESKTOP\PULSAR Desktop.lnk" "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"
+        ${If} ${FileExists} "$LOCALAPPDATA\pulsar-chu\apps\desktop\PULSAR.exe"
+            CreateShortCut "$DESKTOP\PULSAR Desktop.lnk" "$LOCALAPPDATA\pulsar-chu\apps\desktop\PULSAR.exe"
         ${EndIf}
     ${EndIf}
 
@@ -328,8 +328,7 @@ Function UninstallPulsar
     DeleteRegKey HKCU "${PRODUCT_REGKEY}"
 
     DetailPrint "Suppression des fichiers PULSAR..."
-    RMDir /r "$LOCALAPPDATA\hermes\hermes-chu"
-    RMDir /r "$LOCALAPPDATA\hermes\hermes-agent"
+    RMDir /r "$LOCALAPPDATA\pulsar-chu"
 
     MessageBox MB_ICONINFORMATION "PULSAR a ete desinstalle.$\r$\n$\r$\nVos donnees ~/.pulsar/ (Vault, credentials, config) ont ete conservees."
 FunctionEnd
@@ -339,8 +338,8 @@ FunctionEnd
 ; ============================================================================
 Function LaunchPulsar
     ${If} $ModeInstall == "2"
-        ${If} ${FileExists} "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"
-            Exec '"$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"'
+        ${If} ${FileExists} "$LOCALAPPDATA\pulsar-chu\apps\desktop\PULSAR.exe"
+            Exec '"$LOCALAPPDATA\pulsar-chu\apps\desktop\PULSAR.exe"'
         ${EndIf}
     ${Else}
         ExecShell "open" "http://localhost:9119"
@@ -355,7 +354,6 @@ Section "Uninstall"
     Delete "$DESKTOP\PULSAR Desktop.lnk"
     Delete "$DESKTOP\PULSAR CLI.lnk"
     DeleteRegKey HKCU "${PRODUCT_REGKEY}"
-    RMDir /r "$LOCALAPPDATA\hermes\hermes-chu"
-    RMDir /r "$LOCALAPPDATA\hermes\hermes-agent"
+    RMDir /r "$LOCALAPPDATA\pulsar-chu"
     MessageBox MB_ICONINFORMATION "PULSAR desinstalle. Vos donnees ~/.pulsar/ sont conservees."
 SectionEnd
