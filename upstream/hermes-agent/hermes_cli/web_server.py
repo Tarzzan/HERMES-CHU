@@ -2846,6 +2846,167 @@ async def reveal_env_var(body: EnvVarReveal, request: Request):
     return {"key": body.key, "value": value}
 
 
+# ===========================================================================
+# PULSAR VAULT — Coffre de credentials chiffré AES-256
+# ===========================================================================
+
+try:
+    from hermes_cli.vault import (
+        vault_status as _vault_status,
+        vault_list as _vault_list,
+        vault_add as _vault_add,
+        vault_update as _vault_update,
+        vault_delete as _vault_delete,
+        vault_reveal as _vault_reveal_value,
+        vault_audit_log as _vault_audit_log,
+        vault_export_aliases as _vault_export_aliases,
+        CREDENTIAL_TYPES as _CREDENTIAL_TYPES,
+    )
+    _VAULT_AVAILABLE = True
+except ImportError:
+    _VAULT_AVAILABLE = False
+
+
+class VaultAddBody(BaseModel):
+    label: str
+    value: str
+    type: str = "api_key"
+    alias: str = ""
+    description: str = ""
+
+
+class VaultUpdateBody(BaseModel):
+    label: Optional[str] = None
+    value: Optional[str] = None
+    alias: Optional[str] = None
+    description: Optional[str] = None
+
+
+class VaultRevealBody(BaseModel):
+    id: str
+
+
+def _require_vault(request: Request):
+    _require_token(request)
+    if not _VAULT_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="PULSAR Vault indisponible. Installez : pip install cryptography"
+        )
+
+
+@app.get("/api/vault/status")
+async def get_vault_status(request: Request):
+    """Statut du coffre PULSAR Vault."""
+    _require_token(request)
+    if not _VAULT_AVAILABLE:
+        return {"available": False, "reason": "Module 'cryptography' manquant", "count": 0}
+    return _vault_status()
+
+
+@app.get("/api/vault")
+async def get_vault_list(request: Request):
+    """Liste les credentials du coffre (sans les valeurs)."""
+    _require_vault(request)
+    try:
+        return {"credentials": _vault_list(), "types": _CREDENTIAL_TYPES}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/vault/aliases")
+async def get_vault_aliases(request: Request):
+    """Liste les aliases disponibles pour injection {{vault:alias}}."""
+    _require_vault(request)
+    try:
+        return {"aliases": _vault_export_aliases()}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/vault/audit")
+async def get_vault_audit(request: Request, limit: int = 50):
+    """Journal d'audit du coffre."""
+    _require_vault(request)
+    return {"entries": _vault_audit_log(min(limit, 200))}
+
+
+@app.post("/api/vault")
+async def post_vault_add(body: VaultAddBody, request: Request):
+    """Ajoute un credential dans le coffre."""
+    _require_vault(request)
+    try:
+        meta = _vault_add(
+            label=body.label,
+            value=body.value,
+            cred_type=body.type,
+            alias=body.alias,
+            description=body.description,
+        )
+        return {"ok": True, "credential": meta}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        _log.exception("POST /api/vault failed")
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.patch("/api/vault/{cred_id}")
+async def patch_vault_update(cred_id: str, body: VaultUpdateBody, request: Request):
+    """Met à jour un credential existant."""
+    _require_vault(request)
+    try:
+        meta = _vault_update(
+            cred_id=cred_id,
+            label=body.label,
+            value=body.value,
+            alias=body.alias,
+            description=body.description,
+        )
+        return {"ok": True, "credential": meta}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        _log.exception("PATCH /api/vault/%s failed", cred_id)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete("/api/vault/{cred_id}")
+async def delete_vault_credential(cred_id: str, request: Request):
+    """Supprime un credential du coffre."""
+    _require_vault(request)
+    try:
+        _vault_delete(cred_id)
+        return {"ok": True}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/api/vault/reveal")
+async def post_vault_reveal(body: VaultRevealBody, request: Request):
+    """Révèle la valeur d'un credential (audit loggé, rate-limité)."""
+    _require_vault(request)
+    now = time.time()
+    cutoff = now - _REVEAL_WINDOW_SECONDS
+    _reveal_timestamps[:] = [t for t in _reveal_timestamps if t > cutoff]
+    if len(_reveal_timestamps) >= _REVEAL_MAX_PER_WINDOW:
+        raise HTTPException(
+            status_code=429,
+            detail="Trop de demandes de révélation. Réessayez dans un instant."
+        )
+    _reveal_timestamps.append(now)
+    try:
+        client_ip = request.client.host if request.client else "unknown"
+        value = _vault_reveal_value(body.id, source_ip=client_ip)
+        return {"id": body.id, "value": value}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 # Entries omit fields they don't need to override; the catalog builder fills
 # in env_vars from OPTIONAL_ENV_VARS via prefix matching when not specified,
 # and pulls required_env from a plugin's PlatformEntry when available.

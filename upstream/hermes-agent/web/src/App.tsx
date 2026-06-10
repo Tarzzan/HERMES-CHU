@@ -40,6 +40,7 @@ import {
   Radio,
   RotateCw,
   Settings,
+  Lock,
   Shield,
   ShieldCheck,
   Sparkles,
@@ -82,6 +83,7 @@ import ChannelsPage from "@/pages/ChannelsPage";
 import WebhooksPage from "@/pages/WebhooksPage";
 import SystemPage from "@/pages/SystemPage";
 import ChatPage from "@/pages/ChatPage";
+import { VaultPage } from "@/pages/VaultPage";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useI18n } from "@/i18n";
@@ -138,6 +140,7 @@ const BUILTIN_ROUTES_CORE: Record<string, ComponentType> = {
   "/profiles": ProfilesPage,
   "/config": ConfigPage,
   "/env": EnvPage,
+  "/vault": VaultPage,
   "/docs": DocsPage,
 };
 
@@ -179,6 +182,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
   { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users },
   { path: "/config", labelKey: "config", label: "Config", icon: Settings },
   { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound },
+  { path: "/vault", labelKey: "vault", label: "Vault", icon: Lock },
   { path: "/system", label: "System", icon: Wrench },
   {
     path: "/docs",
@@ -203,6 +207,7 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   Terminal,
   Globe,
   Database,
+  Lock,
   Shield,
   Users,
   Wrench,

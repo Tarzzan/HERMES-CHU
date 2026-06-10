@@ -93,6 +93,7 @@ export interface Translations {
       cron: string;
       documentation: string;
       keys: string;
+      vault: string;
       logs: string;
       models: string;
       profiles: string;
