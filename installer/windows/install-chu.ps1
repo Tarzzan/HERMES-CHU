@@ -1,5 +1,5 @@
 # ============================================================================
-# HERMES CHU Installer for Windows - William MERI (CHU de Guyane)
+# PULSAR CHU Installer for Windows - William MERI (CHU de Guyane)
 # ============================================================================
 # Installation script for Windows (PowerShell).
 # Uses uv for fast Python provisioning and package management.
@@ -24,7 +24,7 @@ param(
     [string]$Commit = "",
     [string]$Tag = "",
     [string]$HermesHome = $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\hermes" }),
-    [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-chu" } else { "$env:LOCALAPPDATA\hermes\hermes-chu" }),
+    [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\pulsar-chu" } else { "$env:LOCALAPPDATA\hermes\pulsar-chu" }),
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
@@ -158,9 +158,9 @@ function Get-WindowsArch {
 function Write-Banner {
     Write-Host ""
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|          * HERMES CHU - Systeme Agentique Hospitalier    |" -ForegroundColor Magenta
+    Write-Host "|          * PULSAR CHU - Systeme Agentique Hospitalier    |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|  An open source AI agent by Nous Research.              |" -ForegroundColor Magenta
+    Write-Host "|  DSIO - CHU de Guyane - William MERI              |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host ""
 }
@@ -2377,7 +2377,7 @@ function New-DesktopShortcuts {
         }
 
         # ── Raccourci PULSAR Web (dashboard navigateur via systray) ─────────────
-        $pulsarHome = Join-Path $env:LOCALAPPDATA 'hermes\hermes-chu'
+        $pulsarHome = Join-Path $env:LOCALAPPDATA 'hermes\pulsar-chu'
         $startScript = Join-Path $pulsarHome 'Pulsar-Start.bat'
         $updateScript = Join-Path $pulsarHome 'Pulsar-Update.bat'
         $scriptsSource = Join-Path $pulsarHome 'installer\windows\scripts'
@@ -2802,7 +2802,7 @@ $InstallStages = @(
     @{ Name = "node";             Title = "Detecting Node.js";                    Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Node" }
     @{ Name = "system-packages";  Title = "Installing ripgrep and ffmpeg";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-SystemPackages" }
     @{ Name = "repository";       Title = "Cloning Hermes repository";            Category = "install";      NeedsUserInput = $false; Worker = "Stage-Repository" }
-    @{ Name = "chu-patches";     Title = "Applying HERMES CHU patches";           Category = "install";      NeedsUserInput = $false; Worker = "Stage-ChuPatches" }
+    @{ Name = "chu-patches";     Title = "Application des patches PULSAR CHU";           Category = "install";      NeedsUserInput = $false; Worker = "Stage-ChuPatches" }
     @{ Name = "venv";             Title = "Creating Python virtual environment";  Category = "install";      NeedsUserInput = $false; Worker = "Stage-Venv" }
     @{ Name = "dependencies";     Title = "Installing Python dependencies";       Category = "install";      NeedsUserInput = $false; Worker = "Stage-Dependencies" }
     @{ Name = "node-deps";        Title = "Installing Node.js dependencies";      Category = "install";      NeedsUserInput = $false; Worker = "Stage-NodeDeps" }
@@ -2853,7 +2853,7 @@ function Stage-SystemPackages   { Install-SystemPackages }
 function Stage-Repository       { Install-Repository }
 
 function Stage-ChuPatches {
-    Write-Info "Applying HERMES CHU patches (Privacy Engine RGPD, skills CHU, branding)..."
+    Write-Info "Application des patches PULSAR CHU (Privacy Engine RGPD, skills CHU, branding)..."
 
     # --- Privacy Engine patch ---
     $patchScript = Join-Path $InstallDir "chu\privacy_engine\patch_hermes.py"
@@ -2924,8 +2924,8 @@ function Stage-ChuPatches {
     foreach ($f in $i18nFiles) {
         if (Test-Path $f) {
             $c = Get-Content $f -Raw -Encoding UTF8
-            $c = $c -replace 'brand:\s*"Hermes Agent"', 'brand: "HERMES CHU"'
-            $c = $c -replace "brand:\s*'Hermes Agent'", "brand: 'HERMES CHU'"
+            $c = $c -replace 'brand:\s*"Hermes Agent"', 'brand: "PULSAR CHU"'
+            $c = $c -replace "brand:\s*'Hermes Agent'", "brand: 'PULSAR CHU'"
             $c = $c -replace 'brandShort:\s*"HA"', 'brandShort: "CHU"'
             $c = $c -replace "brandShort:\s*'HA'", "brandShort: 'CHU'"
             $c = $c -replace 'org:\s*"Nous Research"', 'org: "William MERI · CHU de Guyane"'
@@ -2954,15 +2954,15 @@ function Stage-ChuPatches {
     foreach ($ih in $indexHtmlPaths) {
         if (Test-Path $ih) {
             $c = Get-Content $ih -Raw -Encoding UTF8
-            $c = $c -replace '<title>Hermes Agent.*?</title>', '<title>HERMES CHU -- CHU de Guyane</title>'
+            $c = $c -replace '<title>Hermes Agent.*?</title>', '<title>PULSAR CHU -- CHU de Guyane</title>'
             $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
             [System.IO.File]::WriteAllText($ih, $c, $utf8NoBom)
             Write-Success "HTML title patched: $ih"
         }
     }
 
-    Write-Success "HERMES CHU branding applied"
-    Write-Success "HERMES CHU patches applied"
+    Write-Success "PULSAR CHU branding applied"
+    Write-Success "PULSAR CHU patches applied"
 }
 
 function Stage-Venv             { Resolve-UvCmd; Install-Venv }
