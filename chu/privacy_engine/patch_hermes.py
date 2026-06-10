@@ -6,14 +6,24 @@ Ce module applique des monkey-patches non-destructifs sur les points
 d'entrée critiques de hermes-agent (NousResearch) pour garantir que
 le Privacy Engine RGPD s'applique sur TOUS les flux de données :
 
-  Flux couverts :
+  Flux couverts (7 flux — couverture RGPD totale) :
   ┌─────────────────────────────────────────────────────────────────┐
   │ 1. message_sanitization.py  → Entrées utilisateur vers le LLM  │
   │ 2. conversation_loop.py     → Réponses LLM vers l'utilisateur  │
   │ 3. memory_manager.py        → Écriture en mémoire persistante  │
   │ 4. background_review.py     → Revue de fond (agent fantôme)    │
   │ 5. trajectory.py            → Sauvegarde JSONL fine-tuning     │
+  │ 6. curator.py               → Amélioration des skills (écriture)│
+  │ 7. context_compressor.py    → Résumés de contexte persistés    │
   └─────────────────────────────────────────────────────────────────┘
+
+  Justification des patches 6 et 7 :
+  - curator.py extrait des patterns depuis les conversations pour améliorer
+    les skills. Sans anonymisation, un skill amélioré pourrait contenir des
+    données patient (ex: "le patient Dupont présente...").
+  - context_compressor.py résume le contexte long en sections Resolved/Pending
+    persistées en mémoire. Ces résumés peuvent contenir des PHI si la
+    conversation en contenait.
 
 Principe : chaque patch wraps la fonction originale — si le Privacy
 Engine est désactivé (glass-break), la fonction originale est appelée
@@ -397,6 +407,170 @@ def _patch_trajectory() -> bool:
         return False
 
 
+
+# ---------------------------------------------------------------------------
+# Patch 6 : curator.py — Consolidation et amélioration des skills
+# ---------------------------------------------------------------------------
+
+def _patch_curator() -> bool:
+    """Patche le Curator pour anonymiser les données avant écriture dans les skills.
+
+    Le curator extrait des patterns depuis les conversations et les écrit dans
+    des fichiers skills améliorés. Sans ce patch, des PHI pourraient se retrouver
+    dans les skills persistés sur disque — risque RGPD critique en contexte CHU.
+    """
+    try:
+        import agent.curator as mod
+        if getattr(mod, "_chu_patched", False):
+            return True
+
+        cible = mod.Curator if hasattr(mod, "Curator") else mod
+
+        # Patch de la méthode principale d'écriture des skills améliorés
+        for nom_methode in ["update_skill", "write_skill", "save_skill", "_write_skill_update", "apply_update"]:
+            if hasattr(cible, nom_methode):
+                _orig = getattr(cible, nom_methode)
+
+                @functools.wraps(_orig)
+                def _skill_writer_chu(*args, _orig=_orig, _nom=nom_methode, **kwargs):
+                    """Anonymise le contenu du skill avant écriture sur disque."""
+                    if _PRIVACY_ENGINE_DISPONIBLE:
+                        engine = get_privacy_engine()
+                        if engine.actif:
+                            args_propres = list(args)
+                            phi_detecte = False
+                            for i, arg in enumerate(args_propres):
+                                if isinstance(arg, str) and len(arg) > 10:
+                                    texte_safe, res = engine.anonymiser(arg, "curator")
+                                    args_propres[i] = texte_safe
+                                    if res.entites_detectees:
+                                        phi_detecte = True
+                            kwargs_propres = {}
+                            for k, v in kwargs.items():
+                                if isinstance(v, str) and len(v) > 10:
+                                    texte_safe, res = engine.anonymiser(v, "curator")
+                                    kwargs_propres[k] = texte_safe
+                                    if res.entites_detectees:
+                                        phi_detecte = True
+                                else:
+                                    kwargs_propres[k] = v
+
+                            if phi_detecte:
+                                _journaliser_evenement(
+                                    "phi_anonymise_curator_skill",
+                                    {
+                                        "flux": f"curator.{_nom}",
+                                        "gravite": "HAUTE",
+                                        "note": "PHI détecté dans un skill en cours d'amélioration — anonymisé",
+                                    },
+                                    phi_detecte=True,
+                                )
+                            return _orig(*args_propres, **kwargs_propres)
+                    return _orig(*args, **kwargs)
+
+                setattr(cible, nom_methode, _skill_writer_chu)
+                logger.info("[CHU] Patch appliqué : curator.%s", nom_methode)
+                break
+
+        if hasattr(mod, "Curator"):
+            mod.Curator._chu_patched = True
+        mod._chu_patched = True
+        logger.info("[CHU] Patch appliqué : curator")
+        return True
+
+    except (ImportError, AttributeError) as e:
+        logger.warning("[CHU] Patch curator ignoré : %s", e)
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Patch 7 : context_compressor.py — Résumés de contexte persistés
+# ---------------------------------------------------------------------------
+
+def _patch_context_compressor() -> bool:
+    """Patche le ContextCompressor pour anonymiser les résumés avant persistance.
+
+    Le compresseur de contexte génère des résumés structurés (Resolved/Pending)
+    qui sont persistés en mémoire pour les sessions longues. Ces résumés peuvent
+    contenir des PHI si la conversation en contenait — ils doivent être anonymisés
+    avant toute persistance (mémoire Redis, fichier, ou base de données).
+    """
+    try:
+        import agent.context_compressor as mod
+        if getattr(mod, "_chu_patched", False):
+            return True
+
+        cible = mod.ContextCompressor if hasattr(mod, "ContextCompressor") else mod
+
+        # Patch de la méthode de compression principale (produit le résumé)
+        for nom_compress in ["compress", "compress_context", "_compress", "summarize", "build_summary"]:
+            if hasattr(cible, nom_compress):
+                _orig_compress = getattr(cible, nom_compress)
+
+                @functools.wraps(_orig_compress)
+                def _compress_chu(*args, _orig=_orig_compress, _nom=nom_compress, **kwargs):
+                    """Anonymise le résumé produit par le compresseur."""
+                    # Appel original d'abord — on anonymise la sortie
+                    resultat = _orig(*args, **kwargs)
+
+                    if _PRIVACY_ENGINE_DISPONIBLE:
+                        engine = get_privacy_engine()
+                        if engine.actif:
+                            if isinstance(resultat, str) and resultat:
+                                texte_safe, res = engine.anonymiser(resultat, "context_compressor")
+                                if res.entites_detectees:
+                                    _journaliser_evenement(
+                                        "phi_anonymise_contexte_compresse",
+                                        {
+                                            "flux": f"context_compressor.{_nom}",
+                                            "nb_entites": len(res.entites_detectees),
+                                            "note": "PHI dans résumé de contexte — anonymisé avant persistance",
+                                        },
+                                        phi_detecte=True,
+                                    )
+                                return texte_safe
+
+                            elif isinstance(resultat, dict):
+                                # Résumé structuré (ex: {"resolved": "...", "pending": "..."})
+                                resultat_propre = {}
+                                phi_detecte = False
+                                for cle, valeur in resultat.items():
+                                    if isinstance(valeur, str) and valeur:
+                                        texte_safe, res = engine.anonymiser(valeur, "context_compressor")
+                                        resultat_propre[cle] = texte_safe
+                                        if res.entites_detectees:
+                                            phi_detecte = True
+                                    else:
+                                        resultat_propre[cle] = valeur
+                                if phi_detecte:
+                                    _journaliser_evenement(
+                                        "phi_anonymise_contexte_compresse_structure",
+                                        {
+                                            "flux": f"context_compressor.{_nom}",
+                                            "sections": list(resultat.keys()),
+                                            "note": "PHI dans résumé structuré Resolved/Pending",
+                                        },
+                                        phi_detecte=True,
+                                    )
+                                return resultat_propre
+
+                    return resultat
+
+                setattr(cible, nom_compress, _compress_chu)
+                logger.info("[CHU] Patch appliqué : context_compressor.%s", nom_compress)
+                break
+
+        if hasattr(mod, "ContextCompressor"):
+            mod.ContextCompressor._chu_patched = True
+        mod._chu_patched = True
+        logger.info("[CHU] Patch appliqué : context_compressor")
+        return True
+
+    except (ImportError, AttributeError) as e:
+        logger.warning("[CHU] Patch context_compressor ignoré : %s", e)
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Helpers pour l'interface web CHU (rétrocompatibilité)
 # ---------------------------------------------------------------------------
@@ -467,6 +641,8 @@ def appliquer_patches(strict: bool = False) -> Dict[str, bool]:
         ("memory_manager",       _patch_memory_manager,       True),
         ("background_review",    _patch_background_review,    False),
         ("trajectory",           _patch_trajectory,           False),
+        ("curator",              _patch_curator,              False),
+        ("context_compressor",   _patch_context_compressor,   False),
     ]
 
     resultats = {}
