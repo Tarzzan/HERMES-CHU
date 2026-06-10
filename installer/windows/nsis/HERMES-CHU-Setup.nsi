@@ -1,7 +1,7 @@
 ; ============================================================
 ;  HERMES CHU — Installateur Windows
 ;  Système Agentique Hospitalier Souverain
-;  Version : 1.0.0
+;  Version : 1.1.0 — Couverture RGPD totale (7 flux)
 ;  Compilé avec NSIS 3.09 (Linux/makensis)
 ; ============================================================
 
@@ -17,8 +17,8 @@ Unicode True
 ;--------------------------------
 ; Métadonnées
 ;--------------------------------
-Name              "HERMES CHU 1.0.0"
-OutFile           "/home/ubuntu/nsis_build/output/HERMES-CHU-Setup-1.0.0.exe"
+Name              "HERMES CHU 1.1.0"
+OutFile           "/home/ubuntu/nsis_build/output/HERMES-CHU-Setup-1.1.0.exe"
 InstallDir        "$PROGRAMFILES64\HERMES CHU"
 InstallDirRegKey  HKLM "Software\HERMES CHU" "InstallDir"
 RequestExecutionLevel admin
@@ -28,13 +28,13 @@ SetCompressorDictSize 32
 ;--------------------------------
 ; Informations de version
 ;--------------------------------
-VIProductVersion  "1.0.0.0"
+VIProductVersion  "1.1.0.0"
 VIAddVersionKey   "ProductName"      "HERMES CHU"
-VIAddVersionKey   "ProductVersion"   "1.0.0"
+VIAddVersionKey   "ProductVersion"   "1.1.0"
 VIAddVersionKey   "CompanyName"      "Centre Hospitalier Universitaire"
 VIAddVersionKey   "FileDescription"  "Système Agentique Hospitalier Souverain"
-VIAddVersionKey   "FileVersion"      "1.0.0"
-VIAddVersionKey   "LegalCopyright"   "© 2025 CHU — Licence Apache 2.0"
+VIAddVersionKey   "FileVersion"      "1.1.0"
+VIAddVersionKey   "LegalCopyright"   "© 2025-2026 CHU — Licence Apache 2.0"
 VIAddVersionKey   "Comments"         "Basé sur NousResearch Hermes Agent"
 
 ;--------------------------------
@@ -48,11 +48,11 @@ VIAddVersionKey   "Comments"         "Basé sur NousResearch Hermes Agent"
 !define MUI_HEADERIMAGE_BITMAP      "/home/ubuntu/nsis_build/assets/banner.bmp"
 !define MUI_HEADERIMAGE_RIGHT
 
-!define MUI_WELCOMEPAGE_TITLE       "Bienvenue dans HERMES CHU 1.0.0"
-!define MUI_WELCOMEPAGE_TEXT        "Cet assistant va installer HERMES CHU — Système Agentique Hospitalier Souverain.$\r$\n$\r$\nHERMES CHU est basé sur Hermes Agent de NousResearch, adapté pour les établissements de santé avec :$\r$\n$\r$\n• Privacy Engine RGPD (anonymisation des données de santé)$\r$\n• Support multi-LLM (Azure OpenAI, OpenAI, Ollama, vLLM)$\r$\n• Agents spécialisés (Clinique, Administratif, Logistique, Recherche)$\r$\n• Conformité ISO 27001 et HDS$\r$\n$\r$\nIl est recommandé de fermer toutes les autres applications avant de continuer."
+!define MUI_WELCOMEPAGE_TITLE       "Bienvenue dans HERMES CHU 1.1.0"
+!define MUI_WELCOMEPAGE_TEXT        "Cet assistant va installer HERMES CHU — Système Agentique Hospitalier Souverain.$\r$\n$\r$\nHERMES CHU est basé sur Hermes Agent de NousResearch, adapté pour les établissements de santé avec :$\r$\n$\r$\n• Privacy Engine RGPD — 7 flux couverts (NER médical, mémoire, skills, contexte)$\r$\n• Support multi-LLM (Azure OpenAI, OpenAI, Ollama, vLLM)$\r$\n• Agents spécialisés (Clinique, Administratif, Logistique, Recherche)$\r$\n• Conformité ISO 27001 et HDS$\r$\n$\r$\nIl est recommandé de fermer toutes les autres applications avant de continuer."
 
 !define MUI_FINISHPAGE_TITLE        "Installation terminée !"
-!define MUI_FINISHPAGE_TEXT         "HERMES CHU 1.0.0 a été installé avec succès.$\r$\n$\r$\nProchaines étapes :$\r$\n1. Lancez l'assistant de configuration via le Menu Démarrer$\r$\n2. Renseignez vos paramètres Azure OpenAI ou Ollama$\r$\n3. Activez le Privacy Engine RGPD$\r$\n4. Ouvrez HERMES CHU depuis le bureau$\r$\n$\r$\nDocumentation : github.com/Tarzzan/HERMES-CHU/wiki"
+!define MUI_FINISHPAGE_TEXT         "HERMES CHU 1.1.0 a été installé avec succès.$\r$\n$\r$\nProchaines étapes :$\r$\n1. Lancez l'assistant de configuration via le Menu Démarrer$\r$\n2. Renseignez vos paramètres Azure OpenAI ou Ollama$\r$\n3. Activez le Privacy Engine RGPD$\r$\n4. Ouvrez HERMES CHU depuis le bureau$\r$\n$\r$\nDocumentation : github.com/Tarzzan/HERMES-CHU/wiki"
 !define MUI_FINISHPAGE_RUN          "$INSTDIR\scripts\Configure-CHU.bat"
 !define MUI_FINISHPAGE_RUN_TEXT     "Lancer l'assistant de configuration CHU"
 !define MUI_FINISHPAGE_LINK         "Consulter le Wiki HERMES CHU"
@@ -198,7 +198,7 @@ Function PageCHUConfig
     Pop $PrivacyEnabled
     ${NSD_Check} $PrivacyEnabled
 
-    ${NSD_CreateLabel} 0 185u 100% 25u "Note : Le Privacy Engine anonymise les données PHI (noms, NIR, IPP, adresses) avant tout envoi au modèle IA, conformément au RGPD."
+    ${NSD_CreateLabel} 0 185u 100% 35u "Note RGPD (v1.1) : 7 flux couverts — entrées/sorties LLM, mémoire persistante, revue de fond, trajectoires fine-tuning, amélioration des skills (curator) et résumés de contexte (context_compressor). Aucun PHI ne persiste en clair."
     Pop $0
 
     nsDialogs::Show
@@ -326,14 +326,14 @@ Section "HERMES CHU (requis)" SecMain
 
     ; --- Registre Windows ---
     WriteRegStr HKLM "Software\HERMES CHU" "InstallDir" "$INSTDIR"
-    WriteRegStr HKLM "Software\HERMES CHU" "Version"    "1.0.0"
+    WriteRegStr HKLM "Software\HERMES CHU" "Version"    "1.1.0"
 
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
-        "DisplayName"          "HERMES CHU 1.0.0"
+        "DisplayName"          "HERMES CHU 1.1.0"
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
-        "DisplayVersion"       "1.0.0"
+        "DisplayVersion"       "1.1.0"
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
         "Publisher"            "Centre Hospitalier Universitaire"
