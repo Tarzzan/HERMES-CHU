@@ -11,7 +11,7 @@ $Host.UI.RawUI.WindowTitle = "HERMES CHU - Demarrage"
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host "  HERMES CHU - Systeme Agentique Hospitalier" -ForegroundColor Cyan
-Write-Host "  CHU de Guyane | William MERI | @Tarzzan" -ForegroundColor Cyan
+Write-Host "  CHU de Guyane | William MERI | github: Tarzzan" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -224,7 +224,7 @@ if (-not (Test-Path $brandingMarker)) {
         foreach ($ih in $indexHtmlPaths) {
             if (Test-Path $ih) {
                 $c = Get-Content $ih -Raw -Encoding UTF8
-                $c = $c -replace '<title>Hermes Agent.*?</title>', '<title>HERMES CHU — CHU de Guyane</title>'
+                $c = $c -replace '<title>Hermes Agent.*?</title>', '<title>HERMES CHU -- CHU de Guyane</title>'
                 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
                 [System.IO.File]::WriteAllText($ih, $c, $utf8NoBom)
                 Write-Host "  [OK] Titre HTML patche : $ih" -ForegroundColor Green

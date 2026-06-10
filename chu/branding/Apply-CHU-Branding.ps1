@@ -1,6 +1,6 @@
 # ============================================================
-# HERMES CHU — Script de personnalisation de l'interface
-# Concu par William MERI — CHU de Guyane
+# HERMES CHU -- Script de personnalisation de l'interface
+# Concu par William MERI -- CHU de Guyane
 # Applique le branding CHU sur hermes-agent NousResearch
 # ============================================================
 # Usage : powershell -ExecutionPolicy Bypass -File Apply-CHU-Branding.ps1
@@ -11,8 +11,8 @@ $Host.UI.RawUI.WindowTitle = "HERMES CHU - Application du branding"
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  HERMES CHU — Application du branding hospitalier" -ForegroundColor Cyan
-Write-Host "  CHU de Guyane | William MERI | @Tarzzan" -ForegroundColor Cyan
+Write-Host "  HERMES CHU -- Application du branding hospitalier" -ForegroundColor Cyan
+Write-Host "  CHU de Guyane | William MERI | github: Tarzzan" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -85,7 +85,7 @@ if (-not (Test-Path $skinSource)) {
 }
 
 # ============================================================
-# 2. Modifier web/index.html — titre de la page
+# 2. Modifier web/index.html -- titre de la page
 # ============================================================
 Write-Host "[2/6] Modification du titre de la page web..." -ForegroundColor Cyan
 
@@ -103,7 +103,7 @@ if (-not (Test-Path $indexHtml)) {
 
 if (Test-Path $indexHtml) {
     $content = Get-Content $indexHtml -Raw -Encoding UTF8
-    $newContent = $content -replace '<title>.*?</title>', '<title>HERMES CHU — CHU de Guyane</title>'
+    $newContent = $content -replace '<title>.*?</title>', '<title>HERMES CHU -- CHU de Guyane</title>'
     Set-Content $indexHtml $newContent -Encoding UTF8 -NoNewline
     Write-Host "  [OK] Titre modifie : $indexHtml" -ForegroundColor Green
 } else {
@@ -111,7 +111,7 @@ if (Test-Path $indexHtml) {
 }
 
 # ============================================================
-# 3. Modifier les fichiers i18n (fr.ts et en.ts) — brand et footer
+# 3. Modifier les fichiers i18n (fr.ts et en.ts) -- brand et footer
 # ============================================================
 Write-Host "[3/6] Modification des fichiers de traduction..." -ForegroundColor Cyan
 
@@ -130,8 +130,8 @@ foreach ($f in $i18nFiles) {
         $content = $content -replace 'brandShort:\s*"HA"', 'brandShort: "CHU"'
         $content = $content -replace "brandShort:\s*'HA'", "brandShort: 'CHU'"
         # Remplacer footer.org
-        $content = $content -replace 'org:\s*"Nous Research"', 'org: "William MERI · CHU de Guyane"'
-        $content = $content -replace "org:\s*'Nous Research'", "org: 'William MERI · CHU de Guyane'"
+        $content = $content -replace 'org:\s*"Nous Research"', 'org: "William MERI - CHU de Guyane"'
+        $content = $content -replace "org:\s*'Nous Research'", "org: 'William MERI - CHU de Guyane'"
         Set-Content $f $content -Encoding UTF8 -NoNewline
         Write-Host "  [OK] Modifie : $f" -ForegroundColor Green
     } else {
@@ -140,7 +140,7 @@ foreach ($f in $i18nFiles) {
 }
 
 # ============================================================
-# 4. Modifier SidebarFooter.tsx — lien et texte du footer
+# 4. Modifier SidebarFooter.tsx -- lien et texte du footer
 # ============================================================
 Write-Host "[4/6] Modification du footer de la sidebar..." -ForegroundColor Cyan
 
@@ -157,7 +157,7 @@ if (Test-Path $sidebarFooter) {
 }
 
 # ============================================================
-# 5. Modifier config.yaml hermes — activer le skin CHU
+# 5. Modifier config.yaml hermes -- activer le skin CHU
 # ============================================================
 Write-Host "[5/6] Activation du skin CHU dans config.yaml..." -ForegroundColor Cyan
 
@@ -197,7 +197,7 @@ foreach ($configPath in $configPaths) {
 }
 
 if (-not $configFound) {
-    Write-Host "  [INFO] config.yaml non trouve — le skin sera active au prochain hermes setup" -ForegroundColor Yellow
+    Write-Host "  [INFO] config.yaml non trouve -- le skin sera active au prochain hermes setup" -ForegroundColor Yellow
 }
 
 # ============================================================
@@ -210,7 +210,7 @@ $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
 $webDir = "$hermesRoot\web"
 
 if ($nodeCmd -and $npmCmd -and (Test-Path "$webDir\package.json")) {
-    Write-Host "  Node.js trouve — lancement du build..." -ForegroundColor Gray
+    Write-Host "  Node.js trouve -- lancement du build..." -ForegroundColor Gray
     Write-Host "  (Cette etape peut prendre 2-5 minutes)" -ForegroundColor Gray
     try {
         Push-Location $webDir
@@ -243,15 +243,15 @@ Write-Host ""
 Write-Host "Modifications appliquees :" -ForegroundColor Cyan
 Write-Host "  [OK] Skin CHU installe : $skinsDir\chu-guyane.yaml" -ForegroundColor White
 Write-Host "  [OK] Couleurs bleues medicales CHU" -ForegroundColor White
-Write-Host "  [OK] Banner : HERMES CHU — CHU de Guyane" -ForegroundColor White
-Write-Host "  [OK] Footer : William MERI · CHU de Guyane" -ForegroundColor White
-Write-Host "  [OK] Titre page web : HERMES CHU — CHU de Guyane" -ForegroundColor White
+Write-Host "  [OK] Banner : HERMES CHU -- CHU de Guyane" -ForegroundColor White
+Write-Host "  [OK] Footer : William MERI - CHU de Guyane" -ForegroundColor White
+Write-Host "  [OK] Titre page web : HERMES CHU -- CHU de Guyane" -ForegroundColor White
 Write-Host ""
 Write-Host "Pour voir les changements :" -ForegroundColor Yellow
 Write-Host "  1. Fermez hermes dashboard (Ctrl+C)" -ForegroundColor White
 Write-Host "  2. Relancez : hermes dashboard" -ForegroundColor White
 Write-Host ""
-Write-Host "Concu par William MERI — CHU de Guyane" -ForegroundColor Cyan
+Write-Host "Concu par William MERI -- CHU de Guyane" -ForegroundColor Cyan
 Write-Host "https://github.com/Tarzzan/HERMES-CHU" -ForegroundColor Gray
 Write-Host ""
 Read-Host "Appuyez sur Entree pour fermer"

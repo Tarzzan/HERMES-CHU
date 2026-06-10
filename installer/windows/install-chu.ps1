@@ -2879,7 +2879,7 @@ function Stage-ChuPatches {
         }
     }
 
-    # 4. Modifier SidebarFooter.tsx — lien footer
+    # 4. Modifier SidebarFooter.tsx -- lien footer
     $sidebarFooter = Join-Path $hermesAgentDir "web\src\components\SidebarFooter.tsx"
     if (Test-Path $sidebarFooter) {
         $c = Get-Content $sidebarFooter -Raw -Encoding UTF8
@@ -2897,7 +2897,7 @@ function Stage-ChuPatches {
     foreach ($ih in $indexHtmlPaths) {
         if (Test-Path $ih) {
             $c = Get-Content $ih -Raw -Encoding UTF8
-            $c = $c -replace '<title>Hermes Agent.*?</title>', '<title>HERMES CHU — CHU de Guyane</title>'
+            $c = $c -replace '<title>Hermes Agent.*?</title>', '<title>HERMES CHU -- CHU de Guyane</title>'
             $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
             [System.IO.File]::WriteAllText($ih, $c, $utf8NoBom)
             Write-Success "HTML title patched: $ih"
