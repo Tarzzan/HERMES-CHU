@@ -283,8 +283,51 @@ try:
             ],
             "skin_engine.py"
         )
+    # Patch du skin hermes-teal installe (source du "AGENT HERMES" et "Nous Research")
+    skins_dir = Path(os.environ.get("LOCALAPPDATA", "")) / "hermes" / "skins"
+    if not skins_dir.exists():
+        skins_dir = Path(hermes_cli.__file__).parent.parent / "skins"
+    for skin_file in list(skins_dir.glob("*.yaml")) + list(skins_dir.glob("*.yml")):
+        patch_file(
+            skin_file,
+            [
+                ("Nous Research",                "DSIO CHU de Guyane"),
+                ("NousResearch",                 "DSIO CHU de Guyane"),
+                ("Messenger of the Digital Gods", "Systeme Agentique Medical -- CHU de Guyane"),
+                ("Hermes Agent",                 "PULSAR"),
+                ("hermes-agent",                 "pulsar"),
+                ("HERMES-AGENT",                 "PULSAR"),
+                ("AGENT HERMES",                 "PULSAR"),
+                ("Agent Hermes",                 "PULSAR"),
+            ],
+            f"skin/{skin_file.name}"
+        )
 except ImportError:
     warn("hermes_cli non trouve dans le PATH Python -- patches CLI ignores")
+
+# ── Patch skins dans LOCALAPPDATA directement ─────────────────
+step("7b/8", "Patch skins installes (AGENT HERMES, Nous Research)...")
+for skins_root in [
+    Path(os.environ.get("LOCALAPPDATA", "")) / "hermes" / "skins",
+    Path(os.environ.get("APPDATA", "")) / "hermes" / "skins",
+    Path(os.environ.get("USERPROFILE", "")) / ".hermes" / "skins",
+]:
+    if skins_root.exists():
+        for skin_file in list(skins_root.glob("*.yaml")) + list(skins_root.glob("*.yml")):
+            patch_file(
+                skin_file,
+                [
+                    ("Nous Research",                "DSIO CHU de Guyane"),
+                    ("NousResearch",                 "DSIO CHU de Guyane"),
+                    ("Messenger of the Digital Gods", "Systeme Agentique Medical -- CHU de Guyane"),
+                    ("Hermes Agent",                 "PULSAR"),
+                    ("HERMES-AGENT",                 "PULSAR"),
+                    ("AGENT HERMES",                 "PULSAR"),
+                    ("hermes-agent",                 "pulsar"),
+                ],
+                f"skin/{skin_file.name}"
+            )
+        ok(f"Skins patches dans : {skins_root}")
 
 # ── Rebuild npm ───────────────────────────────────────────────
 print()
@@ -292,18 +335,44 @@ print("  ============================================================")
 print("  Patches appliques.")
 print("  ============================================================")
 
+# Trouver npm sur Windows (npm.cmd) ou Linux/Mac (npm)
+def find_npm():
+    for candidate in ["npm.cmd", "npm"]:
+        found = shutil.which(candidate)
+        if found:
+            return found
+    # Chercher dans les chemins Node.js courants sur Windows
+    node_paths = [
+        Path(os.environ.get("APPDATA", "")) / "npm" / "npm.cmd",
+        Path(os.environ.get("PROGRAMFILES", "")) / "nodejs" / "npm.cmd",
+        Path(os.environ.get("PROGRAMFILES(X86)", "")) / "nodejs" / "npm.cmd",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "nodejs" / "npm.cmd",
+    ]
+    for p in node_paths:
+        if p.exists():
+            return str(p)
+    return None
+
+npm_cmd = find_npm()
+
 if args.rebuild or input("\n  Lancer npm run build maintenant ? (o/N) : ").strip().lower() in ("o", "oui", "y", "yes"):
     step("8/8", "Rebuild du dashboard (1-2 minutes)...")
-    os.chdir(web_dir)
-    # Verifier que node_modules existe
-    if not (web_dir / "node_modules").exists():
-        info("Installation des dependances npm...")
-        subprocess.run(["npm", "install", "--silent"], check=False)
-    result = subprocess.run(["npm", "run", "build"], capture_output=False)
-    if result.returncode == 0:
-        ok("Build termine avec succes !")
+    if not npm_cmd:
+        err("npm introuvable. Lancez manuellement :")
+        print(f"    cd \"{web_dir}\"")
+        print("    npm run build")
     else:
-        err("Le build a echoue. Verifiez les erreurs ci-dessus.")
+        ok(f"npm trouve : {npm_cmd}")
+        os.chdir(web_dir)
+        # Verifier que node_modules existe
+        if not (web_dir / "node_modules").exists():
+            info("Installation des dependances npm...")
+            subprocess.run([npm_cmd, "install", "--silent"], check=False)
+        result = subprocess.run([npm_cmd, "run", "build"], capture_output=False, shell=False)
+        if result.returncode == 0:
+            ok("Build termine avec succes !")
+        else:
+            err("Le build a echoue. Verifiez les erreurs ci-dessus.")
 else:
     info("Rebuild ignore. Lancez manuellement :")
     print(f"    cd \"{web_dir}\"")
