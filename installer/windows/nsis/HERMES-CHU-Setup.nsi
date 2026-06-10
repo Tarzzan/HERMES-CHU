@@ -1,7 +1,7 @@
 ; ============================================================
 ;  HERMES CHU — Installateur Windows
 ;  Système Agentique Hospitalier Souverain
-;  Version : 1.2.0 — Couverture RGPD totale (7 flux)
+;  Version : 1.3.0 — Couverture RGPD totale (7 flux)
 ;  Compilé avec NSIS 3.09 (Linux/makensis)
 ; ============================================================
 
@@ -17,8 +17,8 @@ Unicode True
 ;--------------------------------
 ; Métadonnées
 ;--------------------------------
-Name              "HERMES CHU 1.2.0"
-OutFile           "/home/ubuntu/nsis_build/output/HERMES-CHU-Setup-1.2.0.exe"
+Name              "HERMES CHU 1.3.0"
+OutFile           "/home/ubuntu/nsis_build/output/HERMES-CHU-Setup-1.3.0.exe"
 InstallDir        "$PROGRAMFILES64\HERMES CHU"
 InstallDirRegKey  HKLM "Software\HERMES CHU" "InstallDir"
 RequestExecutionLevel admin
@@ -28,12 +28,12 @@ SetCompressorDictSize 32
 ;--------------------------------
 ; Informations de version
 ;--------------------------------
-VIProductVersion  "1.2.0.0"
+VIProductVersion  "1.3.0.0"
 VIAddVersionKey   "ProductName"      "HERMES CHU"
-VIAddVersionKey   "ProductVersion"   "1.2.0"
+VIAddVersionKey   "ProductVersion"   "1.3.0"
 VIAddVersionKey   "CompanyName"      "William MERI — CHU de Guyane"
 VIAddVersionKey   "FileDescription"  "Système Agentique Hospitalier Souverain"
-VIAddVersionKey   "FileVersion"      "1.2.0"
+VIAddVersionKey   "FileVersion"      "1.3.0"
 VIAddVersionKey   "LegalCopyright"   "© 2025-2026 CHU — Licence Apache 2.0"
 VIAddVersionKey   "Comments"         "Conçu par William MERI (CHU-Guyane) — Basé sur NousResearch Hermes Agent"
 
@@ -53,11 +53,11 @@ VIAddVersionKey   "Comments"         "Conçu par William MERI (CHU-Guyane) — B
 !define MUI_HEADERIMAGE_BITMAP      "/home/ubuntu/nsis_build/assets/banner.bmp"
 !define MUI_HEADERIMAGE_RIGHT
 
-!define MUI_WELCOMEPAGE_TITLE       "Bienvenue dans HERMES CHU 1.2.0"
+!define MUI_WELCOMEPAGE_TITLE       "Bienvenue dans HERMES CHU 1.3.0"
 !define MUI_WELCOMEPAGE_TEXT        "Cet assistant va installer HERMES CHU — Système Agentique Hospitalier Souverain.$\r$\n$\r$\nHERMES CHU est basé sur Hermes Agent de NousResearch, adapté pour les établissements de santé avec :$\r$\n$\r$\n• Privacy Engine RGPD — 7 flux couverts (NER médical, mémoire, skills, contexte)$\r$\n• Support multi-LLM (Azure OpenAI, OpenAI, Ollama, vLLM)$\r$\n• Agents spécialisés (Clinique, Administratif, Logistique, Recherche)$\r$\n• Conformité ISO 27001 et HDS$\r$\n$\r$\nIl est recommandé de fermer toutes les autres applications avant de continuer."
 
 !define MUI_FINISHPAGE_TITLE        "Installation terminée !"
-!define MUI_FINISHPAGE_TEXT         "HERMES CHU 1.2.0 a été installé avec succès.$\r$\n$\r$\nConçu par William MERI — CHU de Guyane$\r$\n$\r$\nProchaines étapes :$\r$\n1. Lancez l'assistant de configuration via le Menu Démarrer$\r$\n2. Renseignez vos paramètres Azure OpenAI ou Ollama$\r$\n3. Activez le Privacy Engine RGPD$\r$\n4. Ouvrez HERMES CHU depuis le bureau$\r$\n$\r$\nDocumentation : github.com/Tarzzan/HERMES-CHU/wiki"
+!define MUI_FINISHPAGE_TEXT         "HERMES CHU 1.3.0 a été installé avec succès.$\r$\n$\r$\nConçu par William MERI — CHU de Guyane$\r$\n$\r$\nProchaines étapes :$\r$\n1. Lancez l'assistant de configuration via le Menu Démarrer$\r$\n2. Renseignez vos paramètres Azure OpenAI ou Ollama$\r$\n3. Activez le Privacy Engine RGPD$\r$\n4. Ouvrez HERMES CHU depuis le bureau$\r$\n$\r$\nDocumentation : github.com/Tarzzan/HERMES-CHU/wiki"
 !define MUI_FINISHPAGE_RUN          "$INSTDIR\scripts\Configure-CHU.bat"
 !define MUI_FINISHPAGE_RUN_TEXT     "Lancer l'assistant de configuration CHU"
 !define MUI_FINISHPAGE_LINK         "Consulter le Wiki HERMES CHU"
@@ -89,11 +89,7 @@ Page custom PageCHUConfig PageCHUConfigLeave
 ;--------------------------------
 ; Variables personnalisées
 ;--------------------------------
-Var AzureEndpoint
-Var AzureApiKey
-Var AzureDeployment
 Var PrivacyEnabled
-Var ProviderChoice
 Var NodeFound
 Var PythonFound
 Var GitFound
@@ -140,7 +136,7 @@ Function PageAPropos
     ${NSD_CreateLabel} 10u 158u 100% 10u "Licence Apache 2.0 — Open Source"
     Pop $0
 
-    ${NSD_CreateLabel} 0 175u 100% 10u "Version 1.2.0 — Juin 2026 — Conformité ISO 27001 & HDS & RGPD"
+    ${NSD_CreateLabel} 0 175u 100% 10u "Version 1.3.0 — Juin 2026 — Conformité ISO 27001 & HDS & RGPD"
     Pop $0
 
     nsDialogs::Show
@@ -214,61 +210,53 @@ Function PageCHUConfig
     nsDialogs::Create 1018
     Pop $0
 
-    ${NSD_CreateLabel} 0 0 100% 12u "Configuration du fournisseur IA"
+    ${NSD_CreateLabel} 0 0 100% 12u "Choisissez votre fournisseur IA"
     Pop $0
 
     ${NSD_CreateLabel} 0 18u 100% 10u "Fournisseur LLM :"
     Pop $0
 
-    ${NSD_CreateDropList} 0 30u 200u 60u ""
+    ${NSD_CreateDropList} 0 30u 280u 120u ""
     Pop $1
-    ${NSD_CB_AddString} $1 "Azure OpenAI (recommandé — certifié HDS)"
-    ${NSD_CB_AddString} $1 "OpenAI (GPT-4o, GPT-4-turbo)"
-    ${NSD_CB_AddString} $1 "Ollama (modèles locaux)"
+    ${NSD_CB_AddString} $1 "ChatGPT (abonnement Plus/Team/Enterprise)"
+    ${NSD_CB_AddString} $1 "Nous Portal (abonnement NousResearch)"
+    ${NSD_CB_AddString} $1 "Ollama (modèles locaux — sans clé API)"
+    ${NSD_CB_AddString} $1 "LM Studio (modèles locaux — sans clé API)"
     ${NSD_CB_AddString} $1 "vLLM On-Premise (Hermes-3-70B)"
+    ${NSD_CB_AddString} $1 "Azure OpenAI (certifié HDS — clé API requise)"
+    ${NSD_CB_AddString} $1 "OpenAI API (clé API requise)"
     ${NSD_CB_AddString} $1 "Configurer plus tard"
-    ${NSD_CB_SelectString} $1 "Azure OpenAI (recommandé — certifié HDS)"
-    GetFunctionAddress $2 OnProviderChange
-    nsDialogs::OnChange $1 $2
+    ${NSD_CB_SelectString} $1 "ChatGPT (abonnement Plus/Team/Enterprise)"
 
-    ${NSD_CreateLabel} 0 55u 80u 10u "Endpoint Azure OpenAI :"
+    ${NSD_CreateGroupBox} 0 55u 100% 70u "Connexion par abonnement (sans clé API)"
     Pop $0
-    ${NSD_CreateText} 0 67u 100% 12u "https://votre-ressource.openai.azure.com/"
-    Pop $AzureEndpoint
 
-    ${NSD_CreateLabel} 0 85u 80u 10u "Clé API :"
+    ${NSD_CreateLabel} 10u 70u 100% 22u "Aucune clé API requise. Lors du premier lancement, HERMES CHU affichera un code unique. Rendez-vous sur chatgpt.com/link et saisissez ce code pour autoriser la connexion."
     Pop $0
-    ${NSD_CreatePassword} 0 97u 100% 12u ""
-    Pop $AzureApiKey
 
-    ${NSD_CreateLabel} 0 115u 80u 10u "Nom du déploiement :"
+    ${NSD_CreateLabel} 10u 95u 100% 10u "Fonctionne avec : ChatGPT Plus (20 USD/mois), Team, Enterprise"
     Pop $0
-    ${NSD_CreateText} 0 127u 100% 12u "gpt-4o"
-    Pop $AzureDeployment
 
-    ${NSD_CreateLabel} 0 150u 100% 10u "Privacy Engine RGPD :"
+    ${NSD_CreateLabel} 10u 108u 100% 10u "Modeles disponibles : GPT-4o, o1, o3, GPT-5"
     Pop $0
-    ${NSD_CreateCheckbox} 0 163u 100% 12u "Activer l'anonymisation des données de santé (recommandé)"
+
+    ${NSD_CreateLabel} 0 135u 100% 10u "Privacy Engine RGPD :"
+    Pop $0
+    ${NSD_CreateCheckbox} 0 148u 100% 12u "Activer l'anonymisation RGPD des donnees de sante (recommande)"
     Pop $PrivacyEnabled
     ${NSD_Check} $PrivacyEnabled
 
-    ${NSD_CreateLabel} 0 185u 100% 35u "Note RGPD (v1.1) : 7 flux couverts — entrées/sorties LLM, mémoire persistante, revue de fond, trajectoires fine-tuning, amélioration des skills (curator) et résumés de contexte (context_compressor). Aucun PHI ne persiste en clair."
+    ${NSD_CreateLabel} 0 168u 100% 30u "RGPD : 7 flux couverts — entrees/sorties, memoire, revue de fond, trajectoires, skills, contexte. Aucun PHI ne persiste en clair, meme avec un LLM tiers."
     Pop $0
 
     nsDialogs::Show
 FunctionEnd
 
 Function OnProviderChange
-    ; Callback simplifié — la configuration détaillée se fait via Configure-CHU.ps1
+    ; La configuration detaillee se fait au premier lancement via Configure-CHU.ps1
 FunctionEnd
 
 Function PageCHUConfigLeave
-    ${NSD_GetText} $AzureEndpoint $0
-    StrCpy $AzureEndpoint $0
-    ${NSD_GetText} $AzureApiKey $0
-    StrCpy $AzureApiKey $0
-    ${NSD_GetText} $AzureDeployment $0
-    StrCpy $AzureDeployment $0
     ${NSD_GetState} $PrivacyEnabled $0
     StrCpy $PrivacyEnabled $0
 FunctionEnd
@@ -290,25 +278,23 @@ Section "HERMES CHU (requis)" SecMain
     FileWrite $0 "# Généré automatiquement par l'installateur$\r$\n"
     FileWrite $0 "$\r$\n"
     FileWrite $0 "# Fournisseur LLM actif$\r$\n"
-    FileWrite $0 "FOURNISSEUR_ACTIF=azure_openai$\r$\n"
+    FileWrite $0 "# Configurez votre fournisseur au premier lancement via Configure-CHU.bat$\r$\n"
+    FileWrite $0 "# Connexion par abonnement (sans cle API) : chatgpt.com/link$\r$\n"
+    FileWrite $0 "FOURNISSEUR_ACTIF=openai-codex$\r$\n"
     FileWrite $0 "$\r$\n"
-    FileWrite $0 "# Azure OpenAI$\r$\n"
-    FileWrite $0 "AZURE_OPENAI_ENDPOINT=$AzureEndpoint$\r$\n"
-    FileWrite $0 "AZURE_OPENAI_API_KEY=$AzureApiKey$\r$\n"
-    FileWrite $0 "AZURE_OPENAI_DEPLOYMENT=$AzureDeployment$\r$\n"
-    FileWrite $0 "AZURE_OPENAI_API_VERSION=2024-02-01$\r$\n"
+    FileWrite $0 "# ChatGPT abonnement (openai-codex) — code d appairage genere au 1er lancement$\r$\n"
+    FileWrite $0 "# Aucune cle API requise — rendez-vous sur chatgpt.com/link$\r$\n"
+    FileWrite $0 "CHATGPT_PROVIDER=openai-codex$\r$\n"
     FileWrite $0 "$\r$\n"
-    FileWrite $0 "# OpenAI (alternatif)$\r$\n"
-    FileWrite $0 "OPENAI_API_KEY=$\r$\n"
-    FileWrite $0 "OPENAI_MODEL=gpt-4o$\r$\n"
-    FileWrite $0 "$\r$\n"
-    FileWrite $0 "# Ollama (local)$\r$\n"
+    FileWrite $0 "# Ollama (local — sans cle API)$\r$\n"
     FileWrite $0 "OLLAMA_BASE_URL=http://localhost:11434$\r$\n"
     FileWrite $0 "OLLAMA_MODEL=hermes3:70b$\r$\n"
     FileWrite $0 "$\r$\n"
-    FileWrite $0 "# vLLM On-Premise$\r$\n"
-    FileWrite $0 "VLLM_BASE_URL=http://vllm-service:8000/v1$\r$\n"
-    FileWrite $0 "VLLM_MODEL=NousResearch/Hermes-3-Llama-3.1-70B-Instruct$\r$\n"
+    FileWrite $0 "# Azure OpenAI (HDS — cle API requise)$\r$\n"
+    FileWrite $0 "AZURE_OPENAI_ENDPOINT=$\r$\n"
+    FileWrite $0 "AZURE_OPENAI_API_KEY=$\r$\n"
+    FileWrite $0 "AZURE_OPENAI_DEPLOYMENT=gpt-4o$\r$\n"
+    FileWrite $0 "AZURE_OPENAI_API_VERSION=2024-02-01$\r$\n"
     FileWrite $0 "$\r$\n"
     FileWrite $0 "# Privacy Engine RGPD$\r$\n"
 
@@ -380,14 +366,14 @@ Section "HERMES CHU (requis)" SecMain
 
     ; --- Registre Windows ---
     WriteRegStr HKLM "Software\HERMES CHU" "InstallDir" "$INSTDIR"
-    WriteRegStr HKLM "Software\HERMES CHU" "Version"    "1.2.0"
+    WriteRegStr HKLM "Software\HERMES CHU" "Version"    "1.3.0"
 
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
-        "DisplayName"          "HERMES CHU 1.2.0"
+        "DisplayName"          "HERMES CHU 1.3.0"
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
-        "DisplayVersion"       "1.2.0"
+        "DisplayVersion"       "1.3.0"
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
         "Publisher"            "William MERI — CHU de Guyane"
