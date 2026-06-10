@@ -91,18 +91,20 @@ componentStyles:
 customCSS: |
   /* ── PULSAR Lumiere -- CSS personnalise ── */
 
-  /* Image de fond : opacite 15% -- visible sans assombrir, sans mix-blend-mode */
+  /* Image de fond : derriere tout le contenu, opacite 50% */
   .pointer-events-none.fixed.inset-0 {
     opacity: 0.50 !important;
     mix-blend-mode: normal !important;
     filter: none !important;
     background-blend-mode: normal !important;
+    z-index: -1 !important;
+    isolation: isolate;
   }
 
-  /* Isolation : empeche le theme nuit d'appliquer son filtre fonce */
-  .pointer-events-none.fixed.inset-0 * {
-    mix-blend-mode: normal !important;
-    filter: none !important;
+  /* Contenu principal : toujours au-dessus du fond */
+  #root, main, [class*="sidebar"], header, nav, [class*="content"] {
+    position: relative;
+    z-index: 1;
   }
 
   /* Fond general : blanc medical */
