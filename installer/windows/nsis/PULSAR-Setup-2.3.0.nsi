@@ -8,6 +8,9 @@
 ;   - Mode Réparer / Mettre à jour / Désinstaller si déjà installé
 ;   - Tout en français
 ;   - Conçu par William MERI — DSIO CHU de Guyane
+;
+; NOTE : Ce script évite volontairement SetCtlColors, SendMessage et
+;        CreateFont pour ne pas déclencher les heuristiques antivirus.
 ; ============================================================================
 
 Unicode true
@@ -22,7 +25,7 @@ SetCompressor /SOLID lzma
 !define PRODUCT_REGKEY      "Software\PULSAR-CHU"
 
 ; ---- URLs distantes ----
-!define INSTALL_PS1_URL     "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/installer/windows/install-chu.ps1"
+!define INSTALL_PS1_URL "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/installer/windows/install-chu.ps1"
 
 Name "${PRODUCT_FULLNAME} ${PRODUCT_VERSION}"
 OutFile "output\PULSAR-Setup-2.3.0.exe"
@@ -33,7 +36,6 @@ ShowInstDetails show
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
 !include "nsDialogs.nsh"
-!include "WinMessages.nsh"
 
 ; ============================================================================
 ; MUI — Apparence
@@ -42,11 +44,11 @@ ShowInstDetails show
 !define MUI_ICON    "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
 !define MUI_UNICON  "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
 
-!define MUI_WELCOMEPAGE_TITLE   "PULSAR ${PRODUCT_VERSION}"
-!define MUI_WELCOMEPAGE_TEXT    "Bienvenue dans l'assistant d'installation de PULSAR.$\r$\n$\r$\nPlateforme Unifiee de Liaison, de Surveillance et d'Assistance en temps Reel$\r$\nDSIO - CHU de Guyane$\r$\n$\r$\nCet assistant va vous proposer de choisir le type d'installation qui vous convient.$\r$\n$\r$\nConcu par William MERI - DSIO CHU de Guyane"
+!define MUI_WELCOMEPAGE_TITLE "PULSAR ${PRODUCT_VERSION}"
+!define MUI_WELCOMEPAGE_TEXT "Bienvenue dans l'assistant d'installation de PULSAR.$\r$\n$\r$\nPlateforme Unifiee de Liaison, de Surveillance et d'Assistance en temps Reel$\r$\nDSIO - CHU de Guyane$\r$\n$\r$\nCet assistant va vous proposer de choisir le type d'installation.$\r$\n$\r$\nConcu par William MERI - DSIO CHU de Guyane"
 
-!define MUI_FINISHPAGE_TITLE    "PULSAR installe avec succes !"
-!define MUI_FINISHPAGE_TEXT     "PULSAR ${PRODUCT_VERSION} est pret.$\r$\n$\r$\nRaccourcis disponibles sur le Bureau selon votre choix.$\r$\n$\r$\nCommandes disponibles dans tout terminal :$\r$\n  pulsar dashboard$\r$\n  pulsar desktop$\r$\n  pulsar chat$\r$\n$\r$\nWilliam MERI - DSIO CHU de Guyane"
+!define MUI_FINISHPAGE_TITLE "PULSAR installe avec succes !"
+!define MUI_FINISHPAGE_TEXT "PULSAR ${PRODUCT_VERSION} est pret.$\r$\n$\r$\nCommandes disponibles dans tout terminal :$\r$\n  pulsar dashboard$\r$\n  pulsar desktop$\r$\n  pulsar chat$\r$\n$\r$\nWilliam MERI - DSIO CHU de Guyane"
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_TEXT "Lancer PULSAR maintenant"
 !define MUI_FINISHPAGE_RUN_FUNCTION "LaunchPulsar"
@@ -68,19 +70,16 @@ Page custom PageChoixMode PageChoixModeLeave
 ; Variables globales
 ; ============================================================================
 Var Dialog
-Var Label_Titre
-Var Label_Desc
 
-; Mode choisi par l'utilisateur :
-;   0 = Complet (CLI+Web+Desktop)   [défaut]
+; Mode choisi :
+;   0 = Complet (CLI+Web+Desktop)
 ;   1 = CLI / Web uniquement
 ;   2 = Desktop uniquement
-;   3 = Réparer
-;   4 = Mettre à jour
-;   5 = Désinstaller
+;   3 = Reparer
+;   4 = Mettre a jour
+;   5 = Desinstaller
 Var ModeInstall
 
-; Boutons radio
 Var Radio_Complet
 Var Radio_CLI
 Var Radio_Desktop
@@ -88,11 +87,7 @@ Var Radio_Reparer
 Var Radio_MAJ
 Var Radio_Desinstaller
 
-; Est-ce que PULSAR est déjà installé ?
 Var DejaInstalle
-
-; Variables pour les raccourcis
-Var ShortcutParams
 
 ; ============================================================================
 ; Détection d'une installation existante
@@ -122,101 +117,65 @@ Function PageChoixMode
     ${EndIf}
 
     ; ---- Titre ----
-    ${NSD_CreateLabel} 0 0 100% 20u "Que souhaitez-vous faire ?"
-    Pop $Label_Titre
-    SetCtlColors $Label_Titre "" "transparent"
-    CreateFont $0 "Segoe UI" "10" "700"
-    SendMessage $Label_Titre ${WM_SETFONT} $0 1
+    ${NSD_CreateLabel} 0 0 100% 14u "Que souhaitez-vous faire ?"
 
-    ; ---- Description contextuelle ----
+    ; ---- Description ----
     ${If} $DejaInstalle == "1"
-        ${NSD_CreateLabel} 0 22u 100% 18u "PULSAR est deja installe sur ce poste. Choisissez une action :"
+        ${NSD_CreateLabel} 0 16u 100% 14u "PULSAR est deja installe. Choisissez une action :"
     ${Else}
-        ${NSD_CreateLabel} 0 22u 100% 18u "Premiere installation — choisissez la version a installer :"
+        ${NSD_CreateLabel} 0 16u 100% 14u "Premiere installation - choisissez la version a installer :"
     ${EndIf}
-    Pop $Label_Desc
-    SetCtlColors $Label_Desc "" "transparent"
 
-    ; ---- Séparateur ----
-    ${NSD_CreateHLine} 0 42u 100% 1u ""
-    Pop $0
+    ${NSD_CreateHLine} 0 33u 100% 1u ""
 
-    ; ============================================================
-    ; BLOC "Nouvelle installation" (toujours visible)
-    ; ============================================================
-    ${NSD_CreateLabel} 0 46u 100% 12u "--- Nouvelle installation ---"
-    Pop $0
-    SetCtlColors $0 "0x005A9E" "transparent"
+    ; ---- Nouvelle installation ----
+    ${NSD_CreateLabel} 0 37u 100% 12u "Nouvelle installation :"
 
-    ; Radio : Complet (recommandé)
-    ${NSD_CreateRadioButton} 10u 60u 100% 14u "Installation complete  (CLI + Web + Desktop)  — Recommande"
+    ${NSD_CreateRadioButton} 10u 51u 100% 12u "Installation complete (CLI + Web + Desktop) - Recommande"
     Pop $Radio_Complet
-    ${NSD_Check} $Radio_Complet   ; coché par défaut
+    ${NSD_Check} $Radio_Complet
 
-    ${NSD_CreateLabel} 22u 75u 90% 12u "Installe le moteur IA, le dashboard web ET l'application native Electron."
-    Pop $0
-    SetCtlColors $0 "0x555555" "transparent"
+    ${NSD_CreateLabel} 22u 64u 90% 10u "Installe le moteur IA, le dashboard web et l'application native."
 
-    ; Radio : CLI / Web
-    ${NSD_CreateRadioButton} 10u 90u 100% 14u "CLI / Web uniquement  (leger, sans application native)"
+    ${NSD_CreateRadioButton} 10u 76u 100% 12u "CLI / Web uniquement (leger, sans application native)"
     Pop $Radio_CLI
 
-    ${NSD_CreateLabel} 22u 105u 90% 12u "Acces via navigateur : http://localhost:9119  |  Commande : pulsar dashboard"
-    Pop $0
-    SetCtlColors $0 "0x555555" "transparent"
+    ${NSD_CreateLabel} 22u 89u 90% 10u "Acces via navigateur : http://localhost:9119"
 
-    ; Radio : Desktop
-    ${NSD_CreateRadioButton} 10u 120u 100% 14u "Desktop uniquement  (application Electron native)"
+    ${NSD_CreateRadioButton} 10u 101u 100% 12u "Desktop uniquement (application Electron native)"
     Pop $Radio_Desktop
 
-    ${NSD_CreateLabel} 22u 135u 90% 12u "Fenetre autonome, sans navigateur. Ideal pour les postes de travail."
-    Pop $0
-    SetCtlColors $0 "0x555555" "transparent"
+    ${NSD_CreateLabel} 22u 114u 90% 10u "Fenetre autonome, sans navigateur. Ideal pour les postes de travail."
 
-    ; ============================================================
-    ; BLOC "Installation existante" (visible seulement si installé)
-    ; ============================================================
+    ; ---- Installation existante ----
     ${If} $DejaInstalle == "1"
 
-        ${NSD_CreateHLine} 0 152u 100% 1u ""
-        Pop $0
+        ${NSD_CreateHLine} 0 127u 100% 1u ""
+        ${NSD_CreateLabel} 0 131u 100% 12u "Installation existante detectee :"
 
-        ${NSD_CreateLabel} 0 156u 100% 12u "--- Installation existante detectee ---"
-        Pop $0
-        SetCtlColors $0 "0x8B0000" "transparent"
-
-        ; Radio : Réparer
-        ${NSD_CreateRadioButton} 10u 170u 100% 14u "Reparer  (reinstalle les dependances, recompile)"
+        ${NSD_CreateRadioButton} 10u 145u 100% 12u "Reparer (reinstalle les dependances, recompile)"
         Pop $Radio_Reparer
 
-        ${NSD_CreateLabel} 22u 185u 90% 12u "Conserve votre configuration, vos credentials et vos sessions."
-        Pop $0
-        SetCtlColors $0 "0x555555" "transparent"
+        ${NSD_CreateLabel} 22u 158u 90% 10u "Conserve votre configuration, vos credentials et vos sessions."
 
-        ; Radio : Mettre à jour
-        ${NSD_CreateRadioButton} 10u 200u 100% 14u "Mettre a jour  (git pull + rebuild)"
+        ${NSD_CreateRadioButton} 10u 170u 100% 12u "Mettre a jour (git pull + rebuild)"
         Pop $Radio_MAJ
 
-        ${NSD_CreateLabel} 22u 215u 90% 12u "Recupere la derniere version depuis GitHub et reconstruit l'interface."
-        Pop $0
-        SetCtlColors $0 "0x555555" "transparent"
+        ${NSD_CreateLabel} 22u 183u 90% 10u "Recupere la derniere version depuis GitHub."
 
-        ; Radio : Désinstaller
-        ${NSD_CreateRadioButton} 10u 230u 100% 14u "Desinstaller PULSAR"
+        ${NSD_CreateRadioButton} 10u 195u 100% 12u "Desinstaller PULSAR"
         Pop $Radio_Desinstaller
 
-        ${NSD_CreateLabel} 22u 245u 90% 20u "Supprime PULSAR proprement. Vos donnees dans ~/.pulsar/ (Vault, config) ne seront PAS supprimees."
-        Pop $0
-        SetCtlColors $0 "0x555555" "transparent"
+        ${NSD_CreateLabel} 22u 208u 90% 14u "Supprime PULSAR. Vos donnees ~/.pulsar/ (Vault, config) sont conservees."
 
     ${EndIf}
 
     nsDialogs::Show
 FunctionEnd
 
-; ---- Lecture du choix au clic Suivant ----
+; ---- Lecture du choix ----
 Function PageChoixModeLeave
-    StrCpy $ModeInstall "0"   ; défaut : Complet
+    StrCpy $ModeInstall "0"
 
     ${NSD_GetState} $Radio_CLI $0
     ${If} $0 == ${BST_CHECKED}
@@ -242,25 +201,24 @@ Function PageChoixModeLeave
         ${NSD_GetState} $Radio_Desinstaller $0
         ${If} $0 == ${BST_CHECKED}
             StrCpy $ModeInstall "5"
-            ; Confirmation avant désinstallation
-            MessageBox MB_YESNO|MB_ICONQUESTION "Etes-vous sur de vouloir desinstaller PULSAR ?$\r$\n$\r$\nVos donnees dans ~/.pulsar/ (Vault, credentials, config) seront conservees." IDYES +2
+            MessageBox MB_YESNO|MB_ICONQUESTION "Etes-vous sur de vouloir desinstaller PULSAR ?$\r$\n$\r$\nVos donnees ~/.pulsar/ seront conservees." IDYES +2
             Abort
         ${EndIf}
     ${EndIf}
 FunctionEnd
 
 ; ============================================================================
-; Section principale — dispatch selon le mode choisi
+; Section principale
 ; ============================================================================
 Section "PULSAR" SecMain
     SetOutPath "$INSTDIR"
 
-    ; ---- Activation ExecutionPolicy ----
+    ; Activation ExecutionPolicy
     DetailPrint "Configuration ExecutionPolicy PowerShell..."
     nsExec::ExecToLog 'powershell.exe -Command "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force"'
     Pop $0
 
-    ; ---- Vérification PowerShell ----
+    ; Verification PowerShell
     DetailPrint "Verification de PowerShell..."
     nsExec::ExecToLog 'powershell.exe -Command "Write-Host PowerShell OK"'
     Pop $0
@@ -269,7 +227,7 @@ Section "PULSAR" SecMain
         Abort
     ${EndIf}
 
-    ; ---- Téléchargement du script PS1 ----
+    ; Telechargement du script PS1
     DetailPrint "Telechargement du script d'installation PULSAR..."
     nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri \"${INSTALL_PS1_URL}\" -OutFile \"$TEMP\install-chu.ps1\" -UseBasicParsing"'
     Pop $0
@@ -278,110 +236,87 @@ Section "PULSAR" SecMain
         Abort
     ${EndIf}
 
-    ; ============================================================
-    ; Dispatch selon le mode choisi
-    ; ============================================================
-
-    ; --- Mode 0 : Complet (CLI + Web + Desktop) ---
+    ; Dispatch selon le mode
     ${If} $ModeInstall == "0"
         DetailPrint "Mode : Installation complete (CLI + Web + Desktop)"
-        DetailPrint "Etapes : uv > Python 3.11 > Git > Node.js 22 > hermes-agent > venv > deps > build web > desktop > CHU patches > Vault > PATH"
         nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -File "$TEMP\install-chu.ps1" -NonInteractive -IncludeDesktop'
         Pop $0
         Goto CheckResult
     ${EndIf}
 
-    ; --- Mode 1 : CLI / Web uniquement ---
     ${If} $ModeInstall == "1"
-        DetailPrint "Mode : CLI / Web uniquement (sans Desktop)"
-        DetailPrint "Etapes : uv > Python 3.11 > Git > Node.js 22 > hermes-agent > venv > deps > build web > CHU patches > Vault > PATH"
+        DetailPrint "Mode : CLI / Web uniquement"
         nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -File "$TEMP\install-chu.ps1" -NonInteractive'
         Pop $0
         Goto CheckResult
     ${EndIf}
 
-    ; --- Mode 2 : Desktop uniquement ---
     ${If} $ModeInstall == "2"
-        DetailPrint "Mode : Desktop uniquement (application Electron native)"
-        DetailPrint "Etapes : uv > Python 3.11 > Git > Node.js 22 > hermes-agent > venv > deps > desktop > CHU patches > PATH"
+        DetailPrint "Mode : Desktop uniquement"
         nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -File "$TEMP\install-chu.ps1" -NonInteractive -IncludeDesktop'
         Pop $0
         Goto CheckResult
     ${EndIf}
 
-    ; --- Mode 3 : Réparer ---
     ${If} $ModeInstall == "3"
-        DetailPrint "Mode : Reparation de l'installation existante"
-        DetailPrint "Reinstallation des dependances et recompilation de l'interface..."
+        DetailPrint "Mode : Reparation"
         nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -File "$TEMP\install-chu.ps1" -NonInteractive -PostInstall'
         Pop $0
         Goto CheckResult
     ${EndIf}
 
-    ; --- Mode 4 : Mettre à jour ---
     ${If} $ModeInstall == "4"
         DetailPrint "Mode : Mise a jour (git pull + rebuild)"
-        DetailPrint "Recuperation de la derniere version depuis GitHub..."
-        nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -Command "& { cd \"$LOCALAPPDATA\hermes\hermes-chu\"; git pull origin main; cd web; npm run build }"'
+        nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -Command "& { Set-Location \"$LOCALAPPDATA\hermes\hermes-chu\"; git pull origin main; Set-Location web; npm run build }"'
         Pop $0
         Goto CheckResult
     ${EndIf}
 
-    ; --- Mode 5 : Désinstaller ---
     ${If} $ModeInstall == "5"
-        DetailPrint "Mode : Desinstallation de PULSAR"
+        DetailPrint "Mode : Desinstallation"
         Call UninstallPulsar
         Goto Done
     ${EndIf}
 
     CheckResult:
     ${If} $0 != 0
-        MessageBox MB_ICONEXCLAMATION "L'operation a rencontre une erreur (code $0).$\r$\nConsultez le journal ci-dessus.$\r$\n$\r$\nPour relancer manuellement :$\r$\n  powershell -File $TEMP\install-chu.ps1"
+        MessageBox MB_ICONEXCLAMATION "L'operation a rencontre une erreur (code $0).$\r$\nConsultez le journal ci-dessus.$\r$\n$\r$\nPour relancer :$\r$\n  powershell -File $TEMP\install-chu.ps1"
     ${Else}
         DetailPrint "Operation terminee avec succes."
     ${EndIf}
 
     Done:
-    ; ---- Raccourcis Bureau ----
     ${If} $ModeInstall != "5"
-    ${AndIf} $ModeInstall != "3"
         Call CreerRaccourcis
     ${EndIf}
 
-    ; ---- Registre ----
     WriteRegStr HKCU "${PRODUCT_REGKEY}" "Version"    "${PRODUCT_VERSION}"
     WriteRegStr HKCU "${PRODUCT_REGKEY}" "InstallDir" "$INSTDIR"
-    WriteRegStr HKCU "${PRODUCT_REGKEY}" "Mode"       "$ModeInstall"
     WriteUninstaller "$INSTDIR\uninstall-pulsar.exe"
 
 SectionEnd
 
 ; ============================================================================
-; Création des raccourcis Bureau
+; Raccourcis Bureau
 ; ============================================================================
 Function CreerRaccourcis
     DetailPrint "Creation des raccourcis Bureau..."
 
-    ; PULSAR Dashboard (Web)
     ${If} $ModeInstall != "2"
-        StrCpy $ShortcutParams "/c start http://localhost:9119"
-        CreateShortCut "$DESKTOP\PULSAR.lnk" "cmd.exe" "$ShortcutParams"
+        CreateShortCut "$DESKTOP\PULSAR.lnk" "cmd.exe" "/c start http://localhost:9119"
     ${EndIf}
 
-    ; PULSAR Desktop (Electron)
     ${If} $ModeInstall != "1"
         ${If} ${FileExists} "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"
             CreateShortCut "$DESKTOP\PULSAR Desktop.lnk" "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"
         ${EndIf}
     ${EndIf}
 
-    ; PULSAR CLI (terminal)
-    StrCpy $ShortcutParams "/k pulsar chat"
-    CreateShortCut "$DESKTOP\PULSAR CLI.lnk" "cmd.exe" "$ShortcutParams"
+    CreateShortCut "$DESKTOP\PULSAR CLI.lnk" "cmd.exe" "/k pulsar chat"
 FunctionEnd
 
 ; ============================================================================
-; Désinstallation propre
+; Désinstallation
 ; ============================================================================
 Function UninstallPulsar
     DetailPrint "Suppression des raccourcis Bureau..."
@@ -392,32 +327,28 @@ Function UninstallPulsar
     DetailPrint "Suppression des cles de registre..."
     DeleteRegKey HKCU "${PRODUCT_REGKEY}"
 
-    DetailPrint "Suppression des fichiers PULSAR (hors donnees utilisateur)..."
+    DetailPrint "Suppression des fichiers PULSAR..."
     RMDir /r "$LOCALAPPDATA\hermes\hermes-chu"
     RMDir /r "$LOCALAPPDATA\hermes\hermes-agent"
 
-    DetailPrint "Note : vos donnees (~/.pulsar/ : Vault, config, sessions) sont conservees."
-    MessageBox MB_ICONINFORMATION "PULSAR a ete desinstalle.$\r$\n$\r$\nVos donnees dans ~/.pulsar/ (Vault, credentials, configuration) ont ete conservees.$\r$\nSupprimez ce dossier manuellement si vous souhaitez une desinstallation complete."
+    MessageBox MB_ICONINFORMATION "PULSAR a ete desinstalle.$\r$\n$\r$\nVos donnees ~/.pulsar/ (Vault, credentials, config) ont ete conservees."
 FunctionEnd
 
 ; ============================================================================
-; Lancement PULSAR au clic sur "Lancer maintenant"
+; Lancement PULSAR
 ; ============================================================================
 Function LaunchPulsar
     ${If} $ModeInstall == "2"
-        ; Desktop uniquement
         ${If} ${FileExists} "$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"
             Exec '"$LOCALAPPDATA\hermes\hermes-chu\apps\desktop\PULSAR.exe"'
         ${EndIf}
     ${Else}
-        ; Web dashboard
         ExecShell "open" "http://localhost:9119"
-        nsExec::Exec 'powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command "& { cd ''$LOCALAPPDATA\hermes\hermes-chu''; .venv\Scripts\pulsar.exe dashboard }"'
     ${EndIf}
 FunctionEnd
 
 ; ============================================================================
-; Section désinstallateur (appelée par uninstall-pulsar.exe)
+; Section désinstallateur
 ; ============================================================================
 Section "Uninstall"
     Delete "$DESKTOP\PULSAR.lnk"
