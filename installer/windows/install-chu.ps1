@@ -23,8 +23,8 @@ param(
     # exact ref.  Precedence: Commit > Tag > Branch.
     [string]$Commit = "",
     [string]$Tag = "",
-    [string]$HermesHome = $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\hermes" }),
-    [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\pulsar-chu" } else { "$env:LOCALAPPDATA\hermes\pulsar-chu" }),
+    [string]$PulsarHome = $(if ($env:PULSAR_HOME) { $env:PULSAR_HOME } else { "$env:LOCALAPPDATA\pulsar" }),
+    [string]$InstallDir = $(if ($env:PULSAR_HOME) { "$env:LOCALAPPDATA\pulsar-chu" } else { "$env:LOCALAPPDATA\pulsar-chu" }),
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
@@ -245,10 +245,10 @@ function Find-SystemBrowser {
 
 function Write-BrowserEnv {
     param([string]$BrowserPath)
-    if (-not (Test-Path $HermesHome)) {
-        New-Item -ItemType Directory -Force -Path $HermesHome | Out-Null
+    if (-not (Test-Path $PulsarHome)) {
+        New-Item -ItemType Directory -Force -Path $PulsarHome | Out-Null
     }
-    $envFile = Join-Path $HermesHome ".env"
+    $envFile = Join-Path $PulsarHome ".env"
     if (-not (Test-Path $envFile)) {
         Set-Content -Path $envFile -Value "AGENT_BROWSER_EXECUTABLE_PATH=$BrowserPath" -Encoding UTF8
         return
@@ -267,7 +267,7 @@ function Install-AgentBrowser {
     }
 
     Write-Info "Installing agent-browser via npm -g --prefix..."
-    $prefixDir = Join-Path $HermesHome "node"
+    $prefixDir = Join-Path $PulsarHome "node"
     if (-not (Test-Path $prefixDir)) {
         New-Item -ItemType Directory -Path $prefixDir -Force | Out-Null
     }
@@ -319,11 +319,11 @@ function Install-AgentBrowser {
 # ============================================================================
 
 function Install-Uv {
-    # Hermes owns its own uv at $HermesHome\bin\uv.exe.  Always install there --
+    # Hermes owns its own uv at $PulsarHome\bin\uv.exe.  Always install there --
     # no PATH probing, no conda guards, no multi-location resolution chains.
     # The runtime update path (hermes_cli/managed_uv.py) looks in the same
     # place, so install.ps1 and `hermes update` stay in sync.
-    $managedUv = Join-Path $HermesHome "bin\uv.exe"
+    $managedUv = Join-Path $PulsarHome "bin\uv.exe"
 
     if (Test-Path $managedUv) {
         $script:UvCmd = $managedUv
@@ -332,15 +332,15 @@ function Install-Uv {
         return $true
     }
 
-    Write-Info "Installing managed uv into $HermesHome\bin ..."
-    New-Item -ItemType Directory -Path (Join-Path $HermesHome "bin") -Force | Out-Null
+    Write-Info "Installing managed uv into $PulsarHome\bin ..."
+    New-Item -ItemType Directory -Path (Join-Path $PulsarHome "bin") -Force | Out-Null
 
     # UV_INSTALL_DIR tells the astral installer to place the binary
-    # directly into $HermesHome\bin instead of ~/.local/bin.
+    # directly into $PulsarHome\bin instead of ~/.local/bin.
     $prevEAP = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
-        $env:UV_INSTALL_DIR = Join-Path $HermesHome "bin"
+        $env:UV_INSTALL_DIR = Join-Path $PulsarHome "bin"
         powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex" 2>&1 | Out-Null
         $ErrorActionPreference = $prevEAP
 
@@ -397,14 +397,14 @@ function Resolve-UvCmd {
     }
 
     # Check the managed location first -- this is where Install-Uv puts it.
-    $managedUv = Join-Path $HermesHome "bin\uv.exe"
+    $managedUv = Join-Path $PulsarHome "bin\uv.exe"
     if (Test-Path $managedUv) {
         $script:UvCmd = $managedUv
         return
     }
 
     # Fall back to PATH (covers edge cases where the installer ran in a
-    # sibling process and HERMES_HOME wasn't propagated).
+    # sibling process and PULSAR_HOME wasn't propagated).
     if (Get-Command uv -ErrorAction SilentlyContinue) {
         $script:UvCmd = "uv"
         return
@@ -543,7 +543,7 @@ function Install-Git {
       1. Existing ``git`` on PATH -- use it as-is (the common fast path).
       2. Download **PortableGit** from the official git-for-windows GitHub
          release (self-extracting 7z.exe) and unpack it to
-         ``%LOCALAPPDATA%\hermes\git`` -- never touches system Git, never
+         ``%LOCALAPPDATA%\pulsar\git`` -- never touches system Git, never
          requires admin, works even on locked-down machines and machines
          with a broken system Git install.
 
@@ -557,7 +557,7 @@ function Install-Git {
     We deliberately skip winget because it fails badly when the system Git
     install is in a half-installed state (partially registered, or uninstall-
     blocked).  Owning the Hermes copy of Git ourselves is predictable and
-    recoverable: if it ever breaks, ``Remove-Item %LOCALAPPDATA%\hermes\git``
+    recoverable: if it ever breaks, ``Remove-Item %LOCALAPPDATA%\pulsar\git``
     and re-running this installer fully recovers.
 
     After install we locate ``bash.exe`` and persist the path in
@@ -573,10 +573,10 @@ function Install-Git {
         return $true
     }
 
-    # Download PortableGit into $HermesHome\git.  Always works as long as
+    # Download PortableGit into $PulsarHome\git.  Always works as long as
     # we can reach github.com -- no admin, no winget, no reliance on the
     # user's possibly-broken system Git install.
-    Write-Info "Git not found -- downloading PortableGit to $HermesHome\git\ ..."
+    Write-Info "Git not found -- downloading PortableGit to $PulsarHome\git\ ..."
     Write-Info "(no admin rights required; isolated from any system Git install)"
 
     try {
@@ -606,7 +606,7 @@ function Install-Git {
         $gitVerTag = "$gitVer.windows.1"
 
         if ($arch -eq "32-bit-mingit") {
-            Write-Warn "32-bit Windows detected -- PortableGit is 64-bit only.  Installing MinGit 32-bit as a last resort; bash-dependent Hermes features (terminal tool, agent-browser) will not work on this machine."
+            Write-Warn "32-bit Windows detected -- PortableGit is 64-bit only.  Installing MinGit 32-bit as a last resort; bash-dependent PULSAR features (terminal tool, agent-browser) will not work on this machine."
             $assetName    = "MinGit-$gitVer-32-bit.zip"
             $downloadIsZip = $true
         } elseif ($arch -eq "arm64") {
@@ -620,7 +620,7 @@ function Install-Git {
         $downloadUrl = "https://github.com/git-for-windows/git/releases/download/$gitTag/$assetName"
         $downloadExt = if ($downloadIsZip) { "zip" } else { "7z.exe" }
         $tmpFile = "$env:TEMP\$assetName"
-        $gitDir = "$HermesHome\git"
+        $gitDir = "$PulsarHome\git"
 
         Write-Info "Downloading $assetName (Git for Windows $gitVerTag)..."
         Invoke-WebRequest -Uri $downloadUrl -OutFile $tmpFile -UseBasicParsing
@@ -686,7 +686,7 @@ function Install-Git {
         Write-Err "Could not install portable Git: $_"
         Write-Info ""
         Write-Info "Fallback: install Git manually from https://git-scm.com/download/win"
-        Write-Info "then re-run this installer.  Hermes needs Git Bash on Windows to run"
+        Write-Info "then re-run this installer.  PULSAR nécessite Git Bash sur Windows to run"
         Write-Info "shell commands (same as Claude Code and other coding agents)."
         return $false
     }
@@ -707,10 +707,10 @@ function Set-GitBashEnvVar {
     # this with a system-Git-only installation anyway.
     #
     # Layouts:
-    #   PortableGit (our default): $HermesHome\git\bin\bash.exe
-    #   MinGit (32-bit fallback):  $HermesHome\git\usr\bin\bash.exe
-    $candidates += "$HermesHome\git\bin\bash.exe"       # PortableGit layout (primary)
-    $candidates += "$HermesHome\git\usr\bin\bash.exe"   # MinGit / PortableGit usr\bin fallback
+    #   PortableGit (our default): $PulsarHome\git\bin\bash.exe
+    #   MinGit (32-bit fallback):  $PulsarHome\git\usr\bin\bash.exe
+    $candidates += "$PulsarHome\git\bin\bash.exe"       # PortableGit layout (primary)
+    $candidates += "$PulsarHome\git\usr\bin\bash.exe"   # MinGit / PortableGit usr\bin fallback
 
     # git.exe on PATH can tell us where the install root is
     $gitCmd = Get-Command git -ErrorAction SilentlyContinue
@@ -775,26 +775,26 @@ function Test-Node {
     }
 
     # Prefer a Hermes-managed Node from a previous run over a too-old system one.
-    $managedNode = "$HermesHome\node\node.exe"
+    $managedNode = "$PulsarHome\node\node.exe"
     if ((Test-Path $managedNode) -and (Test-NodeVersionOk (& $managedNode --version))) {
         $version = & $managedNode --version
-        $env:Path = "$HermesHome\node;$env:Path"
+        $env:Path = "$PulsarHome\node;$env:Path"
         Write-Success "Node.js $version found (Hermes-managed)"
         $script:HasNode = $true
         return $true
     }
 
-    Write-Info "Installing Hermes-managed Node.js $NodeVersion LTS..."
+    Write-Info "Installation de Node.js géré par PULSAR $NodeVersion LTS..."
 
     # Try the portable-zip path FIRST -- no UAC, no admin, no winget MSI.
     # winget install OpenJS.NodeJS.LTS triggers a system-wide MSI install
     # which prompts UAC (the dialog often appears minimized in the taskbar
     # and the install silently waits for consent, looking like a hang).
-    # The portable zip path drops node.exe + npm into $HermesHome\node\
+    # The portable zip path drops node.exe + npm into $PulsarHome\node\
     # which is user-scoped and identical to how Install-Git handles
     # PortableGit.  Same UX guarantee: works on locked-down enterprise
     # machines with no admin rights.
-    Write-Info "Downloading portable Node.js $NodeVersion to $HermesHome\node\ ..."
+    Write-Info "Downloading portable Node.js $NodeVersion to $PulsarHome\node\ ..."
     Write-Info "(no admin rights required; isolated from any system Node install)"
     try {
         $arch = Get-WindowsArch
@@ -813,16 +813,16 @@ function Test-Node {
 
             $extractedDir = Get-ChildItem $tmpDir -Directory | Select-Object -First 1
             if ($extractedDir) {
-                if (Test-Path "$HermesHome\node") { Remove-Item -Recurse -Force "$HermesHome\node" }
-                Move-Item $extractedDir.FullName "$HermesHome\node"
+                if (Test-Path "$PulsarHome\node") { Remove-Item -Recurse -Force "$PulsarHome\node" }
+                Move-Item $extractedDir.FullName "$PulsarHome\node"
 
                 # Session PATH so the rest of this run sees node/npm.
-                $env:Path = "$HermesHome\node;$env:Path"
+                $env:Path = "$PulsarHome\node;$env:Path"
 
                 # Persist to User PATH so fresh shells (and future stages
                 # in cross-process driver mode) see it.  Matches the
                 # pattern Install-Git uses for PortableGit.
-                $nodeDir = "$HermesHome\node"
+                $nodeDir = "$PulsarHome\node"
                 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
                 $userPathItems = if ($userPath) { $userPath -split ";" } else { @() }
                 if ($userPathItems -notcontains $nodeDir) {
@@ -830,8 +830,8 @@ function Test-Node {
                     [Environment]::SetEnvironmentVariable("Path", ($userPathItems -join ";"), "User")
                 }
 
-                $version = & "$HermesHome\node\node.exe" --version
-                Write-Success "Node.js $version installed to $HermesHome\node\ (portable, user-scoped)"
+                $version = & "$PulsarHome\node\node.exe" --version
+                Write-Success "Node.js $version installed to $PulsarHome\node\ (portable, user-scoped)"
                 $script:HasNode = $true
 
                 Remove-Item -Force $tmpZip -ErrorAction SilentlyContinue
@@ -1125,7 +1125,7 @@ function Install-Repository {
                 # agent-created dirs (e.g. tinker-atropos/) survive too.
                 $statusOut = git -c windows.appendAtomically=false status --porcelain 2>$null
                 if (-not [string]::IsNullOrWhiteSpace(($statusOut -join "`n"))) {
-                    $stashName = "hermes-install-autostash-" + (Get-Date -Format "yyyyMMdd-HHmmss")
+                    $stashName = "pulsar-install-autostash-" + (Get-Date -Format "yyyyMMdd-HHmmss")
                     Write-Info "Local changes detected, stashing before update..."
                     git -c windows.appendAtomically=false stash push --include-untracked -m "$stashName"
                     if ($LASTEXITCODE -eq 0) { $autostashRef = "stash@{0}" }
@@ -1531,7 +1531,7 @@ except Exception:
         }
     }
     if (-not $installed) {
-        throw "Failed to install hermes-agent package even with no extras. Inspect the uv pip install output above."
+        throw "Échec de l'installation du package PULSAR even with no extras. Inspect the uv pip install output above."
     }
 
     # Baseline-import gate. Even if a tier reported success above, the
@@ -1629,15 +1629,15 @@ function Set-PathVariable {
         Write-Info "PATH already configured"
     }
     
-    # Set HERMES_HOME so the Python code finds config/data in the right place.
-    # Only needed on Windows where we install to %LOCALAPPDATA%\hermes instead
+    # Set PULSAR_HOME so the Python code finds config/data in the right place.
+    # Only needed on Windows where we install to %LOCALAPPDATA%\pulsar instead
     # of the Unix default ~/.hermes
-    $currentHermesHome = [Environment]::GetEnvironmentVariable("HERMES_HOME", "User")
-    if (-not $currentHermesHome -or $currentHermesHome -ne $HermesHome) {
-        [Environment]::SetEnvironmentVariable("HERMES_HOME", $HermesHome, "User")
-        Write-Success "Set HERMES_HOME=$HermesHome"
+    $currentHermesHome = [Environment]::GetEnvironmentVariable("PULSAR_HOME", "User")
+    if (-not $currentHermesHome -or $currentHermesHome -ne $PulsarHome) {
+        [Environment]::SetEnvironmentVariable("PULSAR_HOME", $PulsarHome, "User")
+        Write-Success "Set PULSAR_HOME=$PulsarHome"
     }
-    $env:HERMES_HOME = $HermesHome
+    $env:PULSAR_HOME = $PulsarHome
     
     # Update current session
     $env:Path = "$hermesBin;$env:Path"
@@ -1725,20 +1725,20 @@ function Write-BootstrapMarker {
 function Copy-ConfigTemplates {
     Write-Info "Setting up configuration files..."
     
-    # Create the HERMES_HOME directory structure ($HermesHome, default %LOCALAPPDATA%\hermes)
-    New-Item -ItemType Directory -Force -Path "$HermesHome\cron" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\sessions" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\logs" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\pairing" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\hooks" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\image_cache" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\audio_cache" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\memories" | Out-Null
-    New-Item -ItemType Directory -Force -Path "$HermesHome\skills" | Out-Null
+    # Create the PULSAR_HOME directory structure ($PulsarHome, default %LOCALAPPDATA%\pulsar)
+    New-Item -ItemType Directory -Force -Path "$PulsarHome\cron" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$PulsarHome\sessions" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$PulsarHome\logs" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$PulsarHome\pairing" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$PulsarHome\hooks" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$PulsarHome\image_cache" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$PulsarHome\audio_cache" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$PulsarHome\memories" | Out-Null
+    New-Item -ItemType Directory -Force -Path "$PulsarHome\skills" | Out-Null
 
     
     # Create .env
-    $envPath = "$HermesHome\.env"
+    $envPath = "$PulsarHome\.env"
     if (-not (Test-Path $envPath)) {
         $examplePath = "$InstallDir\.env.example"
         if (Test-Path $examplePath) {
@@ -1753,7 +1753,7 @@ function Copy-ConfigTemplates {
     }
     
     # Create config.yaml
-    $configPath = "$HermesHome\config.yaml"
+    $configPath = "$PulsarHome\config.yaml"
     if (-not (Test-Path $configPath)) {
         $examplePath = "$InstallDir\cli-config.yaml.example"
         if (Test-Path $examplePath) {
@@ -1773,7 +1773,7 @@ function Copy-ConfigTemplates {
     # don't control which PowerShell version the user has.  Go direct
     # to .NET with an explicit UTF8Encoding($false) -- BOM-free on every
     # PowerShell version.
-    $soulPath = "$HermesHome\SOUL.md"
+    $soulPath = "$PulsarHome\SOUL.md"
     if (-not (Test-Path $soulPath)) {
         $soulContent = @"
 # Hermes Agent Persona
@@ -1797,22 +1797,22 @@ Delete the contents (or this file) to use the default personality.
         Write-Success "Created $soulPath (edit to customize personality)"
     }
     
-    Write-Success "Configuration directory ready: $HermesHome"
+    Write-Success "Configuration directory ready: $PulsarHome"
     
-    # Seed bundled skills into $HermesHome\skills (manifest-based, one-time per skill)
-    Write-Info "Syncing bundled skills to $HermesHome\skills ..."
+    # Seed bundled skills into $PulsarHome\skills (manifest-based, one-time per skill)
+    Write-Info "Syncing bundled skills to $PulsarHome\skills ..."
     $pythonExe = "$InstallDir\venv\Scripts\python.exe"
     if (Test-Path $pythonExe) {
         try {
             & $pythonExe "$InstallDir\tools\skills_sync.py" 2>$null
-            Write-Success "Skills synced to $HermesHome\skills"
+            Write-Success "Skills synced to $PulsarHome\skills"
         } catch {
             # Fallback: simple directory copy
             $bundledSkills = "$InstallDir\skills"
-            $userSkills = "$HermesHome\skills"
+            $userSkills = "$PulsarHome\skills"
             if ((Test-Path $bundledSkills) -and -not (Get-ChildItem $userSkills -Exclude '.bundled_manifest' -ErrorAction SilentlyContinue)) {
                 Copy-Item -Path "$bundledSkills\*" -Destination $userSkills -Recurse -Force -ErrorAction SilentlyContinue
-                Write-Success "Skills copied to $HermesHome\skills"
+                Write-Success "Skills copied to $PulsarHome\skills"
             }
         }
     }
@@ -2377,7 +2377,7 @@ function New-DesktopShortcuts {
         }
 
         # ── Raccourci PULSAR Web (dashboard navigateur via systray) ─────────────
-        $pulsarHome = Join-Path $env:LOCALAPPDATA 'hermes\pulsar-chu'
+        $pulsarHome = Join-Path $env:LOCALAPPDATA 'pulsar-chu'
         $startScript = Join-Path $pulsarHome 'Pulsar-Start.bat'
         $updateScript = Join-Path $pulsarHome 'Pulsar-Update.bat'
         $scriptsSource = Join-Path $pulsarHome 'installer\windows\scripts'
@@ -2475,7 +2475,7 @@ function Install-PlatformSdks {
         return
     }
 
-    $envPath = "$HermesHome\.env"
+    $envPath = "$PulsarHome\.env"
     if (-not (Test-Path $envPath)) { return }
     $envLines = Get-Content $envPath -ErrorAction SilentlyContinue
 
@@ -2588,7 +2588,7 @@ function Invoke-SetupWizard {
 }
 
 function Start-GatewayIfConfigured {
-    $envPath = "$HermesHome\.env"
+    $envPath = "$PulsarHome\.env"
     if (-not (Test-Path $envPath)) { return }
 
     $hasMessaging = $false
@@ -2607,7 +2607,7 @@ function Start-GatewayIfConfigured {
 
     # If WhatsApp is enabled but not yet paired, run foreground for QR scan
     $whatsappEnabled = $content | Where-Object { $_ -match "^WHATSAPP_ENABLED=true" }
-    $whatsappSession = "$HermesHome\whatsapp\session\creds.json"
+    $whatsappSession = "$PulsarHome\whatsapp\session\creds.json"
     if ($whatsappEnabled -and -not (Test-Path $whatsappSession)) {
         Write-Host ""
         Write-Info "WhatsApp is enabled but not yet paired."
@@ -2649,10 +2649,10 @@ function Start-GatewayIfConfigured {
     if ($response -eq "" -or $response -match "^[Yy]") {
         Write-Info "Starting gateway in background..."
         try {
-            $logFile = "$HermesHome\logs\gateway.log"
+            $logFile = "$PulsarHome\logs\gateway.log"
             Start-Process -FilePath $hermesCmd -ArgumentList "gateway" `
                 -RedirectStandardOutput $logFile `
-                -RedirectStandardError "$HermesHome\logs\gateway-error.log" `
+                -RedirectStandardError "$PulsarHome\logs\gateway-error.log" `
                 -WindowStyle Hidden
             Write-Success "Gateway started! Your bot is now online."
             Write-Info "Logs: $logFile"
@@ -2676,13 +2676,13 @@ function Write-Completion {
     Write-Host "* Your files:" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "   Config:    " -NoNewline -ForegroundColor Yellow
-    Write-Host "$HermesHome\config.yaml"
+    Write-Host "$PulsarHome\config.yaml"
     Write-Host "   API Keys:  " -NoNewline -ForegroundColor Yellow
-    Write-Host "$HermesHome\.env"
+    Write-Host "$PulsarHome\.env"
     Write-Host "   Data:      " -NoNewline -ForegroundColor Yellow
-    Write-Host "$HermesHome\cron\, sessions\, logs\"
+    Write-Host "$PulsarHome\cron\, sessions\, logs\"
     Write-Host "   Code:      " -NoNewline -ForegroundColor Yellow
-    Write-Host "$HermesHome\hermes-agent\"
+    Write-Host "$PulsarHome\hermes-agent\"
     Write-Host ""
     
     Write-Host "---------------------------------------------------------" -ForegroundColor Cyan
@@ -2879,7 +2879,7 @@ function Stage-ChuPatches {
     Write-Info "Applying CHU branding (skin, i18n, footer, HTML title)..."
 
     # 1. Installer le skin chu-guyane.yaml
-    $skinsDir = "$HermesHome\skins"
+    $skinsDir = "$PulsarHome\skins"
     New-Item -ItemType Directory -Force -Path $skinsDir | Out-Null
     $skinSource = Join-Path $InstallDir "chu\branding\chu-guyane.yaml"
     if (Test-Path $skinSource) {
@@ -2890,7 +2890,7 @@ function Stage-ChuPatches {
     }
 
     # 2. Activer le skin dans config.yaml
-    $configPath = "$HermesHome\config.yaml"
+    $configPath = "$PulsarHome\config.yaml"
     if (Test-Path $configPath) {
         $configContent = Get-Content $configPath -Raw -Encoding UTF8
         if ($configContent -notmatch "skin:\s*chu-guyane") {
