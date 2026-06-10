@@ -1,7 +1,8 @@
 # ============================================================
 # HERMES CHU - Script de lancement
 # Concu par William MERI - CHU de Guyane
-# Lance hermes setup si non configure, puis hermes web
+# Lance hermes setup si non configure, puis hermes dashboard
+# v2.2.0 : Correction commande (hermes dashboard, port 9119)
 # ============================================================
 
 $ErrorActionPreference = "Stop"
@@ -28,6 +29,7 @@ $hermesCmd = Get-Command hermes -ErrorAction SilentlyContinue
 if (-not $hermesCmd) {
     # Essayer les chemins connus d'installation
     $candidates = @(
+        "$env:LOCALAPPDATA\hermes\hermes-agent\venv\Scripts\hermes.exe",
         "$env:LOCALAPPDATA\hermes\hermes-chu\.venv\Scripts\hermes.exe",
         "$env:LOCALAPPDATA\hermes\hermes-chu\.venv\Scripts\hermes",
         "$env:USERPROFILE\.local\bin\hermes",
@@ -63,6 +65,7 @@ $configPaths = @(
     "$env:USERPROFILE\.hermes\config.yaml",
     "$env:USERPROFILE\.hermes\config.yml",
     "$env:LOCALAPPDATA\hermes\config.yaml",
+    "$env:LOCALAPPDATA\hermes\hermes-agent\config.yaml",
     "$env:LOCALAPPDATA\hermes\hermes-chu\config.yaml"
 )
 
@@ -98,7 +101,9 @@ if (-not $configFound) {
     Write-Host ""
 
     try {
+        $ErrorActionPreference = "Continue"
         hermes setup
+        $ErrorActionPreference = "Stop"
         Write-Host ""
         Write-Host "[OK] Configuration terminee !" -ForegroundColor Green
         Write-Host ""
@@ -115,28 +120,31 @@ if (-not $configFound) {
     }
 }
 
-# --- Lancement de hermes web ---
+# --- Lancement de hermes dashboard ---
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host "  Demarrage de l'interface web HERMES CHU..." -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "L'interface sera disponible sur : http://localhost:8080" -ForegroundColor Green
-Write-Host "(ou le port affiche ci-dessous)" -ForegroundColor Gray
+Write-Host "L'interface sera disponible sur : http://localhost:9119" -ForegroundColor Green
+Write-Host "Le navigateur va s'ouvrir automatiquement." -ForegroundColor Gray
 Write-Host ""
 Write-Host "Pour arreter : Ctrl+C" -ForegroundColor Yellow
 Write-Host ""
 
 try {
-    hermes web
+    $ErrorActionPreference = "Continue"
+    hermes dashboard
 }
 catch {
     Write-Host ""
-    Write-Host "[ERREUR] hermes web a echoue : $_" -ForegroundColor Red
+    Write-Host "[ERREUR] hermes dashboard a echoue : $_" -ForegroundColor Red
     Write-Host ""
     Write-Host "Commandes utiles :" -ForegroundColor Yellow
-    Write-Host "  hermes setup    - Reconfigurer le fournisseur LLM" -ForegroundColor White
-    Write-Host "  hermes --help   - Aide complete" -ForegroundColor White
-    Write-Host "  hermes desktop  - Interface desktop Electron" -ForegroundColor White
+    Write-Host "  hermes setup      - Reconfigurer le fournisseur LLM" -ForegroundColor White
+    Write-Host "  hermes dashboard  - Interface web (port 9119)" -ForegroundColor White
+    Write-Host "  hermes chat       - Interface en ligne de commande" -ForegroundColor White
+    Write-Host "  hermes desktop    - Interface desktop Electron" -ForegroundColor White
+    Write-Host "  hermes --help     - Aide complete" -ForegroundColor White
     Write-Host ""
     Read-Host "Appuyez sur Entree pour fermer"
     exit 1
