@@ -30,7 +30,9 @@
 
 **HERMES CHU** est le système nerveux numérique d'un Centre Hospitalier Universitaire. Il ne s'agit pas d'un chatbot, mais d'un **orchestrateur multi-agents autonome** capable de décomposer des tâches complexes, de déléguer à des agents spécialisés, et de s'auto-améliorer — le tout dans un cadre de sécurité et de conformité réglementaire maximal.
 
-Le système repose sur le framework open-source [Hermes Agent](https://github.com/NousResearch/hermes-agent) de NousResearch (189k+ ⭐), adapté aux exigences du secteur hospitalier français.
+Le système est construit **directement sur le code source** de [hermes-agent (NousResearch)](https://github.com/NousResearch/hermes-agent), intégré dans `upstream/hermes-agent/`. La couche CHU (`chu/`) s'y greffe de manière non-destructive via un système de middleware et de skills natifs, sans modifier le code source original.
+
+> **Pour le POC** : le Privacy Engine RGPD anonymise les données PHI avant tout envoi, ce qui permet d'utiliser Azure OpenAI ou OpenAI en toute conformité RGPD, sans attendre l'infrastructure vLLM on-premise de production.
 
 ---
 
@@ -73,21 +75,41 @@ Le système repose sur le framework open-source [Hermes Agent](https://github.co
 
 ```
 HERMES-CHU/
-├── src/
-│   ├── orchestrator/       # Agent Pilote (Hermes modifié)
-│   ├── privacy-engine/     # SAS d'Anonymisation (NER + Pseudonymisation)
-│   ├── agents/             # Sous-agents spécialisés
-│   ├── web-ui/             # Interface Web de Pilotage (React/TS)
-│   └── api-quality/        # APIs de Suivi Qualité (FastAPI)
-├── infrastructure/
-│   ├── kubernetes/         # Manifestes K8s
-│   └── docker/             # Dockerfiles
+├── upstream/                          ← Code source NousResearch (INCHANGÉ)
+│   ├── hermes-agent/                  # hermes-agent complet (NousResearch)
+│   │   ├── agent/                     # Boucle agentique, model registry
+│   │   ├── web/                       # Interface React (avec i18n/fr.ts)
+│   │   ├── tools/                     # Outils natifs hermes
+│   │   ├── gateway/                   # Gateway Telegram/Discord/API
+│   │   └── hermes_cli/                # CLI hermes
+│   └── hermes-function-calling/       # Function calling NousResearch
+│
+├── chu/                               ← Couche hospitalière (AJOUTS CHU)
+│   ├── config_chu.yaml                # Config LLM + Privacy + Agents
+│   ├── installer_chu.sh               # Installation + démarrage (--poc | --production)
+│   ├── privacy_engine/
+│   │   ├── middleware.py              # Privacy Engine RGPD (NER + Glass-Break)
+│   │   └── patch_hermes.py            # Patch non-destructif sur hermes-agent
+│   ├── api/
+│   │   └── serveur_chu.py             # API FastAPI (config LLM, privacy, audit)
+│   ├── web-extensions/
+│   │   └── src/pages/
+│   │       └── ConfigurationCHU.tsx   # Page admin React (s'intègre dans hermes web)
+│   └── skills/                        # Agents CHU (format natif hermes-agent)
+│       ├── agent_clinique.md
+│       ├── agent_administratif.md
+│       ├── agent_logistique.md
+│       ├── agent_recherche.md
+│       └── agent_qualite.md
+│
 ├── docs/
-│   ├── architecture/       # Diagrammes et schémas
-│   └── wiki/               # Sources du wiki
-└── .github/
-    ├── ISSUE_TEMPLATE/     # Templates d'issues
-    └── workflows/          # CI/CD
+│   ├── wiki/                          # Documentation technique (12 pages)
+│   ├── securite/                      # Rapport ISO 27001, pentest
+│   └── website/                       # Page web de présentation
+│
+├── .env.chu.exemple                   # Template de configuration
+├── SECURITY_POLICY.md
+└── CONTRIBUTING.md
 ```
 
 ---
@@ -125,19 +147,28 @@ La documentation complète est disponible dans le [Wiki](https://github.com/Tarz
 
 ---
 
-## ⚡ Démarrage Rapide (Développement)
+## ⚡ Démarrage Rapide (POC)
 
 ```bash
-# Cloner le dépôt
+# 1. Cloner le dépôt
 git clone https://github.com/Tarzzan/HERMES-CHU.git
 cd HERMES-CHU
 
-# Lancer l'environnement de développement
-docker compose -f infrastructure/docker/docker-compose.dev.yml up -d
+# 2. Configurer les variables d'environnement
+cp .env.chu.exemple .env.chu
+# Éditer .env.chu avec votre clé Azure OpenAI ou OpenAI
 
-# Accéder à l'interface web
-open http://localhost:3000
+# 3. Installer hermes-agent + couche CHU et démarrer
+chmod +x chu/installer_chu.sh
+./chu/installer_chu.sh --poc
+
+# 4. Démarrer l'interface web hermes
+hermes web
+# → http://localhost:3000  (interface hermes-agent avec config CHU)
+# → http://localhost:8001/api/chu/docs  (API CHU)
 ```
+
+> **Principe RGPD** : Le Privacy Engine est actif par défaut. Toutes les données PHI (NIR, IPP, noms, adresses...) sont anonymisées avant envoi au LLM. Le mode Glass-Break permet une désactivation temporaire tracée et justifiée.
 
 ---
 

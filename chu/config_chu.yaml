@@ -1,0 +1,178 @@
+# ============================================================
+# HERMES CHU — Configuration Hospitalière
+# Surcouche de configuration sur hermes-agent (NousResearch)
+# Conforme ISO 27001 / HDS / RGPD
+# ============================================================
+
+# --- Identité du déploiement ---
+chu:
+  nom: "CHU de [Votre Établissement]"
+  finess: ""                          # Numéro FINESS à renseigner
+  environnement: "developpement"      # developpement | recette | production
+  version: "1.0.0"
+  langue: "fr"
+
+# --- Configuration LLM (hérite du système hermes-agent) ---
+# Sélectionner le fournisseur selon l'environnement :
+#   POC/Développement  → Azure OpenAI ou OpenAI (données anonymisées via Privacy Engine)
+#   Production         → vLLM local avec Hermes-3-70B (souverain, on-premise)
+#
+# Le Privacy Engine RGPD garantit qu'aucune donnée PHI n'atteint un LLM tiers.
+
+llm:
+  # Fournisseur actif : azure_openai | openai | ollama | vllm | openrouter
+  fournisseur_actif: "azure_openai"
+
+  azure_openai:
+    # Authentification : api_key (POC) ou entra_id (production Azure)
+    auth_mode: "api_key"              # api_key | entra_id
+    api_key: "${AZURE_OPENAI_API_KEY}"
+    endpoint: "${AZURE_OPENAI_ENDPOINT}"
+    deployment: "gpt-4o"
+    api_version: "2024-02-01"
+    # Pour auth Entra ID (Managed Identity) :
+    # auth_mode: "entra_id"
+    # entra:
+    #   scope: "https://cognitiveservices.azure.com/.default"
+
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4o"
+
+  ollama:
+    base_url: "http://localhost:11434"
+    model: "hermes3:70b"              # ou llama3.1:70b, mistral:7b pour le POC
+
+  vllm:
+    # Déploiement on-premise souverain (production CHU)
+    base_url: "http://vllm-service:8000/v1"
+    model: "NousResearch/Hermes-3-Llama-3.1-70B-Instruct"
+    api_key: "${VLLM_API_KEY}"
+
+  openrouter:
+    api_key: "${OPENROUTER_API_KEY}"
+    model: "nousresearch/hermes-3-llama-3.1-70b"
+
+# --- Privacy Engine RGPD ---
+privacy_engine:
+  # Activation globale (true = anonymisation active par défaut)
+  actif: true
+
+  # Mode glass-break : permet la désactivation temporaire avec justification tracée
+  glass_break:
+    autorise: true
+    duree_max_minutes: 60
+    roles_autorises:
+      - "MEDECIN_SENIOR"
+      - "RSSI"
+      - "DPO"
+
+  # Entités PHI à détecter et anonymiser
+  entites_phi:
+    - "NOM_PATIENT"
+    - "PRENOM_PATIENT"
+    - "DATE_NAISSANCE"
+    - "NIR"                           # Numéro de Sécurité Sociale
+    - "IPP"                           # Identifiant Permanent du Patient
+    - "ADRESSE"
+    - "TELEPHONE"
+    - "EMAIL"
+    - "NOM_MEDECIN"
+    - "NUMERO_SEJOUR"
+
+  # Backend NER (pour le POC, utiliser regex ; pour la production, spacy/camembert)
+  backend_ner: "regex"                # regex | spacy | camembert_bio
+
+  # Redis pour la table de correspondance token ↔ PHI réel
+  redis:
+    url: "${REDIS_URL:-redis://localhost:6379}"
+    ttl_secondes: 3600
+    chiffrement: true
+
+# --- Garde-fous (extensions des outils hermes-agent) ---
+garde_fous:
+  # Niveau 1 : Validation des entrées
+  validation_entrees:
+    actif: true
+    longueur_max_tokens: 8192
+    detection_injection_prompt: true
+    blocage_phi_brut: true            # Bloque si PHI détecté et anonymisation désactivée
+
+  # Niveau 2 : Restriction des outils par rôle
+  restriction_outils:
+    actif: true
+    # Les outils système dangereux sont désactivés en contexte CHU
+    outils_bloques_chu:
+      - "shell"
+      - "computer"
+      - "browser"
+
+  # Niveau 3 : Contrôle des sorties
+  controle_sorties:
+    actif: true
+    rescan_phi_sortie: true           # Re-scan NER sur chaque réponse LLM
+
+  # Niveau 4 : Exécution bornée
+  execution_bornee:
+    iterations_max: 10
+    timeout_secondes: 60
+    tokens_max_par_requete: 8192
+
+# --- Agents CHU spécialisés (skills hermes-agent) ---
+# Ces agents sont implémentés comme des "skills" hermes-agent
+# Voir upstream/hermes-agent/tools/skills/ pour le format
+agents_chu:
+  clinique:
+    actif: true
+    skill_file: "chu/skills/agent_clinique.md"
+    roles_autorises: ["MEDECIN", "INFIRMIER", "SAGE_FEMME"]
+
+  administratif:
+    actif: true
+    skill_file: "chu/skills/agent_administratif.md"
+    roles_autorises: ["SECRETAIRE", "CADRE_SANTE", "DIRECTION"]
+
+  logistique:
+    actif: true
+    skill_file: "chu/skills/agent_logistique.md"
+    roles_autorises: ["PHARMACIEN", "LOGISTICIEN", "CADRE_SANTE"]
+
+  recherche:
+    actif: true
+    skill_file: "chu/skills/agent_recherche.md"
+    roles_autorises: ["MEDECIN", "CHERCHEUR", "ARC"]
+
+  qualite:
+    actif: true
+    skill_file: "chu/skills/agent_qualite.md"
+    roles_autorises: ["RESPONSABLE_QUALITE", "DIRECTION", "RSSI"]
+
+# --- Journalisation et audit ISO 27001 ---
+audit:
+  actif: true
+  backend: "postgresql"               # postgresql | fichier
+  database_url: "${DATABASE_URL}"
+  # Chaque événement est hashé SHA-256 pour garantir l'immuabilité
+  hash_chaine: true
+  # Événements à journaliser
+  evenements:
+    - "connexion_utilisateur"
+    - "deconnexion_utilisateur"
+    - "requete_llm"
+    - "activation_glass_break"
+    - "desactivation_anonymisation"
+    - "acces_donnee_sensible"
+    - "erreur_garde_fou"
+    - "changement_configuration_llm"
+
+# --- Intégration SIH (pour la production) ---
+sih:
+  fhir:
+    actif: false                      # Activer en production
+    base_url: "${FHIR_BASE_URL}"
+    version: "R4"
+    auth:
+      type: "oauth2"
+      token_url: "${FHIR_TOKEN_URL}"
+      client_id: "${FHIR_CLIENT_ID}"
+      client_secret: "${FHIR_CLIENT_SECRET}"
