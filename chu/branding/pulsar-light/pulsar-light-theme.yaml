@@ -1,0 +1,146 @@
+# ============================================================
+#  PULSAR Light — Theme Dashboard
+#  Plateforme Unifiée de Liaison, de Surveillance et d'Assistance en temps Réel
+#  DSIO — CHU de Guyane | William MERI
+#
+#  Thème "Jour" — Sobre, clair, hospitalier, rassurant
+#  Contraste avec le thème sombre "pulsar" (nuit de commande)
+# ============================================================
+
+name: pulsar-light
+label: PULSAR Light — CHU de Guyane
+description: "Theme jour PULSAR : sobre, clair, hospitalier. Blanc medical, bleu ciel, teal doux. Pour un environnement sain et rassurant."
+
+# ── Palette de couleurs ──────────────────────────────────────
+# Mode clair : foreground alpha = 1 active l'inversion LENS_5I
+# qui retourne tout le dashboard en mode "light"
+palette:
+  background:
+    hex: "#f8fbfe"
+    alpha: 1.0
+  midground:
+    hex: "#0077a8"
+    alpha: 1.0
+  foreground:
+    hex: "#ffffff"
+    alpha: 1.0
+  warmGlow: "rgba(0, 119, 168, 0.08)"
+  noiseOpacity: 0.25
+
+# ── Typographie ──────────────────────────────────────────────
+typography:
+  fontSans: '"Inter", "Segoe UI", system-ui, -apple-system, sans-serif'
+  fontMono: '"JetBrains Mono", "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace'
+  baseSize: "14px"
+  lineHeight: "1.65"
+  letterSpacing: "0.005em"
+
+# ── Layout ───────────────────────────────────────────────────
+layout:
+  radius: "0.5rem"
+  density: "comfortable"
+
+layoutVariant: "standard"
+
+# ── Surcharges de couleurs composants ────────────────────────
+colorOverrides:
+  primary: "#0077a8"
+  primaryForeground: "#ffffff"
+  secondary: "#e8f4fd"
+  secondaryForeground: "#1a4a6b"
+  accent: "#1a9cc4"
+  accentForeground: "#ffffff"
+  muted: "#f0f7fb"
+  mutedForeground: "#4a7a96"
+  border: "#d0e8f5"
+  input: "#ffffff"
+  ring: "#0077a8"
+  success: "#00875a"
+  destructive: "#c0392b"
+  background: "#f8fbfe"
+  foreground: "#1a2e3a"
+  card: "#ffffff"
+  cardForeground: "#1a2e3a"
+  popover: "#ffffff"
+  popoverForeground: "#1a2e3a"
+
+# ── Assets visuels ───────────────────────────────────────────
+assets:
+  # Image de fond : atrium hospitalier lumineux + jardin tropical guyanais
+  bg: "https://files.manuscdn.com/user_upload_by_module/session_file/92503813/BqacOZMBRgTDlMur.jpg"
+  # Logo PULSAR version jour (teal sur transparent)
+  logo: "https://files.manuscdn.com/user_upload_by_module/session_file/92503813/SdncNYjBufzocSVS.png"
+  # Sidebar : fond blanc dégradé avec ECG watermark
+  sidebar: "https://files.manuscdn.com/user_upload_by_module/session_file/92503813/OSfaUfDFfXWxLHLi.jpg"
+
+# ── Styles de composants ─────────────────────────────────────
+componentStyles:
+  card:
+    background: "rgba(255, 255, 255, 0.92)"
+    border: "1px solid rgba(0, 119, 168, 0.12)"
+    backdropFilter: "blur(8px)"
+    boxShadow: "0 1px 4px rgba(0, 119, 168, 0.06), 0 4px 16px rgba(0, 119, 168, 0.04)"
+  header:
+    background: "rgba(248, 251, 254, 0.96)"
+    borderBottom: "1px solid rgba(0, 119, 168, 0.10)"
+    backdropFilter: "blur(12px)"
+  sidebar:
+    background: "rgba(255, 255, 255, 0.97)"
+    borderRight: "1px solid rgba(0, 119, 168, 0.08)"
+  footer:
+    background: "rgba(248, 251, 254, 0.96)"
+    borderTop: "1px solid rgba(0, 119, 168, 0.08)"
+
+# ── CSS personnalisé ─────────────────────────────────────────
+customCSS: |
+  /* ── PULSAR Light — CSS personnalise ── */
+
+  /* Fond backdrop : opacite reduite pour ne pas ecraser la lisibilite */
+  .pointer-events-none.fixed.inset-0[style*="--theme-asset-bg"] {
+    opacity: 0.10 !important;
+  }
+
+  /* Sidebar : fond blanc semi-transparent, ombre douce */
+  [class*="sidebar"] {
+    background: rgba(255, 255, 255, 0.97) !important;
+    backdrop-filter: blur(16px) !important;
+    border-right: 1px solid rgba(0, 119, 168, 0.08) !important;
+    box-shadow: 2px 0 12px rgba(0, 119, 168, 0.04) !important;
+  }
+
+  /* Liens actifs : teal medical */
+  [data-active="true"], [aria-current="page"] {
+    color: #0077a8 !important;
+    border-left: 2px solid #0077a8 !important;
+    background: rgba(0, 119, 168, 0.06) !important;
+  }
+
+  /* Scrollbar : tres discrete */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: rgba(248, 251, 254, 0.8); }
+  ::-webkit-scrollbar-thumb { background: rgba(0, 119, 168, 0.2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0, 119, 168, 0.4); }
+
+  /* Selection de texte */
+  ::selection { background: rgba(0, 119, 168, 0.15); color: #1a2e3a; }
+
+  /* Boutons primaires : teal medical avec ombre legere */
+  button[class*="primary"], [class*="btn-primary"] {
+    box-shadow: 0 2px 8px rgba(0, 119, 168, 0.20) !important;
+  }
+
+  /* Terminal xterm : fond blanc casse */
+  .xterm-viewport {
+    background: rgba(248, 251, 254, 0.95) !important;
+  }
+
+  /* Cards : elevation douce */
+  [class*="card"] {
+    box-shadow: 0 1px 3px rgba(0, 119, 168, 0.06), 0 4px 12px rgba(0, 119, 168, 0.04) !important;
+  }
+
+  /* Inputs : bordure teal au focus */
+  input:focus, textarea:focus, select:focus {
+    border-color: #0077a8 !important;
+    box-shadow: 0 0 0 3px rgba(0, 119, 168, 0.12) !important;
+  }
