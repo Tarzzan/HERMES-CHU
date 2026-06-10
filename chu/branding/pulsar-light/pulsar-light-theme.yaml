@@ -91,9 +91,16 @@ componentStyles:
 customCSS: |
   /* ── PULSAR Lumiere -- CSS personnalise ── */
 
-  /* Image de fond : opacite 5% watermark, sans mix-blend-mode */
+  /* Image de fond : opacite 15% -- visible sans assombrir, sans mix-blend-mode */
   .pointer-events-none.fixed.inset-0 {
-    opacity: 0.05 !important;
+    opacity: 0.50 !important;
+    mix-blend-mode: normal !important;
+    filter: none !important;
+    background-blend-mode: normal !important;
+  }
+
+  /* Isolation : empeche le theme nuit d'appliquer son filtre fonce */
+  .pointer-events-none.fixed.inset-0 * {
     mix-blend-mode: normal !important;
     filter: none !important;
   }
