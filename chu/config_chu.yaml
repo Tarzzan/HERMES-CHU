@@ -20,7 +20,15 @@ chu:
 # Le Privacy Engine RGPD garantit qu'aucune donnée PHI n'atteint un LLM tiers.
 
 llm:
-  # Fournisseur actif : azure_openai | openai | ollama | vllm | openrouter
+  # Fournisseur actif : azure_openai | openai | openai_codex | nous | ollama | vllm | openrouter
+  #
+  # openai_codex  → ChatGPT via abonnement (Plus/Team/Enterprise)
+  #                  Flux OAuth device_code : un code OTP s'affiche dans l'UI,
+  #                  l'utilisateur le saisit sur chatgpt.com/link.
+  #                  Aucune clé API requise. Géré nativement par hermes-agent.
+  #
+  # nous           → Nous Portal (Hermes natif, même flux device_code)
+  #
   fournisseur_actif: "azure_openai"
 
   azure_openai:
@@ -52,6 +60,33 @@ llm:
   openrouter:
     api_key: "${OPENROUTER_API_KEY}"
     model: "nousresearch/hermes-3-llama-3.1-70b"
+
+  # ChatGPT via abonnement (Plus / Team / Enterprise)
+  # Flux OAuth device_code natif hermes-agent :
+  #   1. hermes-agent appelle l'endpoint OAuth ChatGPT
+  #   2. Un code OTP (ex: ABCD-1234) est retourné et affiché dans l'UI
+  #   3. L'utilisateur se rend sur chatgpt.com/link et saisit ce code
+  #   4. hermes-agent poll jusqu'à validation et stocke le JWT dans ~/.hermes/auth.json
+  #   5. Toutes les requêtes passent par chatgpt.com/backend-api/codex
+  # Aucune configuration manuelle requise — tout est géré par hermes-agent.
+  openai_codex:
+    # Identifiant du provider dans hermes-agent
+    provider_id: "openai-codex"
+    # Modèles disponibles selon l'abonnement :
+    #   Plus      → gpt-4o, o1, o3-mini
+    #   Team      → gpt-4o, o1, o3
+    #   Enterprise → gpt-4o, o1, o3, GPT-5 (si disponible)
+    model: "gpt-4o"
+    # Note RGPD : le Privacy Engine anonymise AVANT envoi à ChatGPT
+    # Les données PHI ne transitent jamais en clair vers OpenAI
+    privacy_engine_obligatoire: true
+
+  # Nous Portal (Hermes natif)
+  # Même flux OAuth device_code que ChatGPT
+  nous:
+    provider_id: "nous"
+    model: "Hermes-3-Llama-3.1-70B-Instruct"
+    privacy_engine_obligatoire: false  # Hébergement NousResearch (hors UE — activer selon politique CHU)
 
 # --- Privacy Engine RGPD ---
 privacy_engine:
