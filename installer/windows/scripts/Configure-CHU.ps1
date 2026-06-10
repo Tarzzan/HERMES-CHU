@@ -1,302 +1,278 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    HERMES CHU — Assistant de configuration (premier démarrage)
+    HERMES CHU - Assistant de configuration (premier demarrage)
 .DESCRIPTION
-    Guide interactif de configuration de HERMES CHU après installation :
-    - Choix du fournisseur LLM (Azure OpenAI, OpenAI, Ollama, vLLM)
-    - Configuration des clés API
-    - Test de connectivité
-    - Configuration du Privacy Engine RGPD
-    - Enregistrement comme service Windows (optionnel)
+    Configure le fournisseur LLM, le Privacy Engine RGPD et l'API CHU.
+    Genere le fichier .env.chu dans le repertoire d'installation.
+.NOTES
+    Auteur  : William MERI - CHU de Guyane
+    Version : 1.3.0
+    Licence : Apache 2.0
 #>
 
-[CmdletBinding()]
 param(
-    [string]$InstallDir = $env:HERMES_CHU_HOME,
+    [string]$InstallDir = $PSScriptRoot + "\..",
     [switch]$Silent
 )
 
-$ErrorActionPreference = "Continue"
-
-if (-not $InstallDir) {
-    $InstallDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-}
-
-$EnvFile = "$InstallDir\chu\.env.chu"
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 # ---------------------------------------------------------------------------
-# Utilitaires UI
+# Fonctions utilitaires
 # ---------------------------------------------------------------------------
 function Write-Title {
     param([string]$Text)
     Write-Host ""
-    Write-Host "  ─────────────────────────────────────────" -ForegroundColor Blue
-    Write-Host "  $Text" -ForegroundColor White
-    Write-Host "  ─────────────────────────────────────────" -ForegroundColor Blue
+    Write-Host "  ============================================================" -ForegroundColor DarkCyan
+    Write-Host "  $Text" -ForegroundColor Cyan
+    Write-Host "  ============================================================" -ForegroundColor DarkCyan
     Write-Host ""
 }
 
-function Read-SecureInput {
-    param([string]$Prompt)
-    Write-Host "  $Prompt : " -NoNewline -ForegroundColor Cyan
-    $secure = Read-Host -AsSecureString
-    $bstr   = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-    return [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
+function Write-Step {
+    param([string]$Text)
+    Write-Host "  >> $Text" -ForegroundColor Yellow
+}
+
+function Write-OK {
+    param([string]$Text)
+    Write-Host "  [OK] $Text" -ForegroundColor Green
+}
+
+function Write-ERR {
+    param([string]$Text)
+    Write-Host "  [ERREUR] $Text" -ForegroundColor Red
 }
 
 function Read-Input {
     param([string]$Prompt, [string]$Default = "")
-    if ($Default) {
-        Write-Host "  $Prompt [$Default] : " -NoNewline -ForegroundColor Cyan
-    } else {
-        Write-Host "  $Prompt : " -NoNewline -ForegroundColor Cyan
-    }
-    $input = Read-Host
-    if ([string]::IsNullOrWhiteSpace($input) -and $Default) { return $Default }
-    return $input
-}
-
-function Test-AzureOpenAI {
-    param([string]$Endpoint, [string]$ApiKey, [string]$Deployment)
-    try {
-        $uri = "$Endpoint/openai/deployments/$Deployment/chat/completions?api-version=2024-02-01"
-        $body = @{
-            messages = @(@{ role = "user"; content = "test" })
-            max_tokens = 1
-        } | ConvertTo-Json
-        $headers = @{ "api-key" = $ApiKey; "Content-Type" = "application/json" }
-        $response = Invoke-RestMethod -Uri $uri -Method POST -Headers $headers -Body $body -TimeoutSec 10
-        return $true
-    } catch {
-        return $false
-    }
-}
-
-function Test-OpenAI {
-    param([string]$ApiKey)
-    try {
-        $headers = @{ "Authorization" = "Bearer $ApiKey"; "Content-Type" = "application/json" }
-        $body = @{ model = "gpt-4o-mini"; messages = @(@{ role = "user"; content = "test" }); max_tokens = 1 } | ConvertTo-Json
-        $response = Invoke-RestMethod -Uri "https://api.openai.com/v1/chat/completions" -Method POST -Headers $headers -Body $body -TimeoutSec 10
-        return $true
-    } catch {
-        return $false
-    }
-}
-
-function Update-EnvFile {
-    param([hashtable]$Values)
-    $content = Get-Content $EnvFile -Raw -ErrorAction SilentlyContinue
-    if (-not $content) { $content = "" }
-
-    foreach ($key in $Values.Keys) {
-        $value = $Values[$key]
-        if ($content -match "(?m)^$key=.*$") {
-            $content = $content -replace "(?m)^$key=.*$", "$key=$value"
-        } else {
-            $content += "`r`n$key=$value"
-        }
-    }
-    $content | Set-Content -Path $EnvFile -Encoding UTF8
+    $display = if ($Default) { "$Prompt [$Default]" } else { $Prompt }
+    $val = Read-Host "  $display"
+    if ([string]::IsNullOrWhiteSpace($val)) { return $Default }
+    return $val
 }
 
 # ---------------------------------------------------------------------------
-# Bannière
+# En-tete
 # ---------------------------------------------------------------------------
 Clear-Host
 Write-Host ""
-Write-Host "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Blue
-Write-Host "  ║                                                          ║" -ForegroundColor Blue
-Write-Host "  ║      HERMES CHU — Assistant de Configuration             ║" -ForegroundColor Blue
-Write-Host "  ║      Système Agentique Hospitalier Souverain             ║" -ForegroundColor Blue
-Write-Host "  ║                                                          ║" -ForegroundColor Blue
-Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Blue
-Write-Host ""
-Write-Host "  Cet assistant configure votre instance HERMES CHU." -ForegroundColor Gray
-Write-Host "  Toutes les clés API sont stockées localement dans :" -ForegroundColor Gray
-Write-Host "  $EnvFile" -ForegroundColor DarkGray
+Write-Host "  ============================================================" -ForegroundColor DarkCyan
+Write-Host "  HERMES CHU 1.3.0 - Configuration initiale" -ForegroundColor Cyan
+Write-Host "  Concu par William MERI - CHU de Guyane" -ForegroundColor DarkGray
+Write-Host "  Base sur Hermes Agent (NousResearch)" -ForegroundColor DarkGray
+Write-Host "  ============================================================" -ForegroundColor DarkCyan
 Write-Host ""
 
 # ---------------------------------------------------------------------------
-# Étape 1 — Choix du fournisseur LLM
+# Etape 1 - Choix du fournisseur LLM
 # ---------------------------------------------------------------------------
-Write-Title "Étape 1/4 — Fournisseur IA"
-Write-Host "  Choisissez votre fournisseur de modèle IA :" -ForegroundColor White
+Write-Title "Etape 1/4 - Fournisseur IA"
+Write-Host "  Choisissez votre fournisseur de modele IA :" -ForegroundColor White
 Write-Host ""
-Write-Host "  [1] Azure OpenAI     (recommandé POC — certifié HDS)" -ForegroundColor Cyan
-Write-Host "  [2] OpenAI           (GPT-4o, GPT-4-turbo)" -ForegroundColor Cyan
-Write-Host "  [3] Ollama           (modèles locaux — GPU requis)" -ForegroundColor Cyan
-Write-Host "  [4] vLLM On-Premise  (Hermes-3-70B — infrastructure CHU)" -ForegroundColor Cyan
-Write-Host "  [5] Configurer plus tard" -ForegroundColor DarkGray
+Write-Host "  --- ABONNEMENT (sans cle API) ---" -ForegroundColor DarkGray
+Write-Host "  [1] ChatGPT           (abonnement Plus/Team/Enterprise)" -ForegroundColor Cyan
+Write-Host "      -> Connexion via code sur chatgpt.com/link" -ForegroundColor DarkGray
+Write-Host "  [2] Nous Portal       (abonnement NousResearch)" -ForegroundColor Cyan
+Write-Host "      -> Connexion via code d'appairage" -ForegroundColor DarkGray
 Write-Host ""
-
+Write-Host "  --- LOCAL (sans cle API) ---" -ForegroundColor DarkGray
+Write-Host "  [3] Ollama            (modeles locaux)" -ForegroundColor Cyan
+Write-Host "  [4] LM Studio         (modeles locaux)" -ForegroundColor Cyan
+Write-Host "  [5] vLLM On-Premise   (Hermes-3-70B)" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  --- CLOUD (cle API requise) ---" -ForegroundColor DarkGray
+Write-Host "  [6] Azure OpenAI      (certifie HDS)" -ForegroundColor Cyan
+Write-Host "  [7] OpenAI API        (GPT-4o, o1, o3)" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  [8] Configurer plus tard" -ForegroundColor DarkGray
+Write-Host ""
 $choice = Read-Input "Votre choix" "1"
 $provider = ""
-$providerConfig = @{}
+$providerEnv = ""
+$needsApiKey = $false
 
 switch ($choice) {
     "1" {
-        $provider = "azure_openai"
+        $provider = "ChatGPT (abonnement)"
+        $providerEnv = "openai-codex"
         Write-Host ""
-        Write-Host "  Configuration Azure OpenAI" -ForegroundColor White
-        Write-Host "  → Trouvez ces informations dans le portail Azure (Cognitive Services)" -ForegroundColor DarkGray
-        Write-Host ""
-        $endpoint   = Read-Input "Endpoint Azure" "https://votre-ressource.openai.azure.com/"
-        $apiKey     = Read-SecureInput "Clé API Azure"
-        $deployment = Read-Input "Nom du déploiement" "gpt-4o"
-        $apiVersion = Read-Input "Version API" "2024-02-01"
-
-        Write-Host ""
-        Write-Host "  Test de connexion Azure OpenAI…" -ForegroundColor Cyan -NoNewline
-        if (Test-AzureOpenAI -Endpoint $endpoint -ApiKey $apiKey -Deployment $deployment) {
-            Write-Host " ✅ Connexion réussie !" -ForegroundColor Green
-        } else {
-            Write-Host " ⚠️  Connexion échouée — vérifiez les paramètres" -ForegroundColor Yellow
-        }
-
-        $providerConfig = @{
-            FOURNISSEUR_ACTIF           = "azure_openai"
-            AZURE_OPENAI_ENDPOINT       = $endpoint
-            AZURE_OPENAI_API_KEY        = $apiKey
-            AZURE_OPENAI_DEPLOYMENT     = $deployment
-            AZURE_OPENAI_API_VERSION    = $apiVersion
-        }
+        Write-OK "ChatGPT selectionne."
+        Write-Host "  Lors du premier lancement de HERMES CHU, un code sera affiche." -ForegroundColor White
+        Write-Host "  Rendez-vous sur : https://chatgpt.com/link" -ForegroundColor Cyan
+        Write-Host "  Saisissez le code pour autoriser la connexion." -ForegroundColor White
+        Write-Host "  Fonctionne avec : ChatGPT Plus, Team, Enterprise" -ForegroundColor DarkGray
     }
     "2" {
-        $provider = "openai"
-        Write-Host ""
-        $apiKey = Read-SecureInput "Clé API OpenAI (sk-...)"
-        $model  = Read-Input "Modèle" "gpt-4o"
-
-        Write-Host ""
-        Write-Host "  Test de connexion OpenAI…" -ForegroundColor Cyan -NoNewline
-        if (Test-OpenAI -ApiKey $apiKey) {
-            Write-Host " ✅ Connexion réussie !" -ForegroundColor Green
-        } else {
-            Write-Host " ⚠️  Connexion échouée — vérifiez la clé API" -ForegroundColor Yellow
-        }
-
-        $providerConfig = @{
-            FOURNISSEUR_ACTIF = "openai"
-            OPENAI_API_KEY    = $apiKey
-            OPENAI_MODEL      = $model
-        }
+        $provider = "Nous Portal (abonnement)"
+        $providerEnv = "nous-portal"
+        Write-OK "Nous Portal selectionne - code d'appairage au premier lancement."
     }
     "3" {
-        $provider = "ollama"
+        $provider = "Ollama"
+        $providerEnv = "ollama"
         $ollamaUrl = Read-Input "URL Ollama" "http://localhost:11434"
-        $model     = Read-Input "Modèle Ollama" "hermes3:70b"
-        $providerConfig = @{
-            FOURNISSEUR_ACTIF = "ollama"
-            OLLAMA_BASE_URL   = $ollamaUrl
-            OLLAMA_MODEL      = $model
-        }
+        $ollamaModel = Read-Input "Modele Ollama" "hermes3:70b"
+        Write-OK "Ollama configure sur $ollamaUrl"
     }
     "4" {
-        $provider = "vllm"
-        $vllmUrl  = Read-Input "URL vLLM" "http://vllm-service:8000/v1"
-        $model    = Read-Input "Modèle" "NousResearch/Hermes-3-Llama-3.1-70B-Instruct"
-        $providerConfig = @{
-            FOURNISSEUR_ACTIF = "vllm"
-            VLLM_BASE_URL     = $vllmUrl
-            VLLM_MODEL        = $model
-        }
+        $provider = "LM Studio"
+        $providerEnv = "lm-studio"
+        $lmStudioUrl = Read-Input "URL LM Studio" "http://localhost:1234"
+        Write-OK "LM Studio configure sur $lmStudioUrl"
+    }
+    "5" {
+        $provider = "vLLM On-Premise"
+        $providerEnv = "vllm"
+        $vllmUrl = Read-Input "URL vLLM" "http://localhost:8000/v1"
+        $vllmModel = Read-Input "Modele vLLM" "NousResearch/Hermes-3-Llama-3.1-70B-Instruct"
+        Write-OK "vLLM configure sur $vllmUrl"
+    }
+    "6" {
+        $provider = "Azure OpenAI"
+        $providerEnv = "azure_openai"
+        $needsApiKey = $true
+        $azureEndpoint = Read-Input "Endpoint Azure OpenAI" "https://votre-ressource.openai.azure.com/"
+        $azureKey = Read-Host "  Cle API Azure OpenAI (masquee)" -AsSecureString
+        $azureKeyPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [Runtime.InteropServices.Marshal]::SecureStringToBSTR($azureKey))
+        $azureDeployment = Read-Input "Nom du deploiement" "gpt-4o"
+        Write-OK "Azure OpenAI configure."
+    }
+    "7" {
+        $provider = "OpenAI API"
+        $providerEnv = "openai"
+        $needsApiKey = $true
+        $openaiKey = Read-Host "  Cle API OpenAI (masquee)" -AsSecureString
+        $openaiKeyPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+            [Runtime.InteropServices.Marshal]::SecureStringToBSTR($openaiKey))
+        $openaiModel = Read-Input "Modele" "gpt-4o"
+        Write-OK "OpenAI API configure."
     }
     default {
-        Write-Host "  ℹ️  Configuration LLM ignorée — à configurer via l'interface HERMES CHU" -ForegroundColor Yellow
+        $provider = "Non configure"
+        $providerEnv = "none"
+        Write-Step "Configuration reportee - modifiable dans $InstallDir\chu\.env.chu"
     }
 }
 
 # ---------------------------------------------------------------------------
-# Étape 2 — Privacy Engine RGPD
+# Etape 2 - Privacy Engine RGPD
 # ---------------------------------------------------------------------------
-Write-Title "Étape 2/4 — Privacy Engine RGPD"
-Write-Host "  Le Privacy Engine anonymise les données de santé (PHI)" -ForegroundColor White
-Write-Host "  avant tout envoi au modèle IA." -ForegroundColor White
+Write-Title "Etape 2/4 - Privacy Engine RGPD"
+Write-Host "  Le Privacy Engine anonymise les donnees de sante (PHI)" -ForegroundColor White
+Write-Host "  avant tout envoi au LLM, meme avec un fournisseur tiers." -ForegroundColor White
+Write-Host "  7 flux couverts : entrees, sorties, memoire, skills, contexte." -ForegroundColor DarkGray
 Write-Host ""
-Write-Host "  Entités détectées : Noms, NIR, IPP, Adresses, Téléphones," -ForegroundColor Gray
-Write-Host "  Dates de naissance, Numéros de dossier, Codes postaux" -ForegroundColor Gray
-Write-Host ""
+$privacyChoice = Read-Input "Activer le Privacy Engine RGPD ? (O/n)" "O"
+$privacyEnabled = ($privacyChoice -match "^[Oo]")
 
-$privacyChoice = Read-Input "Activer l'anonymisation RGPD dès le démarrage ? (O/n)" "O"
-$privacyEnabled = if ($privacyChoice -match "^[Oo]") { "true" } else { "false" }
-
-$providerConfig["PRIVACY_ENGINE_ACTIF"] = $privacyEnabled
-
-if ($privacyEnabled -eq "true") {
-    Write-Host "  ✅ Privacy Engine activé" -ForegroundColor Green
+if ($privacyEnabled) {
+    Write-OK "Privacy Engine RGPD active (recommande pour le POC)."
 } else {
-    Write-Host "  ⚠️  Privacy Engine désactivé — les données brutes seront envoyées au LLM" -ForegroundColor Yellow
-    Write-Host "     Activez-le avant toute utilisation en production !" -ForegroundColor Red
+    Write-Host "  [AVERT] Privacy Engine desactive." -ForegroundColor Yellow
+    Write-Host "  Assurez-vous que vos donnees sont deja anonymisees." -ForegroundColor Yellow
 }
 
 # ---------------------------------------------------------------------------
-# Étape 3 — Port et configuration réseau
+# Etape 3 - Port API CHU
 # ---------------------------------------------------------------------------
-Write-Title "Étape 3/4 — Configuration réseau"
-
+Write-Title "Etape 3/4 - API CHU"
 $apiPort = Read-Input "Port de l'API CHU" "8001"
-$providerConfig["CHU_API_PORT"] = $apiPort
-
-Write-Host "  ✅ API CHU configurée sur le port $apiPort" -ForegroundColor Green
+Write-OK "API CHU configuree sur le port $apiPort"
 
 # ---------------------------------------------------------------------------
-# Étape 4 — Service Windows
+# Etape 4 - Generation du .env.chu
 # ---------------------------------------------------------------------------
-Write-Title "Étape 4/4 — Service Windows (optionnel)"
-Write-Host "  Enregistrer l'API CHU comme service Windows ?" -ForegroundColor White
-Write-Host "  (Démarrage automatique avec Windows, sans fenêtre visible)" -ForegroundColor Gray
+Write-Title "Etape 4/4 - Generation de la configuration"
+
+$envPath = "$InstallDir\chu\.env.chu"
+$envDir = Split-Path $envPath -Parent
+if (-not (Test-Path $envDir)) { New-Item -ItemType Directory -Path $envDir -Force | Out-Null }
+
+$envContent = @"
+# HERMES CHU 1.3.0 - Configuration
+# Genere par Configure-CHU.ps1
+# Auteur : William MERI - CHU de Guyane
+# Date   : $(Get-Date -Format "yyyy-MM-dd HH:mm")
+
+# ============================================================
+# FOURNISSEUR LLM
+# ============================================================
+FOURNISSEUR_ACTIF=$providerEnv
+
+# ChatGPT abonnement (openai-codex) - sans cle API
+# Connexion via code sur chatgpt.com/link au premier lancement
+CHATGPT_PROVIDER=openai-codex
+
+# Ollama (local - sans cle API)
+OLLAMA_BASE_URL=$(if ($choice -eq "3") { $ollamaUrl } else { "http://localhost:11434" })
+OLLAMA_MODEL=$(if ($choice -eq "3") { $ollamaModel } else { "hermes3:70b" })
+
+# LM Studio (local - sans cle API)
+LM_STUDIO_BASE_URL=$(if ($choice -eq "4") { $lmStudioUrl } else { "http://localhost:1234/v1" })
+
+# vLLM On-Premise
+VLLM_BASE_URL=$(if ($choice -eq "5") { $vllmUrl } else { "http://localhost:8000/v1" })
+VLLM_MODEL=$(if ($choice -eq "5") { $vllmModel } else { "NousResearch/Hermes-3-Llama-3.1-70B-Instruct" })
+
+# Azure OpenAI (HDS - cle API requise)
+AZURE_OPENAI_ENDPOINT=$(if ($choice -eq "6") { $azureEndpoint } else { "" })
+AZURE_OPENAI_API_KEY=$(if ($choice -eq "6") { $azureKeyPlain } else { "" })
+AZURE_OPENAI_DEPLOYMENT=$(if ($choice -eq "6") { $azureDeployment } else { "gpt-4o" })
+AZURE_OPENAI_API_VERSION=2024-02-01
+
+# OpenAI API (cle API requise)
+OPENAI_API_KEY=$(if ($choice -eq "7") { $openaiKeyPlain } else { "" })
+OPENAI_MODEL=$(if ($choice -eq "7") { $openaiModel } else { "gpt-4o" })
+
+# ============================================================
+# PRIVACY ENGINE RGPD
+# ============================================================
+PRIVACY_ENGINE_ACTIF=$(if ($privacyEnabled) { "true" } else { "false" })
+PRIVACY_LOG_LEVEL=INFO
+PRIVACY_PATCH_CONVERSATION=true
+PRIVACY_PATCH_MEMORY=true
+PRIVACY_PATCH_BACKGROUND_REVIEW=true
+PRIVACY_PATCH_TRAJECTORY=true
+PRIVACY_PATCH_CURATOR=true
+PRIVACY_PATCH_CONTEXT_COMPRESSOR=true
+PRIVACY_NER_MODEL=fr_core_news_lg
+PRIVACY_GLASS_BREAK_REQUIRE_JUSTIFICATION=true
+PRIVACY_AUDIT_LOG=true
+
+# ============================================================
+# API CHU
+# ============================================================
+CHU_API_PORT=$apiPort
+CHU_API_HOST=127.0.0.1
+DATABASE_URL=sqlite:///$InstallDir\chu\data\hermes_chu.db
+"@
+
+$envContent | Out-File -FilePath $envPath -Encoding UTF8 -Force
+Write-OK "Configuration sauvegardee dans : $envPath"
+
+# ---------------------------------------------------------------------------
+# Resume final
+# ---------------------------------------------------------------------------
+Write-Host ""
+Write-Host "  ============================================================" -ForegroundColor Green
+Write-Host "  HERMES CHU 1.3.0 - Configuration terminee !" -ForegroundColor Green
+Write-Host "  ============================================================" -ForegroundColor Green
+Write-Host "  Fournisseur LLM  : $provider" -ForegroundColor Green
+Write-Host "  Privacy RGPD     : $(if ($privacyEnabled) { 'ACTIVE (7 flux)' } else { 'Desactive' })" -ForegroundColor Green
+Write-Host "  Port API CHU     : $apiPort" -ForegroundColor Green
+Write-Host "  ============================================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "  Prochaines etapes :" -ForegroundColor White
+Write-Host "  1. Lancez 'Demarrer l API CHU' depuis le menu Demarrer" -ForegroundColor White
+Write-Host "  2. Ouvrez HERMES CHU depuis le bureau" -ForegroundColor White
+Write-Host "  3. Wiki : github.com/Tarzzan/HERMES-CHU/wiki" -ForegroundColor Cyan
 Write-Host ""
 
-$serviceChoice = Read-Input "Créer le service Windows ? (o/N)" "N"
-if ($serviceChoice -match "^[Oo]") {
-    # Vérifier NSSM
-    $nssmPath = "$InstallDir\tools\nssm.exe"
-    if (Test-Path $nssmPath) {
-        $serviceName = "HERMES-CHU-API"
-        $pythonCmd   = (Get-Command "python" -ErrorAction SilentlyContinue).Source
-
-        & $nssmPath install $serviceName $pythonCmd "-m uvicorn chu.api.serveur_chu:app --host 127.0.0.1 --port $apiPort" 2>&1 | Out-Null
-        & $nssmPath set $serviceName AppDirectory $InstallDir 2>&1 | Out-Null
-        & $nssmPath set $serviceName DisplayName "HERMES CHU — API Hospitalière" 2>&1 | Out-Null
-        & $nssmPath set $serviceName Description "Privacy Engine RGPD et API de configuration HERMES CHU" 2>&1 | Out-Null
-        & $nssmPath set $serviceName Start SERVICE_AUTO_START 2>&1 | Out-Null
-        & $nssmPath set $serviceName AppStdout "$InstallDir\chu\logs\service-stdout.log" 2>&1 | Out-Null
-        & $nssmPath set $serviceName AppStderr "$InstallDir\chu\logs\service-stderr.log" 2>&1 | Out-Null
-
-        Start-Service -Name $serviceName -ErrorAction SilentlyContinue
-        Write-Host "  ✅ Service Windows '$serviceName' créé et démarré" -ForegroundColor Green
-    } else {
-        Write-Host "  ⚠️  NSSM non trouvé — service non créé" -ForegroundColor Yellow
-        Write-Host "     Utilisez le raccourci 'Démarrer l'API CHU' dans le menu Démarrer" -ForegroundColor Gray
-    }
-} else {
-    Write-Host "  ℹ️  Service Windows non créé — démarrage manuel via le menu Démarrer" -ForegroundColor Gray
+if (-not $Silent) {
+    Write-Host "  Appuyez sur une touche pour fermer..." -ForegroundColor DarkGray
+    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
-
-# ---------------------------------------------------------------------------
-# Enregistrement de la configuration
-# ---------------------------------------------------------------------------
-Write-Host ""
-Write-Host "  💾 Enregistrement de la configuration…" -ForegroundColor Cyan
-Update-EnvFile -Values $providerConfig
-Write-Host "  ✅ Configuration enregistrée dans $EnvFile" -ForegroundColor Green
-
-# ---------------------------------------------------------------------------
-# Résumé final
-# ---------------------------------------------------------------------------
-Write-Host ""
-Write-Host "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "  ║         ✅  HERMES CHU est configuré et prêt !           ║" -ForegroundColor Green
-Write-Host "  ╠══════════════════════════════════════════════════════════╣" -ForegroundColor Green
-Write-Host "  ║  Fournisseur IA   : $provider" -ForegroundColor Green
-Write-Host "  ║  Privacy Engine   : $privacyEnabled" -ForegroundColor Green
-Write-Host "  ║  Port API CHU     : $apiPort" -ForegroundColor Green
-Write-Host "  ╠══════════════════════════════════════════════════════════╣" -ForegroundColor Green
-Write-Host "  ║  Prochaines étapes :" -ForegroundColor Green
-Write-Host "  ║  1. Lancez 'Démarrer l'API CHU' depuis le menu Démarrer" -ForegroundColor Green
-Write-Host "  ║  2. Ouvrez HERMES CHU depuis le bureau" -ForegroundColor Green
-Write-Host "  ║  3. Consultez le wiki : github.com/Tarzzan/HERMES-CHU/wiki" -ForegroundColor Green
-Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Green
-Write-Host ""
