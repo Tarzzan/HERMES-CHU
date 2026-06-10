@@ -5694,7 +5694,7 @@ def _update_via_zip(args):
         )
         sys.exit(1)
     zip_url = (
-        f"https://github.com/NousResearch/hermes-agent/archive/refs/heads/{branch}.zip"
+        f"https://github.com/Tarzzan/PULSAR-CHU/archive/refs/heads/{branch}.zip"
     )
 
     print("→ Downloading latest version...")
@@ -6098,12 +6098,12 @@ def _discard_stashed_changes(
 # =========================================================================
 
 OFFICIAL_REPO_URLS = {
-    "https://github.com/NousResearch/hermes-agent.git",
-    "git@github.com:NousResearch/hermes-agent.git",
-    "https://github.com/NousResearch/hermes-agent",
-    "git@github.com:NousResearch/hermes-agent",
+    "https://github.com/Tarzzan/PULSAR-CHU.git",
+    "git@github.com:Tarzzan/PULSAR-CHU.git",
+    "https://github.com/Tarzzan/PULSAR-CHU",
+    "git@github.com:Tarzzan/PULSAR-CHU",
 }
-OFFICIAL_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
+OFFICIAL_REPO_URL = "https://github.com/Tarzzan/PULSAR-CHU.git"
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 
 
@@ -6251,7 +6251,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
             print("→ Adding upstream remote...")
             if _add_upstream_remote(git_cmd, cwd):
                 print(
-                    "  ✓ Upstream ajouté : https://github.com/Tarzzan/HERMES-CHU.git"
+                    "  ✓ Upstream ajouté : https://github.com/Tarzzan/PULSAR-CHU.git"
                 )
                 has_upstream = True
             else:
@@ -6259,7 +6259,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
                 return
         else:
             print(
-                "  Ignoré. Exécutez 'git remote add upstream https://github.com/Tarzzan/HERMES-CHU.git' pour l'ajouter plus tard."
+                "  Ignoré. Exécutez 'git remote add upstream https://github.com/Tarzzan/PULSAR-CHU.git' pour l'ajouter plus tard."
             )
             _mark_skip_upstream_prompt()
             return

@@ -10,12 +10,15 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-2.2.0-0077a8?style=flat-square)](https://github.com/Tarzzan/HERMES-CHU/releases)
+[![Version](https://img.shields.io/badge/version-2.3.0-0077a8?style=flat-square)](https://github.com/Tarzzan/HERMES-CHU/releases)
 [![Conformité](https://img.shields.io/badge/conformité-RGPD%20%7C%20HDS%20%7C%20ISO%2027001-00897b?style=flat-square)](#conformite)
 [![Licence](https://img.shields.io/badge/licence-Apache%202.0-42A5F5?style=flat-square)](LICENSE)
 [![Auteur](https://img.shields.io/badge/auteur-William%20MERI%20%7C%20DSIO%20CHU%20de%20Guyane-1565C0?style=flat-square)](https://github.com/Tarzzan)
 
 [Documentation](https://github.com/Tarzzan/HERMES-CHU/wiki) · [Releases](https://github.com/Tarzzan/HERMES-CHU/releases) · [Roadmap](https://github.com/Tarzzan/HERMES-CHU/milestones) · [Issues](https://github.com/Tarzzan/HERMES-CHU/issues)
+
+> **Dépôt :** `https://github.com/Tarzzan/HERMES-CHU.git`  
+> **Mise à jour locale :** double-cliquer sur `installer/windows/scripts/Pulsar-Apply.bat`
 
 </div>
 
@@ -131,7 +134,7 @@ Le composant le plus critique de PULSAR. Il garantit que **le LLM ne traite jama
 
 ## Installation Rapide (Windows)
 
-Téléchargez et lancez **[PULSAR-Setup-2.2.0.exe](https://github.com/Tarzzan/HERMES-CHU/releases/latest)** — aucun droit administrateur requis.
+Téléchargez et lancez **[PULSAR-Setup-2.3.0.exe](https://github.com/Tarzzan/HERMES-CHU/releases/latest)** — aucun droit administrateur requis.
 
 ```cmd
 pulsar dashboard     # Interface web (recommande)
@@ -146,7 +149,7 @@ pulsar --help        # Aide complete
 ## Structure du Dépôt
 
 ```
-PULSAR (HERMES-CHU)/
+PULSAR-CHU/
 +-- upstream/                          <- Moteur agentique (NousResearch, INCHANGE)
 |   +-- hermes-agent/                  # hermes-agent v0.16.0
 +-- chu/                               <- Couche PULSAR
@@ -202,7 +205,7 @@ Direction des Systèmes d'Information et de l'Organisation (DSIO) — CHU de Guy
 
 GitHub : [github.com/Tarzzan](https://github.com/Tarzzan)
 
-**Moteur agentique :** [hermes-agent](https://github.com/NousResearch/hermes-agent) — NousResearch (Apache 2.0)
+**Moteur agentique :** hermes-agent (NousResearch) — Apache 2.0 — intégré dans `upstream/`
 
 ---
 
@@ -219,6 +222,6 @@ Le moteur agentique (`upstream/hermes-agent/`) est la propriété de NousResearc
 
 *PULSAR — Système Agentique Médical — DSIO CHU de Guyane*
 
-*Moteur : [hermes-agent](https://github.com/NousResearch/hermes-agent) par [NousResearch](https://nousresearch.com)*
+*PULSAR CHU v2.3.0 — DSIO CHU de Guyane — William MERI*
 
 </div>
