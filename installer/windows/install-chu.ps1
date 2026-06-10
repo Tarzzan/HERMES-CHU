@@ -2796,13 +2796,17 @@ function Stage-SystemPackages   { Install-SystemPackages }
 function Stage-Repository       { Install-Repository }
 
 function Stage-ChuPatches {
-    Write-Info "Applying HERMES CHU patches (Privacy Engine RGPD, skills CHU)..."
+    Write-Info "Applying HERMES CHU patches (Privacy Engine RGPD, skills CHU, branding)..."
+
+    # --- Privacy Engine patch ---
     $patchScript = Join-Path $InstallDir "chu\privacy_engine\patch_hermes.py"
     if (Test-Path $patchScript) {
         Write-Success "CHU Privacy Engine patch found"
     } else {
         Write-Warn "CHU patch not found - will be applied on first launch"
     }
+
+    # --- .env.chu ---
     $envChu = Join-Path $InstallDir ".env.chu"
     if (-not (Test-Path $envChu)) {
         $envExample = Join-Path $InstallDir ".env.chu.exemple"
@@ -2811,6 +2815,96 @@ function Stage-ChuPatches {
             Write-Success "CHU configuration file created: $envChu"
         }
     }
+
+    # ================================================================
+    # --- Branding CHU : skin + i18n + footer + titre HTML ---
+    # ================================================================
+    Write-Info "Applying CHU branding (skin, i18n, footer, HTML title)..."
+
+    # 1. Installer le skin chu-guyane.yaml
+    $skinsDir = "$HermesHome\skins"
+    New-Item -ItemType Directory -Force -Path $skinsDir | Out-Null
+    $skinSource = Join-Path $InstallDir "chu\branding\chu-guyane.yaml"
+    if (Test-Path $skinSource) {
+        Copy-Item $skinSource "$skinsDir\chu-guyane.yaml" -Force
+        Write-Success "CHU skin installed: $skinsDir\chu-guyane.yaml"
+    } else {
+        Write-Warn "CHU skin file not found at $skinSource"
+    }
+
+    # 2. Activer le skin dans config.yaml
+    $configPath = "$HermesHome\config.yaml"
+    if (Test-Path $configPath) {
+        $configContent = Get-Content $configPath -Raw -Encoding UTF8
+        if ($configContent -notmatch "skin:\s*chu-guyane") {
+            if ($configContent -match "display:") {
+                # Ajouter skin sous display: si absent
+                if ($configContent -notmatch "display:.*skin:") {
+                    $configContent = $configContent -replace "(display:)", "`$1`n  skin: chu-guyane"
+                } else {
+                    $configContent = $configContent -replace "(skin:\s*)[\w-]+", "`${1}chu-guyane"
+                }
+            } else {
+                $configContent = $configContent.TrimEnd() + "`n`n# Branding CHU de Guyane`ndisplay:`n  skin: chu-guyane`n"
+            }
+            $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText($configPath, $configContent, $utf8NoBom)
+            Write-Success "CHU skin activated in config.yaml"
+        } else {
+            Write-Info "CHU skin already active in config.yaml"
+        }
+    }
+
+    # 3. Modifier les fichiers i18n (brand, footer)
+    $hermesAgentDir = Join-Path $InstallDir "hermes-agent"
+    if (-not (Test-Path $hermesAgentDir)) {
+        $hermesAgentDir = $InstallDir
+    }
+    $i18nFiles = @(
+        (Join-Path $hermesAgentDir "web\src\i18n\fr.ts"),
+        (Join-Path $hermesAgentDir "web\src\i18n\en.ts")
+    )
+    foreach ($f in $i18nFiles) {
+        if (Test-Path $f) {
+            $c = Get-Content $f -Raw -Encoding UTF8
+            $c = $c -replace 'brand:\s*"Hermes Agent"', 'brand: "HERMES CHU"'
+            $c = $c -replace "brand:\s*'Hermes Agent'", "brand: 'HERMES CHU'"
+            $c = $c -replace 'brandShort:\s*"HA"', 'brandShort: "CHU"'
+            $c = $c -replace "brandShort:\s*'HA'", "brandShort: 'CHU'"
+            $c = $c -replace 'org:\s*"Nous Research"', 'org: "William MERI · CHU de Guyane"'
+            $c = $c -replace "org:\s*'Nous Research'", "org: 'William MERI · CHU de Guyane'"
+            $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText($f, $c, $utf8NoBom)
+            Write-Success "i18n patched: $f"
+        }
+    }
+
+    # 4. Modifier SidebarFooter.tsx — lien footer
+    $sidebarFooter = Join-Path $hermesAgentDir "web\src\components\SidebarFooter.tsx"
+    if (Test-Path $sidebarFooter) {
+        $c = Get-Content $sidebarFooter -Raw -Encoding UTF8
+        $c = $c -replace 'href="https://nousresearch\.com"', 'href="https://github.com/Tarzzan/HERMES-CHU"'
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($sidebarFooter, $c, $utf8NoBom)
+        Write-Success "SidebarFooter patched"
+    }
+
+    # 5. Modifier index.html (build dist)
+    $indexHtmlPaths = @(
+        (Join-Path $hermesAgentDir "hermes_cli\web_dist\index.html"),
+        (Join-Path $hermesAgentDir "web\index.html")
+    )
+    foreach ($ih in $indexHtmlPaths) {
+        if (Test-Path $ih) {
+            $c = Get-Content $ih -Raw -Encoding UTF8
+            $c = $c -replace '<title>Hermes Agent.*?</title>', '<title>HERMES CHU — CHU de Guyane</title>'
+            $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText($ih, $c, $utf8NoBom)
+            Write-Success "HTML title patched: $ih"
+        }
+    }
+
+    Write-Success "HERMES CHU branding applied"
     Write-Success "HERMES CHU patches applied"
 }
 

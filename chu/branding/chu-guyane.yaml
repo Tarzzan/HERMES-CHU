@@ -1,0 +1,73 @@
+# ============================================================
+# HERMES CHU — Skin officiel CHU de Guyane
+# Concu par William MERI — CHU de Guyane
+# Conforme ISO 27001 / HDS / RGPD
+# ============================================================
+# Activation : display.skin: chu-guyane dans config.yaml
+# Ou commande : /skin chu-guyane dans l'interface CLI
+
+name: chu-guyane
+description: "HERMES CHU — Systeme Agentique Hospitalier · CHU de Guyane"
+
+colors:
+  # Palette bleue médicale CHU
+  banner_border:  "#1565C0"   # Bleu CHU profond
+  banner_title:   "#42A5F5"   # Bleu clair titre
+  banner_accent:  "#90CAF9"   # Bleu accent
+  banner_dim:     "#1976D2"   # Bleu dim
+  banner_text:    "#E3F2FD"   # Texte clair sur fond bleu
+  ui_accent:      "#42A5F5"   # Accent interface
+  ui_label:       "#90CAF9"   # Labels
+  ui_ok:          "#66BB6A"   # Vert succès
+  ui_error:       "#EF5350"   # Rouge erreur
+  ui_warn:        "#FFA726"   # Orange avertissement
+  prompt:         "#E3F2FD"   # Texte prompt
+  input_rule:     "#1565C0"   # Règle horizontale
+  response_border: "#42A5F5"  # Bordure réponse
+  status_bar_bg:  "#0D1B2A"   # Fond barre statut
+  status_bar_text: "#90CAF9"  # Texte barre statut
+  status_bar_strong: "#42A5F5" # Texte fort barre statut
+  status_bar_dim: "#455A64"   # Texte dim barre statut
+  status_bar_good: "#66BB6A"  # Indicateur bon
+  status_bar_warn: "#FFA726"  # Indicateur avertissement
+  status_bar_bad:  "#FF8C00"  # Indicateur mauvais
+  status_bar_critical: "#EF5350" # Indicateur critique
+  session_label:  "#90CAF9"   # Label session
+  session_border: "#455A64"   # Bordure session
+
+spinner:
+  waiting_faces:
+    - "(⚕)"
+    - "(🏥)"
+    - "(⚕)"
+  thinking_faces:
+    - "(⌁)"
+    - "(⚕)"
+    - "(🔬)"
+  thinking_verbs:
+    - "analyse"
+    - "traitement"
+    - "diagnostic"
+    - "recherche"
+  wings:
+    - ["⟪⚕", "⚕⟫"]
+    - ["⟪🏥", "🏥⟫"]
+
+branding:
+  agent_name: "HERMES CHU"
+  welcome: "Bienvenue sur HERMES CHU — Systeme Agentique Hospitalier du CHU de Guyane.\nConcu par William MERI. Conforme ISO 27001 / HDS / RGPD.\nTapez votre message ou /help pour les commandes."
+  goodbye: "Au revoir ! HERMES CHU — CHU de Guyane ⚕"
+  response_label: " ⚕ HERMES CHU "
+  prompt_symbol: "❯"
+  help_header: "⚕ HERMES CHU — Commandes disponibles"
+
+tool_prefix: "⚕"
+
+banner_logo: |
+  [bold #42A5F5]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       ██████╗██╗  ██╗██╗   ██╗[/]
+  [bold #42A5F5]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔════╝██║  ██║██║   ██║[/]
+  [#90CAF9]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗ ██║     ███████║██║   ██║[/]
+  [#90CAF9]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██║     ██╔══██║██║   ██║[/]
+  [#1976D2]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ╚██████╗██║  ██║╚██████╔╝[/]
+  [#1976D2]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝       ╚═════╝╚═╝  ╚═╝ ╚═════╝[/]
+  [dim #90CAF9]  Systeme Agentique Hospitalier · CHU de Guyane · William MERI · ISO 27001 / HDS / RGPD[/]
