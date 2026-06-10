@@ -1,0 +1,62 @@
+version: "3.8"
+# ============================================================
+#  PULSAR -- Docker Compose VPS
+#  Systeme Agentique Medical -- DSIO CHU de Guyane
+#  William MERI
+# ============================================================
+
+services:
+  pulsar:
+    build:
+      context: /home/ubuntu/hermes
+      dockerfile: /home/ubuntu/hermes/Dockerfile.pulsar
+    image: pulsar-chu:2.3.0
+    container_name: pulsar-chu
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      # ── Provider LLM ──────────────────────────────────────
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      NOUS_API_KEY: ${NOUS_API_KEY}
+      # ── Telegram Gateway ──────────────────────────────────
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ALLOWED_USERS: ${TELEGRAM_ALLOWED_USERS}
+      # ── Forgejo (Git interne) ─────────────────────────────
+      FORGEJO_API_URL: ${FORGEJO_API_URL:-https://git.cosmolan.fr}
+      FORGEJO_TOKEN: ${FORGEJO_TOKEN}
+      # ── Privacy Engine RGPD ───────────────────────────────
+      CHU_PRIVACY_ENGINE_ACTIF: "true"
+      CHU_AUDIT_LOG_DIR: /home/pulsar/.hermes/audit
+      # ── PULSAR ────────────────────────────────────────────
+      PULSAR_VERSION: "2.3.0"
+      HOME: /home/pulsar
+    volumes:
+      # Donnees persistantes PULSAR (sessions, memoire, audit)
+      - pulsar-data:/home/pulsar/.hermes
+      # Acces au VPS hote (pour les taches d'orchestration)
+      - /home/ubuntu:/home/ubuntu:rw
+      # Docker socket (pour les taches Docker)
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      # MCP servers
+      - /home/ubuntu/hermes/mcp-servers:/home/pulsar/mcp-servers:ro
+    ports:
+      # Dashboard web PULSAR (accessible via reverse proxy)
+      - "9119:9119"
+      # API CHU FastAPI
+      - "8001:8001"
+    networks:
+      - npm_default
+    labels:
+      - "traefik.enable=false"
+      - "com.centurylinklabs.watchtower.enable=false"
+      - "pulsar.version=2.3.0"
+      - "pulsar.service=agentique-medical"
+      - "pulsar.dsio=chu-guyane"
+
+volumes:
+  pulsar-data:
+    driver: local
+
+networks:
+  npm_default:
+    external: true

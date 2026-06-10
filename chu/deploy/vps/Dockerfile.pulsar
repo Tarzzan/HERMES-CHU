@@ -1,0 +1,87 @@
+FROM ubuntu:24.04
+# ============================================================
+#  PULSAR -- Systeme Agentique Medical
+#  Plateforme Unifiee de Liaison, de Surveillance et
+#  d'Assistance en temps Reel
+#  DSIO -- CHU de Guyane | William MERI
+# ============================================================
+ENV DEBIAN_FRONTEND=noninteractive
+LABEL maintainer="William MERI <william.meri@chu-guyane.fr>"
+LABEL org.opencontainers.image.title="PULSAR - Systeme Agentique Medical"
+LABEL org.opencontainers.image.description="Plateforme Unifiee de Liaison, de Surveillance et d'Assistance en temps Reel - DSIO CHU de Guyane"
+LABEL org.opencontainers.image.version="2.3.0"
+LABEL org.opencontainers.image.vendor="DSIO CHU de Guyane"
+
+RUN apt-get update && apt-get install -y \
+    git curl ca-certificates bash xz-utils build-essential python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installer Node.js 22 LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash pulsar
+USER pulsar
+WORKDIR /home/pulsar
+
+ENV PATH="/home/pulsar/.local/bin:$PATH"
+ENV PULSAR_VERSION="2.3.0"
+ENV CHU_PRIVACY_ENGINE_ACTIF="true"
+ENV CHU_AUDIT_LOG_DIR="/home/pulsar/.hermes/audit"
+
+# Installer uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Cloner hermes-agent (moteur PULSAR)
+RUN git clone --recurse-submodules https://git.cosmolan.fr/mirrors/hermes-agent.git /home/pulsar/hermes-agent
+
+WORKDIR /home/pulsar/hermes-agent
+
+# Installer les dependances Python
+RUN /home/pulsar/.local/bin/uv venv venv --python 3.11 && \
+    VIRTUAL_ENV=/home/pulsar/hermes-agent/venv \
+    /home/pulsar/.local/bin/uv pip install -e ".[all,web]"
+
+# Dependances supplementaires PULSAR
+RUN VIRTUAL_ENV=/home/pulsar/hermes-agent/venv \
+    /home/pulsar/.local/bin/uv pip install docker fastapi uvicorn pydantic
+
+# Builder le frontend web
+RUN cd web && npm install && npm run build
+
+# Appliquer les patches PULSAR sur les sources compilees
+COPY --chown=pulsar:pulsar patches/ /tmp/pulsar-patches/
+RUN if [ -f /tmp/pulsar-patches/apply_patches.py ]; then \
+        python3 /tmp/pulsar-patches/apply_patches.py /home/pulsar/hermes-agent; \
+    fi
+
+# Symlink pulsar -> hermes
+RUN mkdir -p /home/pulsar/.local/bin && \
+    ln -sf /home/pulsar/hermes-agent/venv/bin/hermes /home/pulsar/.local/bin/hermes && \
+    ln -sf /home/pulsar/hermes-agent/venv/bin/hermes /home/pulsar/.local/bin/pulsar
+
+# Copier les fichiers CHU
+COPY --chown=pulsar:pulsar chu/ /home/pulsar/chu/
+
+# Init config directory
+RUN mkdir -p /home/pulsar/.hermes/{cron,sessions,logs,memories,skills,pairing,hooks,image_cache,audio_cache,audit,chu} && \
+    cp /home/pulsar/hermes-agent/cli-config.yaml.example /home/pulsar/.hermes/config.yaml && \
+    touch /home/pulsar/.hermes/.env && \
+    cp /home/pulsar/chu/config_chu.yaml /home/pulsar/.hermes/chu/config_chu.yaml
+
+# Copier les skills CHU dans hermes
+RUN mkdir -p /home/pulsar/.hermes/skills/chu && \
+    cp /home/pulsar/chu/skills/*.md /home/pulsar/.hermes/skills/chu/
+
+# Copier les themes PULSAR
+RUN mkdir -p /home/pulsar/.hermes/dashboard-themes && \
+    mkdir -p /home/pulsar/.hermes/skins
+
+COPY --chown=pulsar:pulsar entrypoint-pulsar.sh /home/pulsar/entrypoint.sh
+RUN chmod +x /home/pulsar/entrypoint.sh
+
+VOLUME ["/home/pulsar/.hermes"]
+EXPOSE 9119 8001
+
+ENTRYPOINT ["/home/pulsar/entrypoint.sh"]
