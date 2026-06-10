@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Orchestrateur (Agent Pilote)
+  orchestrator:
+    build: 
+      context: ../../
+      dockerfile: infrastructure/docker/orchestrator.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - VLLM_API_URL=http://vllm-mock:8080/v1
+      - POSTGRES_URL=postgresql://hermes:hermes_dev@postgres:5432/hermes_audit
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../../src/orchestrator:/app/src/orchestrator
+      - ../../src/privacy-engine:/app/src/privacy-engine
+
+  # Base de données PostgreSQL pour le journal d'audit
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=hermes
+      - POSTGRES_PASSWORD=hermes_dev
+      - POSTGRES_DB=hermes_audit
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Cache Redis pour le SAS d'anonymisation
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # Interface Web de Pilotage
+  web-ui:
+    build:
+      context: ../../
+      dockerfile: infrastructure/docker/web-ui.Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    volumes:
+      - ../../src/web-ui:/app/src/web-ui
+      - /app/node_modules
+
+  # Mock vLLM pour le développement local (évite de télécharger 40Go de modèle)
+  vllm-mock:
+    image: stoplight/prism:4
+    command: mock -h 0.0.0.0 /tmp/openai-openapi.yaml
+    ports:
+      - "8080:4010"
+    volumes:
+      - ./mocks/openai-openapi.yaml:/tmp/openai-openapi.yaml
+
+volumes:
+  postgres_data:
