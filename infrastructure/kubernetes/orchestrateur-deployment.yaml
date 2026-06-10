@@ -1,0 +1,272 @@
+---
+# HERMES CHU — Déploiement Kubernetes de l'Orchestrateur Pilote
+# Namespace : hermes-production
+# Conformité : ISO 27001 / HDS — Network Policies, SecurityContext, ResourceQuotas
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-orchestrateur
+  namespace: hermes-production
+  labels:
+    app: hermes-orchestrateur
+    composant: orchestrateur
+    version: "1.0.0"
+    conformite: iso27001
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    description: "Agent Pilote HERMES CHU"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hermes-orchestrateur
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: hermes-orchestrateur
+        composant: orchestrateur
+    spec:
+      serviceAccountName: hermes-orchestrateur-sa
+      automountServiceAccountToken: false
+
+      # Contexte de sécurité du Pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Anti-affinité pour la haute disponibilité
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values: [hermes-orchestrateur]
+              topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: orchestrateur
+          image: ghcr.io/hermes-chu/hermes-orchestrateur:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+              protocol: TCP
+
+          # Contexte de sécurité du conteneur
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+
+          # Variables d'environnement (secrets via SecretKeyRef)
+          env:
+            - name: ENVIRONMENT
+              value: "production"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: MODEL_NAME
+              value: "Hermes-3-Llama-3.1-70B-Instruct"
+            - name: VLLM_API_URL
+              value: "http://hermes-vllm-service:8080/v1"
+            - name: PRIVACY_ENGINE_URL
+              value: "http://hermes-privacy-service:8001"
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: redis-url
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: postgres-url
+            - name: KEYCLOAK_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: hermes-config
+                  key: keycloak-url
+            - name: KEYCLOAK_CLIENT_ID
+              value: "hermes-orchestrateur"
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: keycloak-orchestrateur-secret
+            - name: SQLITE_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: sqlite-encryption-key
+
+          # Ressources (limites strictes)
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+
+          # Sondes de santé
+          livenessProbe:
+            httpGet:
+              path: /api/sante
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /api/sante
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Volumes en lecture seule
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: data
+              mountPath: /data
+            - name: logs
+              mountPath: /var/log/hermes
+
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-orchestrateur-data-pvc
+        - name: logs
+          emptyDir: {}
+
+      # Tolérance aux pannes
+      terminationGracePeriodSeconds: 60
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hermes-orchestrateur-service
+  namespace: hermes-production
+  labels:
+    app: hermes-orchestrateur
+spec:
+  selector:
+    app: hermes-orchestrateur
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+  type: ClusterIP
+
+---
+# Network Policy — Isolation stricte
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hermes-orchestrateur-netpol
+  namespace: hermes-production
+spec:
+  podSelector:
+    matchLabels:
+      app: hermes-orchestrateur
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Autorise uniquement le trafic depuis l'ingress et le web-ui
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: hermes-production
+          podSelector:
+            matchLabels:
+              app: hermes-web-ui
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Autorise uniquement les services internes nécessaires
+    - to:
+        - podSelector:
+            matchLabels:
+              app: hermes-vllm
+      ports:
+        - protocol: TCP
+          port: 8080
+    - to:
+        - podSelector:
+            matchLabels:
+              app: hermes-privacy-engine
+      ports:
+        - protocol: TCP
+          port: 8001
+    - to:
+        - podSelector:
+            matchLabels:
+              app: hermes-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - podSelector:
+            matchLabels:
+              app: hermes-postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # DNS
+    - ports:
+        - protocol: UDP
+          port: 53
+
+---
+# HorizontalPodAutoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hermes-orchestrateur-hpa
+  namespace: hermes-production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hermes-orchestrateur
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

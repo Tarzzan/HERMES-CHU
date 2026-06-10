@@ -1,0 +1,169 @@
+{
+  "realm": "hermes-chu",
+  "displayName": "HERMES CHU — Système Agentique Hospitalier",
+  "displayNameHtml": "<b>HERMES CHU</b>",
+  "enabled": true,
+  "sslRequired": "all",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 3,
+  "accessTokenLifespan": 900,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "accessCodeLifespan": 60,
+  "accessCodeLifespanUserAction": 300,
+  "accessCodeLifespanLogin": 1800,
+  "actionTokenGeneratedByAdminLifespan": 43200,
+  "actionTokenGeneratedByUserLifespan": 300,
+  "defaultSignatureAlgorithm": "RS256",
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "roles": {
+    "realm": [
+      {
+        "name": "ROLE_ADMIN",
+        "description": "Administrateur système HERMES CHU — Accès complet",
+        "composite": false
+      },
+      {
+        "name": "ROLE_CLINICIEN",
+        "description": "Professionnel de santé — Accès aux agents cliniques et administratifs",
+        "composite": false
+      },
+      {
+        "name": "ROLE_QUALITICIEN",
+        "description": "Service qualité — Accès aux APIs de suivi qualité et aux tableaux de bord",
+        "composite": false
+      },
+      {
+        "name": "ROLE_RSSI",
+        "description": "Responsable Sécurité SI — Accès aux journaux d'audit et à la configuration sécurité",
+        "composite": false
+      },
+      {
+        "name": "ROLE_ADMIN_PRIVACY",
+        "description": "Administrateur Privacy — Gestion du SAS d'anonymisation (activation/désactivation)",
+        "composite": false
+      },
+      {
+        "name": "ROLE_AUDITEUR",
+        "description": "Auditeur — Lecture seule des journaux d'audit",
+        "composite": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "hermes-web-ui",
+      "name": "Interface Web HERMES CHU",
+      "description": "Interface web de pilotage de l'Agent Pilote",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "https://hermes.chu-interne.local/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "https://hermes.chu-interne.local",
+        "http://localhost:3000"
+      ],
+      "defaultClientScopes": ["openid", "profile", "email", "roles"],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "hermes-orchestrateur",
+      "name": "Orchestrateur HERMES CHU",
+      "description": "Service backend de l'orchestrateur (machine-to-machine)",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "${KEYCLOAK_ORCHESTRATEUR_SECRET}"
+    },
+    {
+      "clientId": "hermes-api-qualite",
+      "name": "API Qualité HERMES CHU",
+      "description": "Service des APIs de suivi qualité",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "${KEYCLOAK_API_QUALITE_SECRET}"
+    }
+  ],
+  "components": {
+    "org.keycloak.storage.UserStorageProvider": [
+      {
+        "name": "ldap-chu",
+        "providerId": "ldap",
+        "config": {
+          "enabled": ["true"],
+          "priority": ["0"],
+          "editMode": ["READ_ONLY"],
+          "syncRegistrations": ["false"],
+          "vendor": ["ad"],
+          "usernameLDAPAttribute": ["sAMAccountName"],
+          "rdnLDAPAttribute": ["cn"],
+          "uuidLDAPAttribute": ["objectGUID"],
+          "userObjectClasses": ["person", "organizationalPerson", "user"],
+          "connectionUrl": ["${LDAP_URL}"],
+          "usersDn": ["${LDAP_USERS_DN}"],
+          "authType": ["simple"],
+          "bindDn": ["${LDAP_BIND_DN}"],
+          "bindCredential": ["${LDAP_BIND_PASSWORD}"],
+          "searchScope": ["2"],
+          "useTruststoreSpi": ["ldapsOnly"],
+          "connectionPooling": ["true"],
+          "pagination": ["true"],
+          "importEnabled": ["true"],
+          "batchSizeForSync": ["1000"],
+          "fullSyncPeriod": ["604800"],
+          "changedSyncPeriod": ["86400"]
+        }
+      }
+    ]
+  },
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": false
+    },
+    {
+      "alias": "UPDATE_PASSWORD",
+      "name": "Update Password",
+      "providerId": "UPDATE_PASSWORD",
+      "enabled": true,
+      "defaultAction": false
+    }
+  ],
+  "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername and passwordHistory(5)",
+  "browserSecurityHeaders": {
+    "contentSecurityPolicyReportOnly": "",
+    "xContentTypeOptions": "nosniff",
+    "xRobotsTag": "none",
+    "xFrameOptions": "SAMEORIGIN",
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xXSSProtection": "1; mode=block",
+    "strictTransportSecurity": "max-age=31536000; includeSubDomains"
+  }
+}

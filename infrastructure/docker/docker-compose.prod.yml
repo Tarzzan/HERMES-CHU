@@ -1,0 +1,286 @@
+---
+# HERMES CHU — Docker Compose Production
+# Conformité : ISO 27001 — HDS — Réseau isolé — Secrets via Docker Secrets
+# Usage : docker compose -f docker-compose.prod.yml up -d
+
+version: "3.9"
+
+networks:
+  hermes-frontend:
+    driver: bridge
+    internal: false
+  hermes-backend:
+    driver: bridge
+    internal: true   # Réseau interne — pas d'accès Internet direct
+  hermes-data:
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  vllm-models:
+    driver: local
+  audit-logs:
+    driver: local
+  keycloak-data:
+    driver: local
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  redis_password:
+    file: ./secrets/redis_password.txt
+  keycloak_admin_password:
+    file: ./secrets/keycloak_admin_password.txt
+  jwt_secret_key:
+    file: ./secrets/jwt_secret_key.txt
+  sqlite_encryption_key:
+    file: ./secrets/sqlite_encryption_key.txt
+
+services:
+
+  # ── Interface Web ───────────────────────────────────────────────────────────
+  web-ui:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/web-ui.Dockerfile
+    container_name: hermes-web-ui
+    restart: unless-stopped
+    networks:
+      - hermes-frontend
+      - hermes-backend
+    ports:
+      - "80:80"
+    depends_on:
+      - orchestrateur
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "composant=web-ui"
+
+  # ── Orchestrateur Pilote ────────────────────────────────────────────────────
+  orchestrateur:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/orchestrator.Dockerfile
+    container_name: hermes-orchestrateur
+    restart: unless-stopped
+    networks:
+      - hermes-backend
+      - hermes-data
+    environment:
+      ENVIRONMENT: production
+      MODEL_NAME: Hermes-3-Llama-3.1-70B-Instruct
+      VLLM_API_URL: http://vllm:8080/v1
+      PRIVACY_ENGINE_URL: http://privacy-engine:8001
+      REDIS_URL: redis://:$(cat /run/secrets/redis_password)@redis:6379/0
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: hermes-chu
+      KEYCLOAK_CLIENT_ID: hermes-orchestrateur
+      LOG_LEVEL: INFO
+    secrets:
+      - postgres_password
+      - redis_password
+      - jwt_secret_key
+      - sqlite_encryption_key
+    volumes:
+      - audit-logs:/var/log/hermes
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/sante"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ── Privacy Engine ──────────────────────────────────────────────────────────
+  privacy-engine:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/privacy-engine.Dockerfile
+    container_name: hermes-privacy-engine
+    restart: unless-stopped
+    networks:
+      - hermes-backend
+      - hermes-data
+    environment:
+      ENVIRONMENT: production
+      REDIS_URL: redis://:$(cat /run/secrets/redis_password)@redis:6379/1
+      MODELE_NER: almanach/camembert-bio-medical
+      SEUIL_CONFIANCE: "0.85"
+      LOG_LEVEL: INFO
+    secrets:
+      - redis_password
+    volumes:
+      - vllm-models:/models
+      - audit-logs:/var/log/hermes
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/sante"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # ── API Qualité ─────────────────────────────────────────────────────────────
+  api-qualite:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/api-qualite.Dockerfile
+    container_name: hermes-api-qualite
+    restart: unless-stopped
+    networks:
+      - hermes-backend
+      - hermes-data
+    environment:
+      ENVIRONMENT: production
+      POSTGRES_URL: postgresql+asyncpg://hermes:$(cat /run/secrets/postgres_password)@postgres:5432/hermes_qualite
+      LOG_LEVEL: INFO
+    secrets:
+      - postgres_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/docs"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── vLLM (Hermes-3) ─────────────────────────────────────────────────────────
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: hermes-vllm
+    restart: unless-stopped
+    networks:
+      - hermes-backend
+    volumes:
+      - vllm-models:/root/.cache/huggingface
+    environment:
+      HUGGING_FACE_HUB_TOKEN: ${HF_TOKEN}
+    command: >
+      --model NousResearch/Hermes-3-Llama-3.1-70B-Instruct
+      --dtype bfloat16
+      --max-model-len 8192
+      --gpu-memory-utilization 0.90
+      --served-model-name Hermes-3-Llama-3.1-70B-Instruct
+      --host 0.0.0.0
+      --port 8080
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 300s
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: hermes-postgres
+    restart: unless-stopped
+    networks:
+      - hermes-data
+    environment:
+      POSTGRES_DB: hermes
+      POSTGRES_USER: hermes
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hermes"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+        -c log_statement=all
+        -c log_destination=stderr
+        -c logging_collector=off
+        -c ssl=on
+        -c ssl_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+        -c ssl_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+
+  # ── Redis (sessions chiffrées) ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: hermes-redis
+    restart: unless-stopped
+    networks:
+      - hermes-data
+    command: >
+      redis-server
+        --requirepass-file /run/secrets/redis_password
+        --appendonly yes
+        --appendfsync everysec
+        --maxmemory 512mb
+        --maxmemory-policy allkeys-lru
+        --loglevel notice
+    secrets:
+      - redis_password
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Keycloak (IAM) ──────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: hermes-keycloak
+    restart: unless-stopped
+    networks:
+      - hermes-backend
+      - hermes-data
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: hermes
+      KC_DB_PASSWORD_FILE: /run/secrets/postgres_password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD_FILE: /run/secrets/keycloak_admin_password
+      KC_HOSTNAME: keycloak.chu-interne.local
+      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/conf/tls.crt
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/conf/tls.key
+    secrets:
+      - postgres_password
+      - keycloak_admin_password
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      - ./keycloak/realm-hermes-chu.json:/opt/keycloak/data/import/realm.json:ro
+    command: start --import-realm
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    depends_on:
+      postgres:
+        condition: service_healthy

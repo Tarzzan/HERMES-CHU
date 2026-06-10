@@ -1,0 +1,81 @@
+# HERMES CHU — Configuration de l'Orchestrateur Pilote
+# ISO 27001 — Toutes les valeurs sensibles sont injectées via des variables d'environnement
+
+orchestrateur:
+  nom: "HERMES CHU Agent Pilote"
+  version: "1.0.0"
+  langue: "fr"
+  max_iterations: 10
+  timeout_requete_s: 120
+
+llm:
+  fournisseur: "vllm"
+  modele: "${MODEL_NAME:-Hermes-3-Llama-3.1-70B-Instruct}"
+  url_api: "${VLLM_API_URL:-http://localhost:8080/v1}"
+  temperature: 0.1
+  max_tokens: 2048
+  top_p: 0.95
+
+anonymisation:
+  active_par_defaut: true
+  moteur_ner: "camembert-bio"
+  url_service: "${PRIVACY_ENGINE_URL:-http://localhost:8001}"
+  ttl_mapping_secondes: 3600
+  redis_url: "${REDIS_URL:-redis://localhost:6379/0}"
+
+securite:
+  keycloak_url: "${KEYCLOAK_URL:-http://localhost:8080/auth}"
+  realm: "hermes-chu"
+  client_id: "${KEYCLOAK_CLIENT_ID:-hermes-orchestrateur}"
+  client_secret: "${KEYCLOAK_CLIENT_SECRET}"
+  token_ttl_min: 15
+  roles_autorises:
+    - "ROLE_CLINICIEN"
+    - "ROLE_ADMIN"
+    - "ROLE_QUALITICIEN"
+    - "ROLE_RSSI"
+    - "ROLE_ADMIN_PRIVACY"
+
+audit:
+  postgres_url: "${POSTGRES_URL:-postgresql://hermes:hermes_dev@localhost:5432/hermes_audit}"
+  table_audit: "journal_audit"
+  niveau_minimum: "INFO"
+  retention_jours: 3650  # 10 ans (obligation légale données médicales)
+
+memoire_session:
+  sqlite_path: "${SQLITE_PATH:-/data/hermes_memoire.db}"
+  chiffrement: true
+  cle_chiffrement: "${SQLITE_ENCRYPTION_KEY}"
+  ttl_session_heures: 8
+  max_messages_par_session: 200
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  cors_origines:
+    - "${WEB_UI_URL:-http://localhost:3000}"
+  rate_limit:
+    requetes_par_minute: 60
+    requetes_par_heure: 500
+
+agents:
+  clinique:
+    url: "${AGENT_CLINIQUE_URL:-http://localhost:8010}"
+    timeout_s: 60
+  administratif:
+    url: "${AGENT_ADMINISTRATIF_URL:-http://localhost:8011}"
+    timeout_s: 30
+  logistique:
+    url: "${AGENT_LOGISTIQUE_URL:-http://localhost:8012}"
+    timeout_s: 30
+  recherche:
+    url: "${AGENT_RECHERCHE_URL:-http://localhost:8013}"
+    timeout_s: 90
+
+logging:
+  niveau: "${LOG_LEVEL:-INFO}"
+  format: "json"
+  fichier: "/var/log/hermes/orchestrateur.log"
+  rotation: "daily"
+  retention_jours: 90

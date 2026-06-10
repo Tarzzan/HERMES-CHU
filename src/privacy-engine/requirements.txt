@@ -1,0 +1,26 @@
+# HERMES CHU — Privacy Engine
+# Dépendances Python
+
+# Framework web
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+
+# NLP / NER (CamemBERT-bio)
+transformers==4.41.1
+torch==2.3.0
+sentencepiece==0.2.0
+protobuf==5.27.0
+
+# Cache Redis
+redis[asyncio]==5.0.4
+
+# Sécurité / Chiffrement
+cryptography==42.0.7
+
+# Logging
+structlog==24.1.0
+python-json-logger==2.0.7
+
+# Utilitaires
+orjson==3.10.3
