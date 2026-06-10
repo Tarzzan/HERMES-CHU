@@ -211,3 +211,195 @@ sih:
       token_url: "${FHIR_TOKEN_URL}"
       client_id: "${FHIR_CLIENT_ID}"
       client_secret: "${FHIR_CLIENT_SECRET}"
+
+# ============================================================
+# --- Mémoire persistante et apprentissage continu ---
+# Hermes-agent dispose d'un système d'apprentissage en 6 mécanismes.
+# Cette section configure leur comportement dans le contexte CHU.
+# ============================================================
+
+memoire:
+  # -------------------------------------------------------
+  # 1. BACKGROUND REVIEW (background_review.py)
+  # -------------------------------------------------------
+  # Après chaque échange, un agent "fantôme" rejoue la conversation
+  # et décide automatiquement de sauvegarder des informations en mémoire
+  # ou de mettre à jour les skills.
+  # IMPORTANT CHU : le Privacy Engine s'applique AVANT toute écriture
+  # en mémoire — aucun PHI ne persiste en clair.
+  background_review:
+    actif: true
+    # Délai avant déclenchement (secondes après la fin du tour)
+    delai_secondes: 2
+    # Le Background Review utilise un modèle auxiliaire léger (moins coûteux)
+    # Recommandation CHU : même provider que le LLM principal mais modèle rapide
+    modele_auxiliaire: "gpt-4o-mini"    # ou "gpt-3.5-turbo", "mistral:7b"
+    # Filtrage PHI avant écriture mémoire (obligatoire CHU)
+    filtrage_phi_avant_ecriture: true
+
+  # -------------------------------------------------------
+  # 2. MEMORY MANAGER — Plugin mémoire (memory_manager.py)
+  # -------------------------------------------------------
+  # Gère la mémoire persistante inter-sessions.
+  # Un seul plugin externe peut être actif à la fois.
+  #
+  # Recommandations CHU par environnement :
+  #   POC/Dev     → builtin (mémoire locale SQLite, aucune dépendance externe)
+  #   Production  → mem0 (vecteurs locaux) ou holographic (RAG sémantique)
+  #   Cloud       → honcho (SaaS, données anonymisées uniquement)
+  #
+  # Plugins disponibles (upstream/hermes-agent/plugins/memory/) :
+  #   builtin     → Mémoire locale SQLite intégrée à hermes-agent (défaut)
+  #   mem0        → Mémoire vectorielle (Qdrant/Chroma local ou cloud)
+  #   holographic → RAG sémantique avec retrieval hybride (BM25 + vecteurs)
+  #   honcho      → SaaS de mémoire personnalisée (données anonymisées obligatoires)
+  #   hindsight   → Extraction automatique de faits depuis les conversations
+  #   byterover   → Mémoire distribuée avec indexation sémantique
+  #   retaindb    → Base de données de rétention structurée
+  #   supermemory → Mémoire augmentée avec graphe de connaissances
+  #   openviking  → Mémoire open-source auto-hébergeable
+  plugin_actif: "builtin"              # builtin | mem0 | holographic | honcho | hindsight | ...
+
+  # Configuration du plugin builtin (SQLite local)
+  builtin:
+    # Chemin du fichier SQLite (relatif au répertoire hermes-agent)
+    db_path: "~/.hermes/memory_chu.db"
+    # Nombre maximum de souvenirs stockés par utilisateur
+    max_souvenirs: 500
+    # Durée de rétention des souvenirs (jours, 0 = illimité)
+    retention_jours: 365
+
+  # Configuration mem0 (vectoriel local — recommandé production)
+  mem0:
+    # Endpoint mem0 local (docker run mem0/mem0:latest)
+    api_url: "${MEM0_API_URL:-http://localhost:8765}"
+    api_key: "${MEM0_API_KEY}"
+    # Modèle d'embedding (local ou Azure)
+    embedding_model: "text-embedding-3-small"
+    # Collection dédiée CHU
+    collection: "hermes_chu_memory"
+
+  # Configuration holographic (RAG sémantique — recommandé production souveraine)
+  holographic:
+    # Répertoire de stockage local
+    store_path: "~/.hermes/holographic_chu/"
+    # Modèle d'embedding local (via Ollama)
+    embedding_model: "nomic-embed-text"
+    # Taille des chunks
+    chunk_size: 512
+    top_k: 10
+
+  # Configuration honcho (SaaS — POC cloud uniquement, données anonymisées)
+  honcho:
+    api_key: "${HONCHO_API_KEY}"
+    # AVERTISSEMENT : n'utiliser qu'avec Privacy Engine actif
+    # Aucune donnée PHI ne doit transiter vers Honcho
+    privacy_engine_obligatoire: true
+
+  # -------------------------------------------------------
+  # 3. CURATOR — Amélioration continue des skills (curator.py)
+  # -------------------------------------------------------
+  # Processus de fond qui consolide, archive et améliore les skills
+  # au fil du temps. Analyse les patterns d'usage et met à jour
+  # automatiquement les SKILL.md des agents CHU.
+  curator:
+    actif: true
+    # Fréquence d'exécution (heures)
+    frequence_heures: 24
+    # Le Curator peut modifier les skills CHU (agent_clinique.md, etc.)
+    # mais ne peut PAS modifier les skills NousResearch (bundled)
+    skills_modifiables:
+      - "chu/skills/agent_clinique.md"
+      - "chu/skills/agent_administratif.md"
+      - "chu/skills/agent_logistique.md"
+      - "chu/skills/agent_recherche.md"
+      - "chu/skills/agent_qualite.md"
+    # Skills protégés (jamais modifiés par le Curator)
+    skills_proteges:
+      - "upstream/hermes-agent/**"      # Tous les skills NousResearch
+    # Seuil de confiance pour une mise à jour automatique (0.0 à 1.0)
+    seuil_confiance: 0.8
+    # Journaliser chaque modification du Curator
+    journaliser_modifications: true
+
+  # -------------------------------------------------------
+  # 4. TRAJECTORY SAVING — Fine-tuning futur (trajectory.py)
+  # -------------------------------------------------------
+  # Sauvegarde chaque conversation au format ShareGPT (JSONL)
+  # pour permettre le fine-tuning futur du modèle Hermes sur
+  # les cas d'usage CHU spécifiques.
+  # IMPORTANT : les trajectoires sont anonymisées avant sauvegarde.
+  trajectoires:
+    actif: true
+    # Répertoire de sauvegarde
+    repertoire: "~/.hermes/trajectoires_chu/"
+    # Fichier des trajectoires réussies
+    fichier_succes: "trajectoires_reussies.jsonl"
+    # Fichier des trajectoires échouées (pour analyse)
+    fichier_echecs: "trajectoires_echecs.jsonl"
+    # Anonymisation obligatoire avant sauvegarde
+    anonymiser_avant_sauvegarde: true
+    # Conserver uniquement les conversations avec feedback positif
+    filtre_qualite: true
+    # Durée de rétention (jours)
+    retention_jours: 730                # 2 ans (conformité HDS)
+
+  # -------------------------------------------------------
+  # 5. INSIGHTS ENGINE — Analyse d'usage (insights.py)
+  # -------------------------------------------------------
+  # Analyse les sessions historiques pour produire des rapports
+  # d'usage : tokens consommés, coûts estimés, patterns d'outils,
+  # tendances d'activité, répartition par modèle/provider.
+  # Ces insights alimentent le tableau de bord du service qualité.
+  insights:
+    actif: true
+    # Période d'analyse par défaut (jours)
+    periode_defaut_jours: 30
+    # Exporter les insights vers l'API Qualité CHU
+    export_api_qualite: true
+    # Endpoint de l'API Qualité (serveur_chu.py)
+    api_qualite_url: "http://localhost:8001/api/chu/insights"
+    # Fréquence de génération automatique (heures)
+    frequence_heures: 24
+
+  # -------------------------------------------------------
+  # 6. CONTEXT COMPRESSION — Gestion du contexte (context_compressor.py)
+  # -------------------------------------------------------
+  # Compression intelligente du contexte avec résumé structuré
+  # (Resolved/Pending) quand la fenêtre de contexte approche sa limite.
+  # Utilise un modèle auxiliaire léger pour la compression.
+  compression_contexte:
+    actif: true
+    # Seuil de déclenchement (% de la fenêtre de contexte)
+    seuil_declenchement_pct: 80
+    # Modèle auxiliaire pour la compression (léger et rapide)
+    modele_auxiliaire: "gpt-4o-mini"
+    # Protéger les N derniers messages (ne pas compresser la fin)
+    messages_proteges_fin: 10
+    # Inclure un résumé structuré (Résolu / En cours / En attente)
+    resume_structure: true
+
+# ============================================================
+# --- Politique de rétention des données (RGPD / HDS) ---
+# ============================================================
+retention_donnees:
+  # Conversations (sessions SQLite hermes-agent)
+  conversations:
+    duree_jours: 90                     # 3 mois par défaut
+    anonymiser_a_expiration: true       # Anonymiser plutôt que supprimer
+    purger_phi_immediat: false          # Purge immédiate des PHI si true
+
+  # Journaux d'audit ISO 27001
+  journaux_audit:
+    duree_jours: 3650                   # 10 ans (exigence HDS)
+    archivage_chiffre: true
+
+  # Mémoire persistante
+  memoire_persistante:
+    duree_jours: 365                    # 1 an
+    revue_annuelle: true                # Rappel de revue annuelle
+
+  # Trajectoires de fine-tuning
+  trajectoires:
+    duree_jours: 730                    # 2 ans
+    anonymisation_complete: true        # Vérification PHI avant archivage
