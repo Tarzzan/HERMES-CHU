@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="HERMES CHU — Système Agentique Hospitalier Souverain. IA médicale sécurisée, conforme ISO 27001 et HDS, basée sur Hermes-3 de NousResearch." />
+  <title>HERMES CHU — Système Agentique Hospitalier Souverain</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & Variables ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --c-bg:        #030712;
+      --c-bg2:       #0a0f1e;
+      --c-bg3:       #0d1526;
+      --c-border:    rgba(59,130,246,0.15);
+      --c-blue:      #3b82f6;
+      --c-blue-l:    #60a5fa;
+      --c-cyan:      #06b6d4;
+      --c-purple:    #8b5cf6;
+      --c-green:     #10b981;
+      --c-orange:    #f59e0b;
+      --c-red:       #ef4444;
+      --c-text:      #f1f5f9;
+      --c-text-muted:#94a3b8;
+      --c-text-dim:  #475569;
+      --radius:      12px;
+      --radius-lg:   20px;
+      --shadow-glow: 0 0 40px rgba(59,130,246,0.15);
+      --transition:  0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--c-bg);
+      color: var(--c-text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--c-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--c-blue); border-radius: 3px; }
+
+    /* ── Noise texture overlay ─────────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* ── Navigation ────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 16px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(3,7,18,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--c-border);
+      transition: var(--transition);
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 12px;
+      text-decoration: none;
+    }
+    .nav-logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--c-blue), var(--c-cyan));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 900; color: white;
+    }
+    .nav-logo-text { font-size: 18px; font-weight: 700; color: var(--c-text); }
+    .nav-logo-text span { color: var(--c-blue); }
+
+    .nav-links {
+      display: flex; align-items: center; gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--c-text-muted); text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      transition: color var(--transition);
+    }
+    .nav-links a:hover { color: var(--c-text); }
+
+    .nav-cta {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      text-decoration: none; cursor: pointer;
+      border: none; transition: var(--transition);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--c-text-muted);
+      border: 1px solid var(--c-border);
+    }
+    .btn-ghost:hover { background: rgba(59,130,246,0.1); color: var(--c-text); border-color: var(--c-blue); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--c-blue), var(--c-cyan));
+      color: white;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(59,130,246,0.4); }
+
+    /* ── Hero ──────────────────────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      padding: 120px 40px 80px;
+    }
+
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background-image: url('assets/hero_bg.jpg');
+      background-size: cover; background-position: center;
+      filter: brightness(0.25) saturate(1.2);
+    }
+
+    .hero-gradient {
+      position: absolute; inset: 0; z-index: 1;
+      background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(59,130,246,0.08) 0%, transparent 70%),
+                  linear-gradient(to bottom, transparent 60%, var(--c-bg) 100%);
+    }
+
+    /* Animated grid */
+    .hero-grid {
+      position: absolute; inset: 0; z-index: 1;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(60px); }
+    }
+
+    .hero-content {
+      position: relative; z-index: 2;
+      text-align: center; max-width: 900px;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 100px;
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.3);
+      font-size: 13px; font-weight: 500; color: var(--c-blue-l);
+      margin-bottom: 28px;
+    }
+    .hero-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--c-cyan);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-title {
+      font-size: clamp(42px, 7vw, 80px);
+      font-weight: 900; line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+    }
+    .hero-title .accent {
+      background: linear-gradient(135deg, var(--c-blue), var(--c-cyan), var(--c-purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(16px, 2vw, 20px);
+      color: var(--c-text-muted); max-width: 640px;
+      margin: 0 auto 40px; font-weight: 400; line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      flex-wrap: wrap; margin-bottom: 60px;
+    }
+    .btn-hero {
+      padding: 14px 28px; font-size: 16px;
+    }
+
+    .hero-stats {
+      display: flex; align-items: center; justify-content: center; gap: 48px;
+      flex-wrap: wrap;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat-value {
+      font-size: 32px; font-weight: 800;
+      background: linear-gradient(135deg, var(--c-blue), var(--c-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-stat-label { font-size: 13px; color: var(--c-text-dim); margin-top: 4px; }
+
+    .hero-stat-divider {
+      width: 1px; height: 40px;
+      background: var(--c-border);
+    }
+
+    /* ── Section base ──────────────────────────────────────────────────────── */
+    section { position: relative; z-index: 1; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+
+    .section-header { text-align: center; margin-bottom: 64px; }
+    .section-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--c-blue);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 16px;
+    }
+    .section-desc {
+      font-size: 17px; color: var(--c-text-muted);
+      max-width: 560px; margin: 0 auto; line-height: 1.7;
+    }
+
+    /* ── Cards ─────────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--c-bg2);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      transition: var(--transition);
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(59,130,246,0.03) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .card:hover {
+      border-color: rgba(59,130,246,0.35);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-glow);
+    }
+
+    /* ── Features Grid ─────────────────────────────────────────────────────── */
+    .features { padding: 100px 0; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--c-bg2);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      transition: var(--transition);
+      position: relative; overflow: hidden;
+      cursor: default;
+    }
+    .feature-card::after {
+      content: ''; position: absolute;
+      bottom: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--c-blue), var(--c-cyan));
+      transform: scaleX(0); transform-origin: left;
+      transition: transform var(--transition);
+    }
+    .feature-card:hover {
+      border-color: rgba(59,130,246,0.3);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 30px rgba(59,130,246,0.1);
+    }
+    .feature-card:hover::after { transform: scaleX(1); }
+
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 20px;
+    }
+    .feature-title {
+      font-size: 18px; font-weight: 700; margin-bottom: 10px;
+      color: var(--c-text);
+    }
+    .feature-desc {
+      font-size: 14px; color: var(--c-text-muted); line-height: 1.7;
+    }
+    .feature-tag {
+      display: inline-block; margin-top: 16px;
+      padding: 4px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Architecture Section ──────────────────────────────────────────────── */
+    .architecture { padding: 100px 0; background: var(--c-bg2); }
+
+    .arch-layout {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px;
+      align-items: center;
+    }
+
+    .arch-image {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--c-border);
+      box-shadow: 0 0 60px rgba(59,130,246,0.1);
+    }
+    .arch-image img { width: 100%; display: block; }
+
+    .arch-layers { display: flex; flex-direction: column; gap: 12px; }
+
+    .arch-layer {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 20px;
+      background: var(--c-bg3);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      transition: var(--transition);
+      cursor: default;
+    }
+    .arch-layer:hover {
+      border-color: var(--layer-color, var(--c-blue));
+      background: rgba(59,130,246,0.05);
+      transform: translateX(6px);
+    }
+    .arch-layer-num {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      background: var(--layer-bg, rgba(59,130,246,0.15));
+      color: var(--layer-color, var(--c-blue));
+      flex-shrink: 0;
+    }
+    .arch-layer-info { flex: 1; }
+    .arch-layer-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .arch-layer-tech { font-size: 12px; color: var(--c-text-dim); font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Privacy Engine Section ────────────────────────────────────────────── */
+    .privacy { padding: 100px 0; }
+
+    .privacy-layout {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px;
+      align-items: center;
+    }
+
+    .privacy-pipeline {
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .pipeline-step {
+      display: flex; gap: 20px; position: relative;
+    }
+    .pipeline-step:not(:last-child)::before {
+      content: ''; position: absolute;
+      left: 19px; top: 44px; bottom: -12px; width: 2px;
+      background: linear-gradient(to bottom, var(--c-blue), rgba(59,130,246,0.1));
+    }
+    .pipeline-step { padding-bottom: 24px; }
+
+    .step-circle {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--c-blue), var(--c-cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0; z-index: 1;
+      box-shadow: 0 0 20px rgba(59,130,246,0.4);
+    }
+    .step-content { padding-top: 6px; }
+    .step-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .step-desc { font-size: 13px; color: var(--c-text-muted); line-height: 1.6; }
+
+    .privacy-visual {
+      border-radius: var(--radius-lg); overflow: hidden;
+      border: 1px solid var(--c-border);
+      box-shadow: 0 0 60px rgba(59,130,246,0.1);
+    }
+    .privacy-visual img { width: 100%; display: block; }
+
+    /* ── Agents Section ────────────────────────────────────────────────────── */
+    .agents { padding: 100px 0; background: var(--c-bg2); }
+
+    .agents-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 16px; margin-bottom: 48px;
+    }
+
+    .agent-card {
+      background: var(--c-bg3);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg);
+      padding: 28px 20px;
+      text-align: center;
+      transition: var(--transition);
+      cursor: default;
+    }
+    .agent-card:hover {
+      border-color: var(--agent-color);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 30px var(--agent-glow);
+    }
+    .agent-icon {
+      font-size: 36px; margin-bottom: 12px;
+      display: block;
+    }
+    .agent-name {
+      font-size: 14px; font-weight: 700; margin-bottom: 8px;
+      color: var(--agent-color);
+    }
+    .agent-desc { font-size: 12px; color: var(--c-text-dim); line-height: 1.5; }
+
+    .agents-visual {
+      border-radius: var(--radius-lg); overflow: hidden;
+      border: 1px solid var(--c-border);
+      max-width: 500px; margin: 0 auto;
+    }
+    .agents-visual img { width: 100%; display: block; }
+
+    /* ── Security Section ──────────────────────────────────────────────────── */
+    .security { padding: 100px 0; }
+
+    .security-layout {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px;
+      align-items: center;
+    }
+
+    .security-visual {
+      border-radius: var(--radius-lg); overflow: hidden;
+      border: 1px solid var(--c-border);
+      box-shadow: 0 0 60px rgba(59,130,246,0.1);
+    }
+    .security-visual img { width: 100%; display: block; }
+
+    .guardrails { display: flex; flex-direction: column; gap: 16px; }
+
+    .guardrail {
+      display: flex; gap: 16px; align-items: flex-start;
+      padding: 20px;
+      background: var(--c-bg2);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      transition: var(--transition);
+    }
+    .guardrail:hover {
+      border-color: rgba(59,130,246,0.4);
+      background: rgba(59,130,246,0.04);
+    }
+    .guardrail-num {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--c-blue), var(--c-cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: white; flex-shrink: 0;
+    }
+    .guardrail-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .guardrail-desc { font-size: 13px; color: var(--c-text-muted); line-height: 1.6; }
+
+    /* ── Conformité Section ────────────────────────────────────────────────── */
+    .compliance { padding: 100px 0; background: var(--c-bg2); }
+
+    .compliance-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+    }
+
+    .compliance-card {
+      background: var(--c-bg3);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      text-align: center;
+      transition: var(--transition);
+    }
+    .compliance-card:hover {
+      border-color: rgba(16,185,129,0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 30px rgba(16,185,129,0.1);
+    }
+    .compliance-badge {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin: 0 auto 20px;
+    }
+    .compliance-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .compliance-desc { font-size: 14px; color: var(--c-text-muted); line-height: 1.7; }
+    .compliance-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 16px; padding: 6px 14px; border-radius: 100px;
+      background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
+      font-size: 12px; font-weight: 600; color: var(--c-green);
+    }
+
+    /* ── Roadmap Section ───────────────────────────────────────────────────── */
+    .roadmap { padding: 100px 0; }
+
+    .roadmap-timeline {
+      position: relative;
+      display: flex; flex-direction: column; gap: 0;
+      max-width: 800px; margin: 0 auto;
+    }
+    .roadmap-timeline::before {
+      content: ''; position: absolute;
+      left: 27px; top: 0; bottom: 0; width: 2px;
+      background: linear-gradient(to bottom, var(--c-blue), var(--c-purple), rgba(139,92,246,0.1));
+    }
+
+    .roadmap-item {
+      display: flex; gap: 24px;
+      padding-bottom: 40px; position: relative;
+    }
+    .roadmap-dot {
+      width: 56px; height: 56px; border-radius: 50%;
+      border: 2px solid var(--c-border);
+      background: var(--c-bg2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0; z-index: 1;
+      transition: var(--transition);
+    }
+    .roadmap-item.active .roadmap-dot {
+      border-color: var(--c-blue);
+      background: rgba(59,130,246,0.1);
+      box-shadow: 0 0 20px rgba(59,130,246,0.3);
+    }
+    .roadmap-item.done .roadmap-dot {
+      border-color: var(--c-green);
+      background: rgba(16,185,129,0.1);
+    }
+
+    .roadmap-content { padding-top: 12px; }
+    .roadmap-phase {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--c-blue); margin-bottom: 4px;
+    }
+    .roadmap-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .roadmap-desc { font-size: 14px; color: var(--c-text-muted); line-height: 1.6; margin-bottom: 12px; }
+    .roadmap-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .roadmap-tag {
+      padding: 4px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 500;
+      background: rgba(59,130,246,0.1); color: var(--c-blue-l);
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+
+    /* ── CTA Section ───────────────────────────────────────────────────────── */
+    .cta-section {
+      padding: 100px 0;
+      background: var(--c-bg2);
+      position: relative; overflow: hidden;
+    }
+    .cta-section::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(59,130,246,0.06) 0%, transparent 70%);
+    }
+    .cta-content {
+      position: relative; z-index: 1;
+      text-align: center; max-width: 640px; margin: 0 auto;
+    }
+    .cta-title { font-size: clamp(28px, 4vw, 42px); font-weight: 800; margin-bottom: 16px; }
+    .cta-desc { font-size: 17px; color: var(--c-text-muted); margin-bottom: 40px; line-height: 1.7; }
+    .cta-actions { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+
+    /* ── Footer ────────────────────────────────────────────────────────────── */
+    footer {
+      padding: 48px 40px;
+      border-top: 1px solid var(--c-border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 24px;
+    }
+    .footer-brand { display: flex; align-items: center; gap: 12px; }
+    .footer-brand-name { font-size: 16px; font-weight: 700; }
+    .footer-brand-name span { color: var(--c-blue); }
+    .footer-text { font-size: 13px; color: var(--c-text-dim); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a {
+      font-size: 13px; color: var(--c-text-dim); text-decoration: none;
+      transition: color var(--transition);
+    }
+    .footer-links a:hover { color: var(--c-blue); }
+
+    /* ── Animations d'entrée ───────────────────────────────────────────────── */
+    .fade-in {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    .fade-in-delay-1 { transition-delay: 0.1s; }
+    .fade-in-delay-2 { transition-delay: 0.2s; }
+    .fade-in-delay-3 { transition-delay: 0.3s; }
+    .fade-in-delay-4 { transition-delay: 0.4s; }
+    .fade-in-delay-5 { transition-delay: 0.5s; }
+
+    /* ── Code block ────────────────────────────────────────────────────────── */
+    .code-block {
+      background: #0d1117;
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; line-height: 1.8;
+      overflow-x: auto;
+    }
+    .code-comment { color: #6e7681; }
+    .code-keyword { color: #ff7b72; }
+    .code-string { color: #a5d6ff; }
+    .code-func { color: #d2a8ff; }
+    .code-var { color: #79c0ff; }
+    .code-value { color: #ffa657; }
+
+    /* ── Responsive ────────────────────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .agents-grid { grid-template-columns: repeat(3, 1fr); }
+      .arch-layout, .privacy-layout, .security-layout { grid-template-columns: 1fr; gap: 40px; }
+      .compliance-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      .container { padding: 0 20px; }
+      .hero { padding: 100px 20px 60px; }
+      .hero-stats { gap: 24px; }
+      .hero-stat-divider { display: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .agents-grid { grid-template-columns: repeat(2, 1fr); }
+      .compliance-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────────────────────────────────── -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">H</div>
+    <span class="nav-logo-text"><span>HERMES</span> CHU</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#agents">Agents</a></li>
+    <li><a href="#securite">Sécurité</a></li>
+    <li><a href="#conformite">Conformité</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+  </ul>
+  <div class="nav-cta">
+    <a href="https://github.com/Tarzzan/HERMES-CHU" target="_blank" class="btn btn-ghost">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub
+    </a>
+    <a href="#cta" class="btn btn-primary btn-hero">Découvrir →</a>
+  </div>
+</nav>
+
+<!-- ── Hero ────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-gradient"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      Basé sur Hermes-3 · NousResearch · Souverain &amp; Open Source
+    </div>
+    <h1 class="hero-title">
+      L'IA Agentique<br />
+      <span class="accent">au cœur de l'Hôpital</span>
+    </h1>
+    <p class="hero-subtitle">
+      HERMES CHU est un système d'intelligence artificielle agentique conçu pour les Centres Hospitaliers Universitaires. Orchestration multi-agents, anonymisation dynamique et conformité ISO 27001 nativement intégrées.
+    </p>
+    <div class="hero-actions">
+      <a href="https://github.com/Tarzzan/HERMES-CHU" target="_blank" class="btn btn-primary btn-hero">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        Voir sur GitHub
+      </a>
+      <a href="#architecture" class="btn btn-ghost btn-hero">Explorer l'architecture</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value">5</div>
+        <div class="hero-stat-label">Agents Spécialisés</div>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">96.9%</div>
+        <div class="hero-stat-label">Taux d'anonymisation PHI</div>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">ISO 27001</div>
+        <div class="hero-stat-label">Conformité certifiable</div>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">4</div>
+        <div class="hero-stat-label">Niveaux de garde-fous</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Fonctionnalités ──────────────────────────────────────────────────────── -->
+<section class="features" id="fonctionnalites">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">✦ Fonctionnalités Clés</div>
+      <h2 class="section-title">Un système pensé pour<br />les professionnels de santé</h2>
+      <p class="section-desc">Chaque composant a été conçu pour répondre aux exigences spécifiques de l'environnement hospitalier, de la sécurité des données à l'intégration SIH.</p>
+    </div>
+    <div class="features-grid">
+
+      <div class="feature-card fade-in fade-in-delay-1">
+        <div class="feature-icon" style="background:rgba(59,130,246,0.12);">🧠</div>
+        <div class="feature-title">Orchestrateur Pilote</div>
+        <div class="feature-desc">Agent central basé sur Hermes-3 (70B) qui coordonne l'ensemble du système. Boucle agentique complète avec mémoire de session chiffrée, délégation intelligente et traçabilité totale.</div>
+        <span class="feature-tag" style="background:rgba(59,130,246,0.1);color:#60a5fa;">Hermes-3 · vLLM · FastAPI</span>
+      </div>
+
+      <div class="feature-card fade-in fade-in-delay-2">
+        <div class="feature-icon" style="background:rgba(6,182,212,0.12);">🔒</div>
+        <div class="feature-title">Privacy Engine</div>
+        <div class="feature-desc">SAS d'anonymisation dynamique basé sur CamemBERT-bio-medical. Pseudonymisation réversible des PHI (noms, NIR, IPP) avec mode "glass-break" tracé et justifié.</div>
+        <span class="feature-tag" style="background:rgba(6,182,212,0.1);color:#22d3ee;">NER · CamemBERT · Redis</span>
+      </div>
+
+      <div class="feature-card fade-in fade-in-delay-3">
+        <div class="feature-icon" style="background:rgba(139,92,246,0.12);">🤖</div>
+        <div class="feature-title">Agents Spécialisés</div>
+        <div class="feature-desc">Cinq agents dédiés — Clinique, Administratif, Logistique, Recherche et Formation — chacun avec ses propres outils, son périmètre d'action et ses contraintes de sécurité.</div>
+        <span class="feature-tag" style="background:rgba(139,92,246,0.1);color:#a78bfa;">5 Agents · FHIR R4 · HL7</span>
+      </div>
+
+      <div class="feature-card fade-in fade-in-delay-1">
+        <div class="feature-icon" style="background:rgba(16,185,129,0.12);">🌐</div>
+        <div class="feature-title">Interface Web Pilote</div>
+        <div class="feature-desc">Interface de dialogue type Manus/Ollama avec streaming SSE. Tableau de bord de supervision en temps réel et espace d'administration pour le RSSI et le service qualité.</div>
+        <span class="feature-tag" style="background:rgba(16,185,129,0.1);color:#34d399;">React · Vite · Tailwind</span>
+      </div>
+
+      <div class="feature-card fade-in fade-in-delay-2">
+        <div class="feature-icon" style="background:rgba(245,158,11,0.12);">📊</div>
+        <div class="feature-title">API Qualité</div>
+        <div class="feature-desc">16 endpoints REST dédiés au suivi qualité. Métriques en temps réel, journal d'audit immuable (SHA-256), gestion des incidents et génération de rapports de conformité automatisés.</div>
+        <span class="feature-tag" style="background:rgba(245,158,11,0.1);color:#fbbf24;">FastAPI · PostgreSQL · OpenAPI</span>
+      </div>
+
+      <div class="feature-card fade-in fade-in-delay-3">
+        <div class="feature-icon" style="background:rgba(239,68,68,0.12);">🛡️</div>
+        <div class="feature-title">Garde-Fous à 4 Niveaux</div>
+        <div class="feature-desc">Système de protection multicouche contre les vulnérabilités LLM (OWASP LLM Top 10). Validation des entrées, restriction des outils, contrôle des sorties et exécution bornée.</div>
+        <span class="feature-tag" style="background:rgba(239,68,68,0.1);color:#f87171;">OWASP LLM · ISO 27001</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Architecture ─────────────────────────────────────────────────────────── -->
+<section class="architecture" id="architecture">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">⚙ Architecture Technique</div>
+      <h2 class="section-title">5 couches. Une seule vision.</h2>
+      <p class="section-desc">Une architecture en couches isolées, déployée sur Kubernetes, conçue pour la haute disponibilité et la défense en profondeur.</p>
+    </div>
+    <div class="arch-layout">
+      <div class="arch-image fade-in">
+        <img src="assets/architecture_visual.jpg" alt="Architecture HERMES CHU — 5 couches" loading="lazy" />
+      </div>
+      <div class="arch-layers fade-in fade-in-delay-2">
+        <div class="arch-layer" style="--layer-color:#60a5fa;--layer-bg:rgba(59,130,246,0.12);">
+          <div class="arch-layer-num">1</div>
+          <div class="arch-layer-info">
+            <div class="arch-layer-name">Couche Présentation</div>
+            <div class="arch-layer-tech">React · Vite · Nginx · TLS 1.3</div>
+          </div>
+        </div>
+        <div class="arch-layer" style="--layer-color:#22d3ee;--layer-bg:rgba(6,182,212,0.12);">
+          <div class="arch-layer-num">2</div>
+          <div class="arch-layer-info">
+            <div class="arch-layer-name">Couche Sécurité & IAM</div>
+            <div class="arch-layer-tech">Keycloak · OAuth2 · OIDC · RBAC</div>
+          </div>
+        </div>
+        <div class="arch-layer" style="--layer-color:#f9fafb;--layer-bg:rgba(249,250,251,0.08);">
+          <div class="arch-layer-num">3</div>
+          <div class="arch-layer-info">
+            <div class="arch-layer-name">Couche Orchestration</div>
+            <div class="arch-layer-tech">Hermes-3 · vLLM · Privacy Engine · Redis</div>
+          </div>
+        </div>
+        <div class="arch-layer" style="--layer-color:#a78bfa;--layer-bg:rgba(139,92,246,0.12);">
+          <div class="arch-layer-num">4</div>
+          <div class="arch-layer-info">
+            <div class="arch-layer-name">Couche Agents Spécialisés</div>
+            <div class="arch-layer-tech">5 Agents · FHIR R4 · Outils Métier</div>
+          </div>
+        </div>
+        <div class="arch-layer" style="--layer-color:#34d399;--layer-bg:rgba(16,185,129,0.12);">
+          <div class="arch-layer-num">5</div>
+          <div class="arch-layer-info">
+            <div class="arch-layer-name">Couche SIH & Données</div>
+            <div class="arch-layer-tech">PostgreSQL · HL7 FHIR · DPI · PACS</div>
+          </div>
+        </div>
+        <div class="code-block fade-in fade-in-delay-3" style="margin-top:16px;">
+          <span class="code-comment"># Démarrage rapide</span><br/>
+          <span class="code-keyword">git</span> <span class="code-func">clone</span> <span class="code-string">https://github.com/Tarzzan/HERMES-CHU</span><br/>
+          <span class="code-keyword">cd</span> HERMES-CHU<br/>
+          <span class="code-keyword">docker</span> <span class="code-func">compose</span> <span class="code-var">-f</span> infrastructure/docker/docker-compose.dev.yml <span class="code-value">up</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Privacy Engine ───────────────────────────────────────────────────────── -->
+<section class="privacy" id="privacy">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">🔐 Privacy Engine</div>
+      <h2 class="section-title">L'anonymisation au cœur<br />de chaque échange</h2>
+      <p class="section-desc">Un pipeline NER en 5 étapes garantit que les données de santé à caractère personnel ne quittent jamais le périmètre sécurisé, même en mode désactivé.</p>
+    </div>
+    <div class="privacy-layout">
+      <div class="privacy-pipeline fade-in">
+        <div class="pipeline-step">
+          <div class="step-circle">🔍</div>
+          <div class="step-content">
+            <div class="step-title">Détection NER</div>
+            <div class="step-desc">Le modèle CamemBERT-bio-medical analyse le texte et identifie les entités PHI : noms, dates, NIR, IPP, adresses, numéros de téléphone.</div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-circle">🏷️</div>
+          <div class="step-content">
+            <div class="step-title">Tokenisation Déterministe</div>
+            <div class="step-desc">Chaque entité détectée est remplacée par un token unique et déterministe (ex: <code style="background:#1e293b;padding:2px 6px;border-radius:4px;font-size:12px;">[PATIENT_7f3a]</code>). La table de correspondance est chiffrée.</div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-circle">🔄</div>
+          <div class="step-content">
+            <div class="step-title">Pseudonymisation Réversible</div>
+            <div class="step-desc">La correspondance token ↔ donnée réelle est stockée dans Redis (TTL 1h, chiffré AES-256). La désanonymisation est possible pour les utilisateurs autorisés.</div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-circle">📋</div>
+          <div class="step-content">
+            <div class="step-title">Mode Glass-Break Tracé</div>
+            <div class="step-desc">La désactivation de l'anonymisation est possible mais exige une justification textuelle et génère une entrée immuable dans le journal d'audit.</div>
+          </div>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-circle">✅</div>
+          <div class="step-content">
+            <div class="step-title">Contrôle de Sortie</div>
+            <div class="step-desc">Le garde-fou de Niveau 3 rescanne la sortie du LLM pour détecter et masquer tout PHI résiduel avant restitution à l'utilisateur.</div>
+          </div>
+        </div>
+      </div>
+      <div class="privacy-visual fade-in fade-in-delay-2">
+        <img src="assets/privacy_engine.jpg" alt="Privacy Engine — Flux d'anonymisation" loading="lazy" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Agents ───────────────────────────────────────────────────────────────── -->
+<section class="agents" id="agents">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">🤖 Agents Spécialisés</div>
+      <h2 class="section-title">Cinq agents, un seul pilote</h2>
+      <p class="section-desc">L'Orchestrateur Pilote délègue les tâches aux agents spécialisés selon le contexte, le rôle de l'utilisateur et les contraintes de sécurité.</p>
+    </div>
+    <div class="agents-grid fade-in">
+      <div class="agent-card" style="--agent-color:#60a5fa;--agent-glow:rgba(59,130,246,0.2);">
+        <span class="agent-icon">🏥</span>
+        <div class="agent-name">Agent Clinique</div>
+        <div class="agent-desc">Synthèses médicales, aide à la décision, recommandations HAS, lettres de sortie, analyse d'ordonnances.</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#34d399;--agent-glow:rgba(16,185,129,0.2);">
+        <span class="agent-icon">📋</span>
+        <div class="agent-name">Agent Administratif</div>
+        <div class="agent-desc">Gestion des admissions, planification, facturation, codage PMSI, courriers et comptes-rendus.</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#fbbf24;--agent-glow:rgba(245,158,11,0.2);">
+        <span class="agent-icon">📦</span>
+        <div class="agent-name">Agent Logistique</div>
+        <div class="agent-desc">Suivi des stocks médicaux, gestion des commandes, alertes de rupture, traçabilité des dispositifs.</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#a78bfa;--agent-glow:rgba(139,92,246,0.2);">
+        <span class="agent-icon">🔬</span>
+        <div class="agent-name">Agent Recherche</div>
+        <div class="agent-desc">Extraction de cohortes anonymisées, analyse de littérature médicale, aide à la rédaction de protocoles.</div>
+      </div>
+      <div class="agent-card" style="--agent-color:#f9fafb;--agent-glow:rgba(249,250,251,0.1);">
+        <span class="agent-icon">🎓</span>
+        <div class="agent-name">Agent Formation</div>
+        <div class="agent-desc">Création de cas cliniques pédagogiques, quiz de formation continue, suivi des compétences.</div>
+      </div>
+    </div>
+    <div class="agents-visual fade-in fade-in-delay-2">
+      <img src="assets/agents_visual.jpg" alt="Agents Spécialisés HERMES CHU" loading="lazy" />
+    </div>
+  </div>
+</section>
+
+<!-- ── Sécurité ─────────────────────────────────────────────────────────────── -->
+<section class="security" id="securite">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">🛡️ Garde-Fous</div>
+      <h2 class="section-title">4 niveaux de protection<br />contre les vulnérabilités LLM</h2>
+      <p class="section-desc">Conçu pour contrer l'intégralité de l'OWASP LLM Top 10, le système de garde-fous protège chaque flux à chaque étape du traitement.</p>
+    </div>
+    <div class="security-layout">
+      <div class="security-visual fade-in">
+        <img src="assets/security_visual.jpg" alt="Garde-Fous à 4 niveaux" loading="lazy" />
+      </div>
+      <div class="guardrails fade-in fade-in-delay-2">
+        <div class="guardrail">
+          <div class="guardrail-num">1</div>
+          <div>
+            <div class="guardrail-title">Input Guardrail — Validation des Entrées</div>
+            <div class="guardrail-desc">Détection des injections de prompt, des patterns de jailbreak et des données PHI brutes dans les messages entrants. Blocage ou anonymisation automatique avant traitement.</div>
+          </div>
+        </div>
+        <div class="guardrail">
+          <div class="guardrail-num">2</div>
+          <div>
+            <div class="guardrail-title">Tool Call Guardrail — Restriction des Outils</div>
+            <div class="guardrail-desc">Chaque agent dispose d'une liste blanche d'outils autorisés. Toute tentative d'appel à un outil non autorisé (shell, réseau, système de fichiers) est bloquée et journalisée.</div>
+          </div>
+        </div>
+        <div class="guardrail">
+          <div class="guardrail-num">3</div>
+          <div>
+            <div class="guardrail-title">Output Guardrail — Contrôle des Sorties</div>
+            <div class="guardrail-desc">Scan NER systématique de chaque réponse générée par le LLM. Les PHI résiduels sont masqués avant restitution à l'utilisateur, même si l'anonymisation d'entrée était active.</div>
+          </div>
+        </div>
+        <div class="guardrail">
+          <div class="guardrail-num">4</div>
+          <div>
+            <div class="guardrail-title">Bounded Execution — Exécution Bornée</div>
+            <div class="guardrail-desc">Limite stricte de 10 itérations dans la boucle agentique, 8 192 tokens maximum par requête, et timeout de 60 secondes. Prévient les boucles infinies et les attaques DoS.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Conformité ───────────────────────────────────────────────────────────── -->
+<section class="compliance" id="conformite">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">✅ Conformité</div>
+      <h2 class="section-title">Conçu pour l'environnement<br />réglementaire hospitalier</h2>
+      <p class="section-desc">Chaque décision d'architecture a été prise en tenant compte des exigences normatives et réglementaires applicables aux systèmes d'information de santé.</p>
+    </div>
+    <div class="compliance-grid">
+      <div class="compliance-card fade-in fade-in-delay-1">
+        <div class="compliance-badge">🔐</div>
+        <div class="compliance-title">ISO/IEC 27001:2022</div>
+        <div class="compliance-desc">Mapping complet de l'Annexe A. Journal d'audit immuable (SHA-256), chiffrement TLS 1.3 + AES-256, RBAC via Keycloak, gestion des incidents documentée.</div>
+        <div class="compliance-status">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="5"/></svg>
+          Certifiable
+        </div>
+      </div>
+      <div class="compliance-card fade-in fade-in-delay-2">
+        <div class="compliance-badge">🏥</div>
+        <div class="compliance-title">HDS (Hébergeur de Données de Santé)</div>
+        <div class="compliance-desc">Conformité aux exigences de l'ANS. Pas de stockage long terme des données patient, traçabilité des accès pour le DPO, haute disponibilité et continuité d'activité.</div>
+        <div class="compliance-status">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="5"/></svg>
+          Conforme
+        </div>
+      </div>
+      <div class="compliance-card fade-in fade-in-delay-3">
+        <div class="compliance-badge">🇪🇺</div>
+        <div class="compliance-title">RGPD &amp; Privacy by Design</div>
+        <div class="compliance-desc">Anonymisation activée par défaut, consentement vérifié via FHIR, droit à l'effacement respecté (sessions volatiles), registre des traitements exportable.</div>
+        <div class="compliance-status">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="5"/></svg>
+          Privacy by Design
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Roadmap ──────────────────────────────────────────────────────────────── -->
+<section class="roadmap" id="roadmap">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-tag">🗺 Roadmap</div>
+      <h2 class="section-title">18 mois vers la production</h2>
+      <p class="section-desc">Une feuille de route structurée en 6 phases, de la preuve de concept au déploiement multi-sites.</p>
+    </div>
+    <div class="roadmap-timeline">
+      <div class="roadmap-item done fade-in">
+        <div class="roadmap-dot">✅</div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 1 · Terminée · Sept 2026</div>
+          <div class="roadmap-title">Fondations &amp; Infrastructure</div>
+          <div class="roadmap-desc">Orchestrateur de base, intégration vLLM, configuration Keycloak, mémoire de session chiffrée, pipeline CI/CD.</div>
+          <div class="roadmap-tags">
+            <span class="roadmap-tag">Orchestrateur</span>
+            <span class="roadmap-tag">vLLM</span>
+            <span class="roadmap-tag">Keycloak</span>
+            <span class="roadmap-tag">Redis</span>
+          </div>
+        </div>
+      </div>
+      <div class="roadmap-item done fade-in fade-in-delay-1">
+        <div class="roadmap-dot">✅</div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 2 · Terminée · Nov 2026</div>
+          <div class="roadmap-title">Sécurité &amp; Anonymisation</div>
+          <div class="roadmap-desc">Privacy Engine NER, pseudonymisation réversible, mode glass-break tracé, garde-fous 4 niveaux, journal d'audit immuable.</div>
+          <div class="roadmap-tags">
+            <span class="roadmap-tag">Privacy Engine</span>
+            <span class="roadmap-tag">CamemBERT</span>
+            <span class="roadmap-tag">ISO 27001</span>
+          </div>
+        </div>
+      </div>
+      <div class="roadmap-item done fade-in fade-in-delay-2">
+        <div class="roadmap-dot">✅</div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 3 · Terminée · Jan 2027</div>
+          <div class="roadmap-title">Agents Spécialisés &amp; SIH</div>
+          <div class="roadmap-desc">5 agents spécialisés, connecteur HL7 FHIR R4, intégration DPI, tests d'intégration complets.</div>
+          <div class="roadmap-tags">
+            <span class="roadmap-tag">5 Agents</span>
+            <span class="roadmap-tag">FHIR R4</span>
+            <span class="roadmap-tag">HL7</span>
+          </div>
+        </div>
+      </div>
+      <div class="roadmap-item done fade-in fade-in-delay-3">
+        <div class="roadmap-dot">✅</div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 4 · Terminée · Mars 2027</div>
+          <div class="roadmap-title">Interface Web &amp; API Qualité</div>
+          <div class="roadmap-desc">Interface React (Dialogue, Supervision, Admin), API Qualité 16 endpoints, tableau de bord RSSI.</div>
+          <div class="roadmap-tags">
+            <span class="roadmap-tag">React</span>
+            <span class="roadmap-tag">FastAPI</span>
+            <span class="roadmap-tag">PostgreSQL</span>
+          </div>
+        </div>
+      </div>
+      <div class="roadmap-item active fade-in fade-in-delay-4">
+        <div class="roadmap-dot">🔄</div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 5 · En cours · Juin 2027</div>
+          <div class="roadmap-title">Pilote &amp; Validation</div>
+          <div class="roadmap-desc">Déploiement dans un service pilote, tests utilisateurs, pentest complet, validation par le service qualité et le RSSI.</div>
+          <div class="roadmap-tags">
+            <span class="roadmap-tag">Staging</span>
+            <span class="roadmap-tag">Pentest</span>
+            <span class="roadmap-tag">UAT</span>
+          </div>
+        </div>
+      </div>
+      <div class="roadmap-item fade-in fade-in-delay-5">
+        <div class="roadmap-dot">🚀</div>
+        <div class="roadmap-content">
+          <div class="roadmap-phase">Phase 6 · Planifiée · Déc 2027</div>
+          <div class="roadmap-title">Production Multi-Sites</div>
+          <div class="roadmap-desc">Déploiement production, extension à d'autres services, formation des équipes, certification ISO 27001, ouverture aux GHT partenaires.</div>
+          <div class="roadmap-tags">
+            <span class="roadmap-tag">Production</span>
+            <span class="roadmap-tag">Multi-sites</span>
+            <span class="roadmap-tag">Certification</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ──────────────────────────────────────────────────────────────────── -->
+<section class="cta-section" id="cta">
+  <div class="container">
+    <div class="cta-content fade-in">
+      <h2 class="cta-title">Prêt à déployer HERMES<br />dans votre établissement ?</h2>
+      <p class="cta-desc">Le dépôt GitHub est public, la documentation complète et l'infrastructure prête à être déployée. Clonez, configurez et lancez en quelques minutes.</p>
+      <div class="cta-actions">
+        <a href="https://github.com/Tarzzan/HERMES-CHU" target="_blank" class="btn btn-primary btn-hero">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          Cloner le dépôt
+        </a>
+        <a href="https://github.com/Tarzzan/HERMES-CHU/wiki" target="_blank" class="btn btn-ghost btn-hero">
+          Lire la documentation
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-brand">
+    <div class="nav-logo-icon" style="width:32px;height:32px;font-size:16px;">H</div>
+    <div>
+      <div class="footer-brand-name"><span>HERMES</span> CHU</div>
+      <div class="footer-text">Système Agentique Hospitalier Souverain · v1.0.0</div>
+    </div>
+  </div>
+  <div class="footer-text">
+    Basé sur <a href="https://github.com/NousResearch/Hermes-Function-Calling" target="_blank" style="color:var(--c-blue);text-decoration:none;">Hermes-3 · NousResearch</a> · Licence MIT
+  </div>
+  <div class="footer-links">
+    <a href="https://github.com/Tarzzan/HERMES-CHU" target="_blank">GitHub</a>
+    <a href="https://github.com/Tarzzan/HERMES-CHU/wiki" target="_blank">Wiki</a>
+    <a href="https://github.com/Tarzzan/HERMES-CHU/releases" target="_blank">Releases</a>
+    <a href="https://github.com/Tarzzan/HERMES-CHU/issues" target="_blank">Issues</a>
+  </div>
+</footer>
+
+<script>
+  // ── Navbar scroll effect ──────────────────────────────────────────────────
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 50) {
+      navbar.style.background = 'rgba(3,7,18,0.95)';
+    } else {
+      navbar.style.background = 'rgba(3,7,18,0.85)';
+    }
+  });
+
+  // ── Intersection Observer pour les animations d'entrée ────────────────────
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+  // ── Compteur animé pour les stats ─────────────────────────────────────────
+  function animateCounter(el, target, suffix = '') {
+    const isFloat = target % 1 !== 0;
+    let start = 0;
+    const duration = 1500;
+    const step = (timestamp) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = isFloat
+        ? (eased * target).toFixed(1)
+        : Math.floor(eased * target);
+      el.textContent = value + suffix;
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  // Observer pour déclencher les compteurs
+  const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const stats = entry.target.querySelectorAll('.hero-stat-value');
+        stats.forEach(stat => {
+          const text = stat.textContent;
+          if (text === '5') animateCounter(stat, 5);
+          else if (text === '96.9%') animateCounter(stat, 96.9, '%');
+          else if (text === '4') animateCounter(stat, 4);
+        });
+        statsObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  const heroStats = document.querySelector('.hero-stats');
+  if (heroStats) statsObserver.observe(heroStats);
+
+  // ── Smooth scroll pour les ancres ─────────────────────────────────────────
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', (e) => {
+      const target = document.querySelector(anchor.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+</body>
+</html>
