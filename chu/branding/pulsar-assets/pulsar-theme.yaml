@@ -1,0 +1,143 @@
+# ============================================================
+#  PULSAR — Theme Dashboard
+#  Plateforme Unifiée de Liaison, de Surveillance et d'Assistance en temps Réel
+#  DSIO — CHU de Guyane
+#  Développé par William MERI (@Tarzzan)
+# ============================================================
+
+name: pulsar
+label: PULSAR — CHU de Guyane
+description: Identite visuelle officielle PULSAR — Systeme Agentique Medical DSIO CHU de Guyane
+
+# ── Palette de couleurs ──────────────────────────────────────
+# background : fond principal (bleu nuit médical profond)
+# midground  : couleur d'accent / texte principal
+# foreground : couche d'inversion (0 = mode sombre, 1 = mode clair)
+palette:
+  background:
+    hex: "#050f1e"
+    alpha: 1.0
+  midground:
+    hex: "#00d4ff"
+    alpha: 1.0
+  foreground:
+    hex: "#ffffff"
+    alpha: 0.0
+  warmGlow: "rgba(0, 180, 255, 0.18)"
+  noiseOpacity: 0.6
+
+# ── Typographie ──────────────────────────────────────────────
+typography:
+  fontSans: '"Inter", "Segoe UI", system-ui, -apple-system, sans-serif'
+  fontMono: '"JetBrains Mono", "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace'
+  baseSize: "14px"
+  lineHeight: "1.6"
+  letterSpacing: "0.01em"
+
+# ── Layout ───────────────────────────────────────────────────
+layout:
+  radius: "0.375rem"
+  density: "comfortable"
+
+layoutVariant: "standard"
+
+# ── Surcharges de couleurs composants ────────────────────────
+colorOverrides:
+  primary: "#00d4ff"
+  primaryForeground: "#050f1e"
+  secondary: "#0a2540"
+  secondaryForeground: "#a0c4d8"
+  accent: "#00b4d8"
+  accentForeground: "#ffffff"
+  muted: "#0d1f35"
+  mutedForeground: "#6b8fa8"
+  border: "#0e2d4a"
+  input: "#0a1e32"
+  ring: "#00d4ff"
+  success: "#00e5a0"
+  destructive: "#ff4d6d"
+
+# ── Assets visuels ───────────────────────────────────────────
+# Ces URLs pointent vers les assets hébergés sur le CDN PULSAR.
+# Pour utiliser des fichiers locaux, remplacez par un chemin absolu
+# ou une URL data: (base64).
+assets:
+  # Image de fond principale : centre de commande médical + jungle amazonienne
+  bg: "https://files.manuscdn.com/user_upload_by_module/session_file/92503813/vwRkMpgKaxLVlAAE.jpg"
+  # Logo PULSAR (icône ECG + étoile pulsar)
+  logo: "https://files.manuscdn.com/user_upload_by_module/session_file/92503813/LYiVeVRiRiXDKawh.png"
+  # Image de fond sidebar
+  sidebar: "https://files.manuscdn.com/user_upload_by_module/session_file/92503813/oceBISFudUvOruRl.jpg"
+
+# ── Styles de composants ─────────────────────────────────────
+componentStyles:
+  card:
+    background: "rgba(5, 15, 30, 0.85)"
+    border: "1px solid rgba(0, 212, 255, 0.15)"
+    backdropFilter: "blur(12px)"
+  header:
+    background: "rgba(5, 15, 30, 0.92)"
+    borderBottom: "1px solid rgba(0, 212, 255, 0.12)"
+    backdropFilter: "blur(16px)"
+  sidebar:
+    background: "rgba(4, 12, 24, 0.95)"
+    borderRight: "1px solid rgba(0, 212, 255, 0.10)"
+  footer:
+    background: "rgba(4, 12, 24, 0.92)"
+    borderTop: "1px solid rgba(0, 212, 255, 0.10)"
+
+# ── CSS personnalisé ─────────────────────────────────────────
+customCSS: |
+  /* ── PULSAR — CSS personnalisé ── */
+
+  /* Masquer toutes les références à Nous Research et Hermes Agent */
+  a[href*="nousresearch.com"] {
+    pointer-events: none !important;
+  }
+
+  /* Fond backdrop : opacité augmentée pour l'image de fond */
+  .pointer-events-none.fixed.inset-0[style*="--theme-asset-bg"] {
+    opacity: 0.18 !important;
+  }
+
+  /* Sidebar : fond légèrement transparent avec effet verre */
+  [class*="sidebar"] {
+    background: rgba(4, 12, 24, 0.94) !important;
+    backdrop-filter: blur(20px) !important;
+    border-right: 1px solid rgba(0, 212, 255, 0.12) !important;
+  }
+
+  /* Titre PULSAR dans la sidebar */
+  .font-mondwest {
+    letter-spacing: 0.15em !important;
+  }
+
+  /* Barre de statut en bas */
+  [class*="status"] {
+    font-family: "JetBrains Mono", monospace !important;
+  }
+
+  /* Accent cyan sur les éléments actifs */
+  [data-active="true"], [aria-current="page"] {
+    color: #00d4ff !important;
+    border-left: 2px solid #00d4ff !important;
+  }
+
+  /* Scrollbar personnalisée */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: rgba(5, 15, 30, 0.5); }
+  ::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.3); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0, 212, 255, 0.6); }
+
+  /* Sélection de texte */
+  ::selection { background: rgba(0, 212, 255, 0.25); color: #ffffff; }
+
+  /* Effet de lueur sur les boutons primaires */
+  button[class*="primary"], [class*="btn-primary"] {
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.25) !important;
+  }
+
+  /* Terminal xterm : fond légèrement transparent */
+  .xterm-viewport {
+    background: rgba(5, 15, 30, 0.7) !important;
+  }

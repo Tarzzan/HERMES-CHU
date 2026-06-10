@@ -1,0 +1,93 @@
+# ============================================================
+#  PULSAR — Skin CLI
+#  Plateforme Unifiée de Liaison, de Surveillance et d'Assistance en temps Réel
+#  DSIO — CHU de Guyane
+#  Développé par William MERI (@Tarzzan)
+# ============================================================
+
+name: pulsar
+description: "PULSAR — Systeme Agentique Medical | DSIO CHU de Guyane"
+
+# ── Couleurs CLI ─────────────────────────────────────────────
+colors:
+  banner_border: "#006b8f"
+  banner_title: "#00d4ff"
+  banner_accent: "#00b4d8"
+  banner_dim: "#1a4a6b"
+  banner_text: "#c8e8f5"
+  ui_accent: "#00d4ff"
+  ui_label: "#00b4d8"
+  ui_ok: "#00e5a0"
+  ui_error: "#ff4d6d"
+  ui_warn: "#ffb347"
+  prompt: "#c8e8f5"
+  input_rule: "#006b8f"
+  response_border: "#00d4ff"
+  status_bar_bg: "#030d1a"
+  status_bar_text: "#c8e8f5"
+  status_bar_strong: "#00d4ff"
+  status_bar_dim: "#1a4a6b"
+  status_bar_good: "#00e5a0"
+  status_bar_warn: "#ffb347"
+  status_bar_bad: "#ff4d6d"
+  status_bar_critical: "#ff1744"
+  session_label: "#00b4d8"
+  session_border: "#1a4a6b"
+
+# ── Spinner ───────────────────────────────────────────────────
+spinner:
+  waiting_faces:
+    - "(⚕)"
+    - "(◉)"
+    - "(⊙)"
+    - "(⚕)"
+    - "(◎)"
+  thinking_faces:
+    - "(⚕)"
+    - "(◉)"
+    - "(⊙)"
+    - "(◎)"
+    - "(⚕)"
+  thinking_verbs:
+    - "Analyse en cours"
+    - "Traitement medical"
+    - "Consultation agents"
+    - "Verification donnees"
+    - "Synthese clinique"
+    - "Orchestration"
+    - "Vigilance active"
+    - "Impulsion PULSAR"
+
+# ── Branding ──────────────────────────────────────────────────
+branding:
+  agent_name: "PULSAR"
+  welcome: "Bienvenue sur PULSAR — Systeme Agentique Medical | DSIO CHU de Guyane\nTapez votre message ou /help pour les commandes disponibles."
+  goodbye: "Au revoir. PULSAR reste en veille. (⚕)"
+  response_label: " ⚕ PULSAR "
+  prompt_symbol: "⚕"
+  help_header: "(⚕) Commandes PULSAR disponibles"
+
+tool_prefix: "┊"
+
+# ── Banner ASCII PULSAR ───────────────────────────────────────
+banner_logo: |
+  [bold #00d4ff]██████╗ ██╗   ██╗██╗     ███████╗ █████╗ ██████╗ [/]
+  [bold #00d4ff]██╔══██╗██║   ██║██║     ██╔════╝██╔══██╗██╔══██╗[/]
+  [#00b4d8]██████╔╝██║   ██║██║     ███████╗███████║██████╔╝[/]
+  [#0094b8]██╔═══╝ ██║   ██║██║     ╚════██║██╔══██║██╔══██╗[/]
+  [#006b8f]██║     ╚██████╔╝███████╗███████║██║  ██║██║  ██║[/]
+  [#004d6b]╚═╝      ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝[/]
+
+banner_hero: |
+  [#006b8f]                    *    [/]
+  [#0094b8]                   /|\   [/]
+  [#00b4d8]          ___     / | \     ___[/]
+  [#00d4ff]    ~~~~~/   \~~~/ ~~~~ \~~~/   \~~~~~[/]
+  [#00b4d8]        |  ⚕  |  PULSAR  |  ⚕  |[/]
+  [#0094b8]    ~~~~~\___/~~~\      /~~~\___/~~~~~[/]
+  [#006b8f]                  \    /[/]
+  [#004d6b]                   \  /[/]
+  [#003d55]                    \/[/]
+  [dim #1a4a6b]         Plateforme Unifiee de Liaison,[/]
+  [dim #1a4a6b]      de Surveillance et d'Assistance en temps Reel[/]
+  [dim #006b8f]              DSIO — CHU de Guyane[/]
