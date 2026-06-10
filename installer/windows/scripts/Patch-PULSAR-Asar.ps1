@@ -1,31 +1,27 @@
 # =============================================================================
 # Patch-PULSAR-Asar.ps1
-# PULSAR CHU — DSIO CHU de Guyane
-# Patche le Hermes Desktop installé pour remplacer l'identité Hermes/NousResearch
+# PULSAR CHU - DSIO CHU de Guyane
+# Patche le Hermes Desktop installe pour remplacer l'identite Hermes/NousResearch
 # par PULSAR / DSIO CHU de Guyane, sans recompiler le binaire Electron.
 #
-# Usage : Clic droit → Exécuter avec PowerShell
-#         ou : powershell -ExecutionPolicy Bypass -File Patch-PULSAR-Asar.ps1
+# Usage : powershell -ExecutionPolicy Bypass -File Patch-PULSAR-Asar.ps1
 # =============================================================================
 
 $ErrorActionPreference = "Stop"
-$Host.UI.RawUI.WindowTitle = "PULSAR CHU — Patch Asar Desktop"
 
-# ─── Couleurs console ────────────────────────────────────────────────────────
-function Write-Step  { param($msg) Write-Host "  → $msg" -ForegroundColor Cyan }
-function Write-OK    { param($msg) Write-Host "  [OK] $msg" -ForegroundColor Green }
-function Write-Warn  { param($msg) Write-Host "  [!]  $msg" -ForegroundColor Yellow }
-function Write-Fail  { param($msg) Write-Host "  [X]  $msg" -ForegroundColor Red }
+function Write-Step { param($msg) Write-Host "  -> $msg" -ForegroundColor Cyan }
+function Write-OK   { param($msg) Write-Host "  [OK] $msg" -ForegroundColor Green }
+function Write-Warn { param($msg) Write-Host "  [!]  $msg" -ForegroundColor Yellow }
+function Write-Fail { param($msg) Write-Host "  [X]  $msg" -ForegroundColor Red }
 
-# ─── Bannière ────────────────────────────────────────────────────────────────
 Write-Host ""
-Write-Host "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Blue
-Write-Host "  ║       PULSAR CHU — Patch Identité Desktop v2.3.0        ║" -ForegroundColor Blue
-Write-Host "  ║       DSIO - CHU de Guyane  |  William MERI              ║" -ForegroundColor Blue
-Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Blue
+Write-Host "  +----------------------------------------------------------+" -ForegroundColor Blue
+Write-Host "  |      PULSAR CHU - Patch Identite Desktop v2.3.0         |" -ForegroundColor Blue
+Write-Host "  |      DSIO - CHU de Guyane  |  William MERI              |" -ForegroundColor Blue
+Write-Host "  +----------------------------------------------------------+" -ForegroundColor Blue
 Write-Host ""
 
-# ─── Localiser l'installation Hermes Desktop ─────────────────────────────────
+# --- Localiser l'installation Hermes Desktop ---------------------------------
 $possiblePaths = @(
     "$env:LOCALAPPDATA\hermes\hermes-agent\apps\desktop\release\win-unpacked",
     "$env:LOCALAPPDATA\hermes\apps\desktop\release\win-unpacked",
@@ -36,155 +32,134 @@ $possiblePaths = @(
 
 $desktopRoot = $null
 foreach ($p in $possiblePaths) {
-    if (Test-Path "$p\resources\app.asar") {
-        $desktopRoot = $p
-        break
-    }
-    if (Test-Path "$p\app.asar") {
-        $desktopRoot = $p
-        break
-    }
+    if (Test-Path "$p\resources\app.asar") { $desktopRoot = $p; break }
+    if (Test-Path "$p\app.asar")           { $desktopRoot = $p; break }
 }
 
 if (-not $desktopRoot) {
-    # Recherche étendue
-    Write-Step "Recherche de app.asar dans %LOCALAPPDATA%..."
+    Write-Step "Recherche etendue de app.asar dans %LOCALAPPDATA%..."
     $found = Get-ChildItem -Path $env:LOCALAPPDATA -Filter "app.asar" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($found) {
-        $desktopRoot = $found.DirectoryName
-    }
+    if ($found) { $desktopRoot = $found.DirectoryName }
 }
 
 if (-not $desktopRoot) {
-    Write-Fail "Hermes Desktop introuvable. Vérifiez que Hermes Desktop est installé."
-    Write-Host ""
-    Write-Host "  Chemins recherchés :" -ForegroundColor Gray
-    $possiblePaths | ForEach-Object { Write-Host "    $_" -ForegroundColor Gray }
-    Read-Host "`n  Appuyez sur Entrée pour quitter"
+    Write-Fail "Hermes Desktop introuvable. Verifiez que Hermes Desktop est installe."
+    Read-Host "`n  Appuyez sur Entree pour quitter"
     exit 1
 }
 
-# Localiser app.asar
-$asarPath = if (Test-Path "$desktopRoot\resources\app.asar") {
-    "$desktopRoot\resources\app.asar"
-} elseif (Test-Path "$desktopRoot\app.asar") {
-    "$desktopRoot\app.asar"
-} else {
-    $null
-}
+$asarPath = $null
+if (Test-Path "$desktopRoot\resources\app.asar") { $asarPath = "$desktopRoot\resources\app.asar" }
+elseif (Test-Path "$desktopRoot\app.asar")       { $asarPath = "$desktopRoot\app.asar" }
 
 if (-not $asarPath) {
     Write-Fail "app.asar introuvable dans : $desktopRoot"
-    Read-Host "`n  Appuyez sur Entrée pour quitter"
+    Read-Host "`n  Appuyez sur Entree pour quitter"
     exit 1
 }
 
-Write-OK "Hermes Desktop trouvé : $desktopRoot"
+Write-OK "Hermes Desktop trouve : $desktopRoot"
 Write-OK "app.asar : $asarPath"
 Write-Host ""
 
-# ─── Vérifier Node.js et @electron/asar ──────────────────────────────────────
-Write-Step "Vérification de Node.js..."
+# --- Verifier Node.js --------------------------------------------------------
+Write-Step "Verification de Node.js..."
 try {
     $nodeVer = node --version 2>&1
     Write-OK "Node.js $nodeVer"
 } catch {
     Write-Fail "Node.js introuvable. Installez Node.js depuis https://nodejs.org"
-    Read-Host "`n  Appuyez sur Entrée pour quitter"
+    Read-Host "`n  Appuyez sur Entree pour quitter"
     exit 1
 }
 
-Write-Step "Vérification de @electron/asar..."
-$asarCmd = $null
+# --- Verifier @electron/asar -------------------------------------------------
+Write-Step "Verification de @electron/asar..."
+$asarAvailable = $false
 try {
-    $asarCmd = (Get-Command asar -ErrorAction SilentlyContinue)?.Source
-    if (-not $asarCmd) {
-        # Chercher dans npx
-        $null = npx @electron/asar --version 2>&1
-        $asarCmd = "npx @electron/asar"
+    $null = asar --version 2>&1
+    $asarAvailable = $true
+    Write-OK "asar disponible (global)"
+} catch {
+    Write-Step "Installation de @electron/asar (npm install -g)..."
+    try {
+        npm install -g @electron/asar 2>&1 | Out-Null
+        $asarAvailable = $true
+        Write-OK "@electron/asar installe"
+    } catch {
+        Write-Warn "Installation globale echouee - utilisation via npx"
+        $asarAvailable = $false
     }
-} catch {}
-
-if (-not $asarCmd) {
-    Write-Step "Installation de @electron/asar..."
-    npm install -g @electron/asar 2>&1 | Out-Null
-    $asarCmd = "asar"
 }
-Write-OK "@electron/asar disponible"
 
-# ─── Sauvegarde ──────────────────────────────────────────────────────────────
-$backupPath = "$asarPath.bak_hermes_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
-Write-Step "Sauvegarde de app.asar → $backupPath"
+# --- Sauvegarde --------------------------------------------------------------
+$ts = Get-Date -Format "yyyyMMdd_HHmmss"
+$backupPath = "$asarPath.bak_hermes_$ts"
+Write-Step "Sauvegarde de app.asar..."
 Copy-Item $asarPath $backupPath -Force
-Write-OK "Sauvegarde créée"
+Write-OK "Sauvegarde : $backupPath"
 
-# ─── Extraction ──────────────────────────────────────────────────────────────
-$extractDir = "$env:TEMP\pulsar-asar-patch-$(Get-Random)"
-Write-Step "Extraction de app.asar vers $extractDir..."
+# --- Extraction --------------------------------------------------------------
+$extractDir = "$env:TEMP\pulsar-asar-$ts"
+Write-Step "Extraction de app.asar..."
 
-if ($asarCmd -eq "npx @electron/asar") {
-    npx @electron/asar extract $asarPath $extractDir 2>&1 | Out-Null
+if ($asarAvailable) {
+    asar extract $asarPath $extractDir 2>&1 | Out-Null
 } else {
-    & $asarCmd extract $asarPath $extractDir 2>&1 | Out-Null
+    npx --yes @electron/asar extract $asarPath $extractDir 2>&1 | Out-Null
 }
 
 if (-not (Test-Path $extractDir)) {
-    Write-Fail "Échec de l'extraction de app.asar"
-    Read-Host "`n  Appuyez sur Entrée pour quitter"
+    Write-Fail "Echec de l'extraction. Restauration de la sauvegarde..."
+    Copy-Item $backupPath $asarPath -Force
+    Read-Host "`n  Appuyez sur Entree pour quitter"
     exit 1
 }
-Write-OK "Extraction réussie"
+Write-OK "Extraction reussie dans $extractDir"
 
-# ─── Dictionnaire de remplacement ────────────────────────────────────────────
-$replacements = [ordered]@{
-    # Identité principale
-    "Hermes Desktop"                          = "PULSAR Desktop"
-    "Hermes Agent"                            = "PULSAR"
-    "Hermes agent"                            = "PULSAR"
-    "hermes agent"                            = "PULSAR"
-    # Titres et labels
-    "HERMES AGENT"                            = "PULSAR"
-    "Hermes is thinking"                      = "PULSAR réfléchit"
-    "Hermes is loading a response"            = "PULSAR charge une réponse"
-    "Hermes reported an error"                = "PULSAR a signalé une erreur"
-    "Hermes error"                            = "Erreur PULSAR"
-    "Hermes couldn"                           = "PULSAR n"
-    "Starting Hermes Desktop"                 = "Démarrage de PULSAR"
-    "Starting Hermes..."                      = "Démarrage de PULSAR..."
-    "Hermes Desktop is ready"                 = "PULSAR est prêt"
-    "Hermes background process exited"        = "Le processus PULSAR s'est arrêté"
-    "Hermes backend did not become ready"     = "Le moteur PULSAR n'a pas démarré"
-    "Hermes gateway connection closed"        = "Connexion PULSAR fermée"
-    "Hermes gateway is not connected"         = "PULSAR n'est pas connecté"
-    "Hermes checks for updates"               = "PULSAR vérifie les mises à jour"
-    "Update Hermes"                           = "Mettre à jour PULSAR"
-    "Uninstall Hermes"                        = "Désinstaller PULSAR"
-    "About Hermes Desktop"                    = "À propos de PULSAR"
-    "Hermes Desktop will reconnect"           = "PULSAR va se reconnecter"
-    "restarting Hermes Desktop"               = "redémarrant PULSAR"
-    "Waiting to start Hermes backend"         = "Démarrage du moteur PULSAR"
-    "Launching packaged Hermes Desktop"       = "Lancement de PULSAR Desktop"
-    # Auteur / organisation
-    "Nous Research"                           = "DSIO - CHU de Guyane"
-    "NousResearch"                            = "DSIO-CHU-Guyane"
-    "nousresearch.com"                        = "chu-guyane.fr"
-    "portal.nousresearch.com"                 = "github.com/Tarzzan/PULSAR-CHU"
-    # URLs GitHub
-    "github.com/NousResearch/hermes-agent"    = "github.com/Tarzzan/PULSAR-CHU"
-    "github.com/NousResearch/hermes-desktop"  = "github.com/Tarzzan/PULSAR-CHU"
-    "NousResearch/hermes-agent"               = "Tarzzan/PULSAR-CHU"
-    # APP_NAME dans main.cjs
-    "const APP_NAME = 'Hermes'"               = "const APP_NAME = 'PULSAR'"
-    '"productName": "Hermes"'                 = '"productName": "PULSAR"'
-    '"name": "hermes"'                        = '"name": "pulsar-chu"'
-    '"appId": "com.nousresearch.hermes"'      = '"appId": "fr.chu-guyane.pulsar"'
-    '"author": "Nous Research"'               = '"author": "DSIO - CHU de Guyane"'
-    '"description": "Native desktop shell for Hermes Agent."' = '"description": "PULSAR — Systeme Agentique Medical DSIO CHU de Guyane"'
-}
+# --- Remplacements -----------------------------------------------------------
+# IMPORTANT : les cles doivent etre uniques (casse differente = cle differente)
+$replacements = @(
+    @{ From = "HERMES AGENT";                              To = "PULSAR" },
+    @{ From = "Hermes Desktop";                            To = "PULSAR Desktop" },
+    @{ From = "Hermes Agent";                              To = "PULSAR" },
+    @{ From = "Hermes agent";                              To = "PULSAR" },
+    @{ From = "hermes agent";                              To = "PULSAR" },
+    @{ From = "Hermes is thinking";                        To = "PULSAR reflechit" },
+    @{ From = "Hermes is loading a response";              To = "PULSAR charge une reponse" },
+    @{ From = "Hermes reported an error";                  To = "PULSAR a signale une erreur" },
+    @{ From = "Hermes error";                              To = "Erreur PULSAR" },
+    @{ From = "Starting Hermes Desktop";                   To = "Demarrage de PULSAR" },
+    @{ From = "Starting Hermes...";                        To = "Demarrage de PULSAR..." },
+    @{ From = "Hermes Desktop is ready";                   To = "PULSAR est pret" },
+    @{ From = "Hermes background process exited";          To = "Le processus PULSAR s'est arrete" },
+    @{ From = "Hermes backend did not become ready";       To = "Le moteur PULSAR n'a pas demarre" },
+    @{ From = "Hermes gateway connection closed";          To = "Connexion PULSAR fermee" },
+    @{ From = "Hermes gateway is not connected";           To = "PULSAR n'est pas connecte" },
+    @{ From = "Hermes checks for updates";                 To = "PULSAR verifie les mises a jour" },
+    @{ From = "Update Hermes";                             To = "Mettre a jour PULSAR" },
+    @{ From = "Uninstall Hermes";                          To = "Desinstaller PULSAR" },
+    @{ From = "About Hermes Desktop";                      To = "A propos de PULSAR" },
+    @{ From = "Hermes Desktop will reconnect";             To = "PULSAR va se reconnecter" },
+    @{ From = "restarting Hermes Desktop";                 To = "redemarrant PULSAR" },
+    @{ From = "Waiting to start Hermes backend";           To = "Demarrage du moteur PULSAR" },
+    @{ From = "Launching packaged Hermes Desktop";         To = "Lancement de PULSAR Desktop" },
+    @{ From = "Nous Research";                             To = "DSIO - CHU de Guyane" },
+    @{ From = "NousResearch";                              To = "DSIO-CHU-Guyane" },
+    @{ From = "nousresearch.com";                          To = "chu-guyane.fr" },
+    @{ From = "portal.nousresearch.com";                   To = "github.com/Tarzzan/PULSAR-CHU" },
+    @{ From = "github.com/NousResearch/hermes-agent";      To = "github.com/Tarzzan/PULSAR-CHU" },
+    @{ From = "github.com/NousResearch/hermes-desktop";    To = "github.com/Tarzzan/PULSAR-CHU" },
+    @{ From = "NousResearch/hermes-agent";                 To = "Tarzzan/PULSAR-CHU" },
+    @{ From = "const APP_NAME = 'Hermes'";                 To = "const APP_NAME = 'PULSAR'" },
+    @{ From = '"productName": "Hermes"';                   To = '"productName": "PULSAR"' },
+    @{ From = '"name": "hermes"';                          To = '"name": "pulsar-chu"' },
+    @{ From = '"appId": "com.nousresearch.hermes"';        To = '"appId": "fr.chu-guyane.pulsar"' },
+    @{ From = '"author": "Nous Research"';                 To = '"author": "DSIO - CHU de Guyane"' }
+)
 
-# ─── Patch des fichiers texte ─────────────────────────────────────────────────
 Write-Step "Patch des fichiers texte..."
-$extensions = @("*.js", "*.cjs", "*.mjs", "*.html", "*.json", "*.css", "*.ts")
+$extensions = @("*.js", "*.cjs", "*.mjs", "*.html", "*.json", "*.css")
 $patchedCount = 0
 
 $files = Get-ChildItem -Path $extractDir -Recurse -Include $extensions -File -ErrorAction SilentlyContinue
@@ -192,79 +167,65 @@ foreach ($file in $files) {
     try {
         $content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
         $original = $content
-        foreach ($pair in $replacements.GetEnumerator()) {
-            $content = $content.Replace($pair.Key, $pair.Value)
+        foreach ($r in $replacements) {
+            $content = $content.Replace($r.From, $r.To)
         }
         if ($content -ne $original) {
             [System.IO.File]::WriteAllText($file.FullName, $content, [System.Text.Encoding]::UTF8)
             $patchedCount++
         }
-    } catch {
-        # Ignorer les fichiers binaires
-    }
+    } catch { }
 }
-Write-OK "$patchedCount fichier(s) patché(s)"
+Write-OK "$patchedCount fichier(s) patche(s)"
 
-# ─── Remplacer l'icône si disponible ─────────────────────────────────────────
-$iconSrc = "$PSScriptRoot\pulsar.ico"
-if (-not (Test-Path $iconSrc)) {
-    # Chercher dans le dossier assets relatif
-    $iconSrc = Join-Path (Split-Path $PSScriptRoot -Parent) "assets\pulsar.ico"
-}
-
+# --- Remplacer l'icone si disponible -----------------------------------------
+$iconSrc = Join-Path $PSScriptRoot "pulsar.ico"
 if (Test-Path $iconSrc) {
-    Write-Step "Remplacement de l'icône..."
+    Write-Step "Remplacement de l'icone..."
     $iconTargets = @(
         "$extractDir\resources\app.ico",
         "$extractDir\resources\icon.ico",
-        "$extractDir\build\icon.ico"
+        "$extractDir\build\icon.ico",
+        "$desktopRoot\resources\app.ico"
     )
     foreach ($t in $iconTargets) {
         if (Test-Path $t) {
             Copy-Item $iconSrc $t -Force
-            Write-OK "Icône remplacée : $t"
+            Write-OK "Icone remplacee : $(Split-Path $t -Leaf)"
         }
     }
-    # Remplacer aussi l'icône dans le dossier resources de l'app
-    $appIco = "$desktopRoot\resources\app.ico"
-    if (Test-Path $appIco) {
-        Copy-Item $iconSrc $appIco -Force
-        Write-OK "Icône principale remplacée"
-    }
 } else {
-    Write-Warn "Icône PULSAR non trouvée ($iconSrc) — icône originale conservée"
+    Write-Warn "pulsar.ico non trouve a cote du script - icone originale conservee"
 }
 
-# ─── Repackage ───────────────────────────────────────────────────────────────
+# --- Repackage ---------------------------------------------------------------
 Write-Step "Repackage de app.asar..."
 
-if ($asarCmd -eq "npx @electron/asar") {
-    npx @electron/asar pack $extractDir $asarPath 2>&1 | Out-Null
+if ($asarAvailable) {
+    asar pack $extractDir $asarPath 2>&1 | Out-Null
 } else {
-    & $asarCmd pack $extractDir $asarPath 2>&1 | Out-Null
+    npx --yes @electron/asar pack $extractDir $asarPath 2>&1 | Out-Null
 }
 
 if (-not (Test-Path $asarPath)) {
-    Write-Fail "Échec du repackage. Restauration de la sauvegarde..."
+    Write-Fail "Echec du repackage. Restauration de la sauvegarde..."
     Copy-Item $backupPath $asarPath -Force
-    Read-Host "`n  Appuyez sur Entrée pour quitter"
+    Read-Host "`n  Appuyez sur Entree pour quitter"
     exit 1
 }
-Write-OK "app.asar repackagé avec succès"
+Write-OK "app.asar repackage avec succes"
 
-# ─── Nettoyage ───────────────────────────────────────────────────────────────
-Write-Step "Nettoyage des fichiers temporaires..."
+# --- Nettoyage ---------------------------------------------------------------
 Remove-Item $extractDir -Recurse -Force -ErrorAction SilentlyContinue
-Write-OK "Nettoyage terminé"
+Write-OK "Fichiers temporaires nettoyes"
 
-# ─── Résultat ────────────────────────────────────────────────────────────────
+# --- Resultat ----------------------------------------------------------------
 Write-Host ""
-Write-Host "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "  ║          PULSAR Desktop patché avec succès !             ║" -ForegroundColor Green
-Write-Host "  ║                                                          ║" -ForegroundColor Green
-Write-Host "  ║  Relancez Hermes Desktop — il affichera PULSAR.         ║" -ForegroundColor Green
-Write-Host "  ║  Sauvegarde : $($backupPath | Split-Path -Leaf)" -ForegroundColor Green
-Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host "  +----------------------------------------------------------+" -ForegroundColor Green
+Write-Host "  |         PULSAR Desktop patche avec succes !              |" -ForegroundColor Green
+Write-Host "  |                                                          |" -ForegroundColor Green
+Write-Host "  |  Relancez Hermes Desktop - il affichera PULSAR.         |" -ForegroundColor Green
+Write-Host "  +----------------------------------------------------------+" -ForegroundColor Green
 Write-Host ""
 
 $launch = Read-Host "  Lancer PULSAR Desktop maintenant ? (O/N)"
@@ -277,6 +238,7 @@ if ($launch -match "^[Oo]") {
     foreach ($exe in $exePaths) {
         if (Test-Path $exe) {
             Start-Process $exe
+            Write-OK "PULSAR Desktop lance : $exe"
             break
         }
     }
