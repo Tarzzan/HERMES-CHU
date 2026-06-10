@@ -1,0 +1,728 @@
+openapi: 3.1.0
+info:
+  title: HERMES CHU — API de Suivi Qualité
+  description: |
+    APIs REST pour le suivi qualité, l'audit de conformité ISO 27001,
+    et le monitoring du système agentique HERMES CHU.
+    
+    Ces endpoints sont destinés à être consommés par l'application mobile/web
+    du service qualité et des responsables de service.
+  version: 1.0.0
+  contact:
+    name: Équipe HERMES CHU
+    email: hermes-chu@chu.local
+  license:
+    name: Usage interne CHU
+    
+servers:
+  - url: https://hermes-api.chu.local/api/v1
+    description: Serveur de production (réseau interne CHU)
+  - url: https://hermes-api-staging.chu.local/api/v1
+    description: Serveur de pré-production
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Anonymisation
+    description: Métriques et configuration du SAS d'anonymisation
+  - name: Agents
+    description: Télémétrie et supervision des agents
+  - name: Audit
+    description: Journal d'audit et conformité ISO 27001
+  - name: Usage
+    description: Statistiques d'utilisation et performance
+
+paths:
+  /anonymization/stats:
+    get:
+      tags: [Anonymisation]
+      summary: Statistiques globales d'anonymisation
+      description: Retourne les métriques agrégées du SAS d'anonymisation sur une période donnée.
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Début de la période (ISO 8601)
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Fin de la période (ISO 8601)
+        - name: service
+          in: query
+          schema:
+            type: string
+          description: Filtrer par service hospitalier
+      responses:
+        '200':
+          description: Statistiques d'anonymisation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnonymizationStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /anonymization/alerts:
+    get:
+      tags: [Anonymisation]
+      summary: Alertes de fuite potentielle de données
+      description: Liste les alertes générées lorsque le système détecte une potentielle fuite de PHI.
+      parameters:
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [critique, elevee, moyenne, faible]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ouverte, en_cours, resolue]
+      responses:
+        '200':
+          description: Liste des alertes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Alert'
+
+  /anonymization/config:
+    get:
+      tags: [Anonymisation]
+      summary: État actuel du SAS d'anonymisation
+      description: Retourne la configuration et l'état d'activation du SAS.
+      responses:
+        '200':
+          description: Configuration du SAS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SASConfig'
+    put:
+      tags: [Anonymisation]
+      summary: Modifier la configuration du SAS
+      description: |
+        Permet d'activer/désactiver le SAS d'anonymisation.
+        Nécessite le rôle ADMIN_PRIVACY et une justification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SASConfigUpdate'
+      responses:
+        '200':
+          description: Configuration mise à jour
+        '403':
+          description: Rôle ADMIN_PRIVACY requis
+
+  /agents/status:
+    get:
+      tags: [Agents]
+      summary: État temps réel de tous les agents
+      description: Retourne le statut de chaque agent du réseau (pilote + sous-agents).
+      responses:
+        '200':
+          description: Liste des agents et leur état
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AgentStatus'
+
+  /agents/{agent_id}/metrics:
+    get:
+      tags: [Agents]
+      summary: Métriques détaillées d'un agent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [1h, 24h, 7j, 30j]
+            default: 24h
+      responses:
+        '200':
+          description: Métriques de l'agent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMetrics'
+
+  /agents/function-calls:
+    get:
+      tags: [Agents]
+      summary: Historique des appels de fonctions
+      description: Liste paginée des function calls exécutés par les agents.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [succes, echec, timeout, en_attente]
+        - name: agent_id
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+      responses:
+        '200':
+          description: Liste des appels de fonctions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FunctionCallList'
+
+  /agents/approvals:
+    get:
+      tags: [Agents]
+      summary: Statistiques des approbations Human-in-the-Loop
+      description: Métriques sur les demandes d'approbation et leurs résultats.
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [24h, 7j, 30j]
+            default: 7j
+      responses:
+        '200':
+          description: Statistiques d'approbation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalStats'
+
+  /audit/logs:
+    get:
+      tags: [Audit]
+      summary: Journal d'audit paginé et filtrable
+      description: Accès en lecture seule au registre immuable des événements de sécurité.
+      parameters:
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: event_type
+          in: query
+          schema:
+            type: string
+            enum: [anonymisation, approbation, acces, erreur, configuration, incident]
+        - name: user_id
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Entrées du journal d'audit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogList'
+
+  /audit/logs/{log_id}/verify:
+    get:
+      tags: [Audit]
+      summary: Vérification d'intégrité d'une entrée d'audit
+      description: Vérifie le hash cryptographique d'une entrée pour garantir la non-répudiation.
+      parameters:
+        - name: log_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Résultat de la vérification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrityCheck'
+
+  /audit/compliance/iso27001:
+    get:
+      tags: [Audit]
+      summary: Score de conformité ISO 27001 par clause
+      description: Évaluation automatisée du niveau de conformité pour chaque clause de la norme.
+      responses:
+        '200':
+          description: Rapport de conformité
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceReport'
+
+  /usage/sessions:
+    get:
+      tags: [Usage]
+      summary: Nombre de sessions par service et période
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [24h, 7j, 30j, 90j]
+            default: 30j
+        - name: group_by
+          in: query
+          schema:
+            type: string
+            enum: [service, role, jour, semaine]
+            default: service
+      responses:
+        '200':
+          description: Statistiques de sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStats'
+
+  /usage/satisfaction:
+    get:
+      tags: [Usage]
+      summary: Retours de satisfaction utilisateurs
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7j, 30j, 90j]
+            default: 30j
+      responses:
+        '200':
+          description: Métriques de satisfaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SatisfactionMetrics'
+    post:
+      tags: [Usage]
+      summary: Soumettre un retour de satisfaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SatisfactionFeedback'
+      responses:
+        '201':
+          description: Retour enregistré
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenu via Keycloak (durée de vie 15 minutes)
+
+  responses:
+    Unauthorized:
+      description: Token JWT manquant ou expiré
+    Forbidden:
+      description: Rôle insuffisant pour cette opération
+
+  schemas:
+    AnonymizationStats:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        total_requests_processed:
+          type: integer
+          description: Nombre total de requêtes traitées par le SAS
+        entities_detected:
+          type: object
+          properties:
+            total:
+              type: integer
+            by_type:
+              type: object
+              properties:
+                nom_prenom:
+                  type: integer
+                date_naissance:
+                  type: integer
+                nir:
+                  type: integer
+                ipp:
+                  type: integer
+                adresse:
+                  type: integer
+                telephone:
+                  type: integer
+        anonymization_rate:
+          type: number
+          format: float
+          description: Taux de succès de l'anonymisation (0.0 à 1.0)
+        sas_status:
+          type: string
+          enum: [actif, inactif, mode_audit]
+        by_service:
+          type: array
+          items:
+            type: object
+            properties:
+              service:
+                type: string
+              requests:
+                type: integer
+              entities:
+                type: integer
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        severity:
+          type: string
+          enum: [critique, elevee, moyenne, faible]
+        status:
+          type: string
+          enum: [ouverte, en_cours, resolue]
+        description:
+          type: string
+        session_id:
+          type: string
+        entity_types_concerned:
+          type: array
+          items:
+            type: string
+
+    SASConfig:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [actif, inactif, mode_audit]
+        last_modified:
+          type: string
+          format: date-time
+        modified_by:
+          type: string
+        justification:
+          type: string
+        ttl_mapping_seconds:
+          type: integer
+          description: Durée de vie de la table de correspondance en secondes
+        ner_model_version:
+          type: string
+
+    SASConfigUpdate:
+      type: object
+      required: [status, justification]
+      properties:
+        status:
+          type: string
+          enum: [actif, inactif, mode_audit]
+        justification:
+          type: string
+          minLength: 20
+          description: Justification obligatoire pour toute modification
+
+    AgentStatus:
+      type: object
+      properties:
+        agent_id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [pilote, clinique, administratif, logistique, recherche, qualite]
+        status:
+          type: string
+          enum: [actif, en_attente, erreur, arrete]
+        uptime_seconds:
+          type: integer
+        current_task:
+          type: string
+          nullable: true
+        container_id:
+          type: string
+
+    AgentMetrics:
+      type: object
+      properties:
+        agent_id:
+          type: string
+        period:
+          type: string
+        total_requests:
+          type: integer
+        success_rate:
+          type: number
+          format: float
+        avg_response_time_ms:
+          type: integer
+        tokens_consumed:
+          type: integer
+        function_calls_total:
+          type: integer
+        function_calls_failed:
+          type: integer
+        human_approvals_requested:
+          type: integer
+
+    FunctionCallList:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              timestamp:
+                type: string
+                format: date-time
+              agent_id:
+                type: string
+              function_name:
+                type: string
+              parameters_hash:
+                type: string
+                description: Hash des paramètres (pas les données brutes)
+              status:
+                type: string
+                enum: [succes, echec, timeout, en_attente, rejete]
+              duration_ms:
+                type: integer
+              required_approval:
+                type: boolean
+
+    ApprovalStats:
+      type: object
+      properties:
+        period:
+          type: string
+        total_requests:
+          type: integer
+        approved:
+          type: integer
+        rejected:
+          type: integer
+        timed_out:
+          type: integer
+        avg_response_time_seconds:
+          type: number
+        by_agent:
+          type: array
+          items:
+            type: object
+            properties:
+              agent_id:
+                type: string
+              agent_name:
+                type: string
+              approvals:
+                type: integer
+              rejections:
+                type: integer
+
+    AuditLogList:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogEntry'
+
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        event_type:
+          type: string
+          enum: [anonymisation, approbation, acces, erreur, configuration, incident]
+        user_id:
+          type: string
+          description: Identifiant LDAP de l'utilisateur
+        session_id:
+          type: string
+        action:
+          type: string
+        status:
+          type: string
+          enum: [succes, echec, bloque]
+        details:
+          type: object
+        integrity_hash:
+          type: string
+          description: SHA-256 de l'entrée pour vérification de non-répudiation
+
+    IntegrityCheck:
+      type: object
+      properties:
+        log_id:
+          type: string
+          format: uuid
+        expected_hash:
+          type: string
+        computed_hash:
+          type: string
+        is_valid:
+          type: boolean
+        checked_at:
+          type: string
+          format: date-time
+
+    ComplianceReport:
+      type: object
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        overall_score:
+          type: number
+          format: float
+          description: Score global de conformité (0.0 à 1.0)
+        clauses:
+          type: array
+          items:
+            type: object
+            properties:
+              clause_id:
+                type: string
+                description: "Ex: A.5, A.6, A.8..."
+              title:
+                type: string
+              score:
+                type: number
+                format: float
+              status:
+                type: string
+                enum: [conforme, partiellement_conforme, non_conforme]
+              findings:
+                type: array
+                items:
+                  type: string
+
+    SessionStats:
+      type: object
+      properties:
+        period:
+          type: string
+        total_sessions:
+          type: integer
+        groups:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              count:
+                type: integer
+
+    SatisfactionMetrics:
+      type: object
+      properties:
+        period:
+          type: string
+        total_feedbacks:
+          type: integer
+        positive:
+          type: integer
+        negative:
+          type: integer
+        satisfaction_rate:
+          type: number
+          format: float
+        by_agent:
+          type: array
+          items:
+            type: object
+            properties:
+              agent_name:
+                type: string
+              positive:
+                type: integer
+              negative:
+                type: integer
+
+    SatisfactionFeedback:
+      type: object
+      required: [session_id, rating]
+      properties:
+        session_id:
+          type: string
+        rating:
+          type: string
+          enum: [positif, negatif]
+        comment:
+          type: string
+          maxLength: 500
