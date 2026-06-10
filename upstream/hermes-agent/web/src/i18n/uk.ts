@@ -73,6 +73,7 @@ export const uk: Translations = {
       cron: "Cron",
       documentation: "Документація",
       keys: "Ключі",
+      vault: "Vault",
       logs: "Журнали",
       models: "Моделі",
       profiles: "профілі: мульти-агенти",

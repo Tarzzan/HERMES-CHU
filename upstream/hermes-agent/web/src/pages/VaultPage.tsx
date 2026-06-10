@@ -13,7 +13,7 @@
  * DSIO — CHU de Guyane | William MERI
  */
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -36,7 +36,6 @@ import {
   History,
   Terminal,
 } from "lucide-react";
-import { api } from "@/lib/api";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn } from "@/lib/utils";
@@ -151,7 +150,7 @@ async function revealCredential(id: string): Promise<string> {
 // Icônes par type
 // ---------------------------------------------------------------------------
 
-const TYPE_ICONS: Record<string, JSX.Element> = {
+const TYPE_ICONS: Record<string, React.ReactElement> = {
   api_key:     <KeyRound className="w-4 h-4 text-blue-400" />,
   token:       <Shield className="w-4 h-4 text-purple-400" />,
   ssh_key:     <Terminal className="w-4 h-4 text-green-400" />,
@@ -160,7 +159,8 @@ const TYPE_ICONS: Record<string, JSX.Element> = {
   custom:      <KeyRound className="w-4 h-4 text-gray-400" />,
 };
 
-const TYPE_COLORS: Record<string, string> = {
+// TYPE_COLORS conservé pour usage futur
+const _TYPE_COLORS: Record<string, string> = {
   api_key:     "bg-blue-500/10 text-blue-400 border-blue-500/20",
   token:       "bg-purple-500/10 text-purple-400 border-purple-500/20",
   ssh_key:     "bg-green-500/10 text-green-400 border-green-500/20",
@@ -168,6 +168,7 @@ const TYPE_COLORS: Record<string, string> = {
   certificate: "bg-teal-500/10 text-teal-400 border-teal-500/20",
   custom:      "bg-gray-500/10 text-gray-400 border-gray-500/20",
 };
+void _TYPE_COLORS;
 
 const ACTION_LABELS: Record<string, string> = {
   add:     "Ajout",
@@ -182,8 +183,9 @@ const ACTION_LABELS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 export function VaultPage() {
-  const { t } = useI18n();
-  const { setHeader } = usePageHeader();
+  const { t: _t } = useI18n();
+  void _t;
+  const { setTitle } = usePageHeader();
 
   const [status, setStatus]           = useState<VaultStatus | null>(null);
   const [credentials, setCredentials] = useState<VaultCredential[]>([]);
@@ -217,12 +219,8 @@ export function VaultPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useLayoutEffect(() => {
-    setHeader({
-      title: "PULSAR Vault",
-      description: "Coffre de credentials sécurisé — API keys, clés SSH, tokens",
-      icon: <Lock className="w-5 h-5" />,
-    });
-  }, [setHeader]);
+    setTitle("PULSAR Vault");
+  }, [setTitle]);
 
   const loadData = useCallback(async () => {
     setLoading(true);

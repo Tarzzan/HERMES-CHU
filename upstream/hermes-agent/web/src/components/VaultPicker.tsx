@@ -11,7 +11,7 @@
  * DSIO — CHU de Guyane | William MERI
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -41,7 +41,7 @@ interface VaultAlias {
 // Icônes par type (compact)
 // ---------------------------------------------------------------------------
 
-const TYPE_ICONS: Record<string, JSX.Element> = {
+const TYPE_ICONS: Record<string, React.ReactElement> = {
   api_key:     <KeyRound className="w-3.5 h-3.5 text-blue-400" />,
   token:       <Shield className="w-3.5 h-3.5 text-purple-400" />,
   ssh_key:     <Terminal className="w-3.5 h-3.5 text-green-400" />,

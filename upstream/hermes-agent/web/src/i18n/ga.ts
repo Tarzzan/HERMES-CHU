@@ -73,6 +73,7 @@ export const ga: Translations = {
       cron: "Cron",
       documentation: "Doiciméadú",
       keys: "Eochracha",
+      vault: "Vault",
       logs: "Logaí",
       models: "Samhlacha",
       profiles: "próifílí : il-agents",

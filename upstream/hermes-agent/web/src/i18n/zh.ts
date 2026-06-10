@@ -72,6 +72,7 @@ export const zh: Translations = {
       cron: "定时任务",
       documentation: "文档",
       keys: "密钥",
+      vault: "Vault",
       logs: "日志",
       models: "模型",
       profiles: "多Agent配置",

@@ -73,6 +73,7 @@ export const zhHant: Translations = {
       cron: "排程任務",
       documentation: "文件",
       keys: "金鑰",
+      vault: "Vault",
       logs: "日誌",
       models: "模型",
       profiles: "多代理設定檔",

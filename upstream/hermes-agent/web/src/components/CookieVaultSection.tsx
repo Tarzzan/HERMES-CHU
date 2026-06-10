@@ -17,8 +17,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   Check,
-  ChevronDown,
-  ChevronRight,
   ClipboardCopy,
   Cookie,
   Download,
