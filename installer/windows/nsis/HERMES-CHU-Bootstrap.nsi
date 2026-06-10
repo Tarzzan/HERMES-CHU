@@ -11,9 +11,9 @@ SetCompressor /SOLID lzma
 !define PRODUCT_NAME      "HERMES CHU"
 !define PRODUCT_VERSION   "2.1.0"
 !define PRODUCT_PUBLISHER "William MERI - CHU de Guyane"
-!define PRODUCT_URL       "https://github.com/Tarzzan/HERMES-CHU"
-!define INSTALL_PS1_URL   "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/installer/windows/install-chu.ps1"
-!define LAUNCH_PS1_URL    "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/installer/windows/scripts/Launch-HERMES-CHU.ps1"
+!define PRODUCT_URL       "https://github.com/Tarzzan/PULSAR-CHU"
+!define INSTALL_PS1_URL   "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/installer/windows/install-chu.ps1"
+!define LAUNCH_PS1_URL    "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/installer/windows/scripts/Launch-HERMES-CHU.ps1"
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
 OutFile "output\HERMES-CHU-Setup-2.1.0.exe"
@@ -35,7 +35,7 @@ ShowInstDetails show
 !define MUI_WELCOMEPAGE_TEXT "Bienvenue dans l'assistant d'installation de HERMES CHU.$\r$\n$\r$\nSysteme Agentique Hospitalier Souverain base sur Hermes (NousResearch).$\r$\n$\r$\nCet assistant va :$\r$\n  - Installer Python 3.11, Node.js 22 et Git (si absents)$\r$\n  - Cloner le depot HERMES-CHU depuis GitHub$\r$\n  - Installer toutes les dependances$\r$\n  - Appliquer les patches CHU (Privacy Engine RGPD)$\r$\n  - Configurer votre fournisseur LLM$\r$\n$\r$\nDuree estimee : 5 a 15 minutes selon votre connexion.$\r$\n$\r$\nConcu par William MERI - CHU de Guyane"
 
 !define MUI_FINISHPAGE_TITLE "Installation terminee !"
-!define MUI_FINISHPAGE_TEXT "HERMES CHU a ete installe avec succes.$\r$\n$\r$\nPremier demarrage :$\r$\n  Cliquez sur le raccourci 'HERMES CHU' sur le Bureau.$\r$\n  L'assistant de configuration se lancera automatiquement.$\r$\n$\r$\nVous choisirez votre fournisseur LLM :$\r$\n  - ChatGPT (abonnement, sans cle API)$\r$\n  - Azure OpenAI, OpenAI, Ollama...$\r$\n$\r$\nDocumentation : github.com/Tarzzan/HERMES-CHU/wiki$\r$\n$\r$\nWilliam MERI - CHU de Guyane"
+!define MUI_FINISHPAGE_TEXT "HERMES CHU a ete installe avec succes.$\r$\n$\r$\nPremier demarrage :$\r$\n  Cliquez sur le raccourci 'HERMES CHU' sur le Bureau.$\r$\n  L'assistant de configuration se lancera automatiquement.$\r$\n$\r$\nVous choisirez votre fournisseur LLM :$\r$\n  - ChatGPT (abonnement, sans cle API)$\r$\n  - Azure OpenAI, OpenAI, Ollama...$\r$\n$\r$\nDocumentation : github.com/Tarzzan/PULSAR-CHU/wiki$\r$\n$\r$\nWilliam MERI - CHU de Guyane"
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_TEXT "Ouvrir la documentation HERMES CHU"
 !define MUI_FINISHPAGE_RUN_FUNCTION "OpenDocs"

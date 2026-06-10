@@ -34,10 +34,10 @@ cd /d "%INSTALL_DIR%"
 
 :: Corriger le remote si nécessaire
 for /f "tokens=*" %%r in ('git remote get-url origin 2^>nul') do set "CURRENT_REMOTE=%%r"
-if not "%CURRENT_REMOTE%"=="https://github.com/Tarzzan/HERMES-CHU.git" (
+if not "%CURRENT_REMOTE%"=="https://github.com/Tarzzan/PULSAR-CHU.git" (
     echo  Correction du remote git...
-    git remote set-url origin https://github.com/Tarzzan/HERMES-CHU.git 2>nul
-    git remote add origin https://github.com/Tarzzan/HERMES-CHU.git 2>nul
+    git remote set-url origin https://github.com/Tarzzan/PULSAR-CHU.git 2>nul
+    git remote add origin https://github.com/Tarzzan/PULSAR-CHU.git 2>nul
 )
 
 :: Pull depuis PULSAR-CHU

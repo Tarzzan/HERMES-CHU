@@ -122,7 +122,7 @@ L'assistant guide la configuration de :
 | Configurer les LLM | Interface HERMES CHU → Paramètres → Fournisseurs IA |
 | Consulter les logs | `C:\Program Files\HERMES CHU\chu\logs\` |
 | Modifier la config | `C:\Program Files\HERMES CHU\chu\.env.chu` |
-| Documentation | [Wiki GitHub](https://github.com/Tarzzan/HERMES-CHU/wiki) |
+| Documentation | [Wiki GitHub](https://github.com/Tarzzan/PULSAR-CHU/wiki) |
 
 ---
 

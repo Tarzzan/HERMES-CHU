@@ -15,7 +15,7 @@ set -e
 VPS_HOST="57.128.241.123"
 VPS_USER="ubuntu"
 VPS_HERMES_DIR="/home/ubuntu/hermes"
-GITHUB_REPO="https://github.com/Tarzzan/HERMES-CHU.git"
+GITHUB_REPO="https://github.com/Tarzzan/PULSAR-CHU.git"
 PULSAR_VERSION="2.3.0"
 
 REBUILD=false

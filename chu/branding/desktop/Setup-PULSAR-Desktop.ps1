@@ -40,8 +40,8 @@ $ProfileDir  = Split-Path $PROFILE -Parent
 $ProfileFile = $PROFILE
 
 # URLs CDN
-$ICO_URL  = "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/desktop/pulsar.ico"
-$PNG_URL  = "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/desktop/pulsar-icon-256.png"
+$ICO_URL  = "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/desktop/pulsar.ico"
+$PNG_URL  = "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/desktop/pulsar-icon-256.png"
 
 Write-Header
 

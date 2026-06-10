@@ -201,9 +201,9 @@ patch_file(
     web_src / "components" / "SidebarFooter.tsx",
     [
         ('href="https://nousresearch.com"',
-         'href="https://github.com/Tarzzan/HERMES-CHU"'),
+         'href="https://github.com/Tarzzan/PULSAR-CHU"'),
         ("href='https://nousresearch.com'",
-         "href='https://github.com/Tarzzan/HERMES-CHU'"),
+         "href='https://github.com/Tarzzan/PULSAR-CHU'"),
     ],
     "SidebarFooter.tsx"
 )

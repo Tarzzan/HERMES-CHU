@@ -21,11 +21,11 @@ SetCompressor /SOLID lzma
 !define PRODUCT_VERSION     "2.3.0"
 !define PRODUCT_FULLNAME    "PULSAR - DSIO CHU de Guyane"
 !define PRODUCT_PUBLISHER   "DSIO - CHU de Guyane"
-!define PRODUCT_URL         "https://github.com/Tarzzan/HERMES-CHU"
+!define PRODUCT_URL         "https://github.com/Tarzzan/PULSAR-CHU"
 !define PRODUCT_REGKEY      "Software\PULSAR-CHU"
 
 ; ---- URLs distantes ----
-!define INSTALL_PS1_URL "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/installer/windows/install-chu.ps1"
+!define INSTALL_PS1_URL "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/installer/windows/install-chu.ps1"
 
 Name "${PRODUCT_FULLNAME} ${PRODUCT_VERSION}"
 OutFile "output\PULSAR-Setup-2.3.0.exe"

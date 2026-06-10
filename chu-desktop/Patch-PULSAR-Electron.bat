@@ -84,7 +84,7 @@ if not exist "%RESOURCES_DIR%" mkdir "%RESOURCES_DIR%"
 :: Telecharger l'icone PULSAR si absente
 if not exist "%PULSAR_ICO%" (
     echo [INFO] Telechargement icone PULSAR...
-    curl -sL "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/desktop/pulsar.ico" ^
+    curl -sL "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/desktop/pulsar.ico" ^
          -o "%PULSAR_ICO%" 2>nul
 )
 

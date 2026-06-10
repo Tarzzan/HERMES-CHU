@@ -5,7 +5,7 @@ import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn } from "@/lib/utils";
 import { PluginSlot } from "@/plugins";
 
-export const PULSAR_DOCS_URL = "https://github.com/Tarzzan/HERMES-CHU/wiki";
+export const PULSAR_DOCS_URL = "https://github.com/Tarzzan/PULSAR-CHU/wiki";
 
 const DS_BUTTON_OUTLINED_LINK_CN = cn(
   "group relative inline-grid grid-cols-[auto_1fr_auto] items-center",
@@ -64,7 +64,7 @@ export default function DocsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { href: PULSAR_DOCS_URL, label: "Documentation en ligne" },
-            { href: "https://github.com/Tarzzan/HERMES-CHU", label: "Depot GitHub PULSAR" },
+            { href: "https://github.com/Tarzzan/PULSAR-CHU", label: "Depot GitHub PULSAR" },
             { href: "https://www.chu-guyane.fr", label: "CHU de Guyane" },
             { href: "mailto:dsio@chu-guyane.fr", label: "Support DSIO" },
           ].map(({ href, label }) => (

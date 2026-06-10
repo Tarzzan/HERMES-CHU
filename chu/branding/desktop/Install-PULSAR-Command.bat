@@ -29,7 +29,7 @@ echo      [OK] Dossiers crees
 
 :: 2. Telecharger pulsar.bat depuis GitHub
 echo [>>] Telechargement de pulsar.bat...
-powershell -Command "try { Invoke-WebRequest 'https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/desktop/pulsar.bat' -OutFile '%PULSAR_BAT%' -UseBasicParsing; Write-Host '     [OK] pulsar.bat telecharge' } catch { Write-Host '     [!!] Echec telechargement, creation locale...' }"
+powershell -Command "try { Invoke-WebRequest 'https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/desktop/pulsar.bat' -OutFile '%PULSAR_BAT%' -UseBasicParsing; Write-Host '     [OK] pulsar.bat telecharge' } catch { Write-Host '     [!!] Echec telechargement, creation locale...' }"
 
 :: Si le telechargement a echoue, creer le fichier localement
 if not exist "%PULSAR_BAT%" (
@@ -54,7 +54,7 @@ echo      [OK] pulsar.cmd cree
 
 :: 3. Telecharger l'icone PULSAR
 echo [>>] Telechargement de l'icone PULSAR...
-powershell -Command "try { Invoke-WebRequest 'https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/desktop/pulsar.ico' -OutFile '%ICO_PATH%' -UseBasicParsing; Write-Host '     [OK] Icone PULSAR telechargee' } catch { Write-Host '     [!!] Icone non telechargee (non bloquant)' }"
+powershell -Command "try { Invoke-WebRequest 'https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/desktop/pulsar.ico' -OutFile '%ICO_PATH%' -UseBasicParsing; Write-Host '     [OK] Icone PULSAR telechargee' } catch { Write-Host '     [!!] Icone non telechargee (non bloquant)' }"
 
 :: 4. Ajouter le dossier bin au PATH utilisateur
 echo [>>] Ajout de %INSTALL_DIR% au PATH utilisateur...

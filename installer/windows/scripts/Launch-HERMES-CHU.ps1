@@ -154,7 +154,7 @@ if (-not (Test-Path $brandingMarker)) {
     } else {
         # Telecharger depuis GitHub
         try {
-            $skinUrl = "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/chu-guyane.yaml"
+            $skinUrl = "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/chu-guyane.yaml"
             Invoke-WebRequest -Uri $skinUrl -OutFile "$skinsDir\chu-guyane.yaml" -UseBasicParsing
             Write-Host "  [OK] Skin CHU telecharge depuis GitHub" -ForegroundColor Green
         } catch {
@@ -210,7 +210,7 @@ if (-not (Test-Path $brandingMarker)) {
         $sidebarFooter = "$agentDir\web\src\components\SidebarFooter.tsx"
         if (Test-Path $sidebarFooter) {
             $c = Get-Content $sidebarFooter -Raw -Encoding UTF8
-            $c = $c -replace 'href="https://nousresearch\.com"', 'href="https://github.com/Tarzzan/HERMES-CHU"'
+            $c = $c -replace 'href="https://nousresearch\.com"', 'href="https://github.com/Tarzzan/PULSAR-CHU"'
             $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
             [System.IO.File]::WriteAllText($sidebarFooter, $c, $utf8NoBom)
             Write-Host "  [OK] Footer patche" -ForegroundColor Green

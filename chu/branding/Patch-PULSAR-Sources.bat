@@ -145,7 +145,7 @@ try:
         content = f.read()
     content = content.replace(
         'href=\"https://nousresearch.com\"',
-        'href=\"https://github.com/Tarzzan/HERMES-CHU\"'
+        'href=\"https://github.com/Tarzzan/PULSAR-CHU\"'
     )
     with open(path, 'w', encoding='utf-8') as f:
         f.write(content)

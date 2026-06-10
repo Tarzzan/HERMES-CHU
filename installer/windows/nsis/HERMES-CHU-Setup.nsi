@@ -57,11 +57,11 @@ VIAddVersionKey   "Comments"         "Concu par William MERI (CHU-Guyane) - Base
 !define MUI_WELCOMEPAGE_TEXT        "Cet assistant va installer HERMES CHU - Systeme Agentique Hospitalier Souverain.$\r$\n$\r$\nHERMES CHU est base sur Hermes Agent de NousResearch, adapte pour les etablissements de sante avec :$\r$\n$\r$\n- Privacy Engine RGPD - 7 flux couverts (NER medical, memoire, skills, contexte)$\r$\n- Support multi-LLM (Azure OpenAI, OpenAI, Ollama, vLLM)$\r$\n- Agents specialises (Clinique, Administratif, Logistique, Recherche)$\r$\n- Conformite ISO 27001 et HDS$\r$\n$\r$\nIl est recommande de fermer toutes les autres applications avant de continuer."
 
 !define MUI_FINISHPAGE_TITLE        "Installation terminee !"
-!define MUI_FINISHPAGE_TEXT         "HERMES CHU 1.3.0 a ete installe avec succes.$\r$\n$\r$\nConcu par William MERI - CHU de Guyane$\r$\n$\r$\nProchaines etapes :$\r$\n1. Lancez l'assistant de configuration via le Menu Demarrer$\r$\n2. Renseignez vos parametres Azure OpenAI ou Ollama$\r$\n3. Activez le Privacy Engine RGPD$\r$\n4. Ouvrez HERMES CHU depuis le bureau$\r$\n$\r$\nDocumentation : github.com/Tarzzan/HERMES-CHU/wiki"
+!define MUI_FINISHPAGE_TEXT         "HERMES CHU 1.3.0 a ete installe avec succes.$\r$\n$\r$\nConcu par William MERI - CHU de Guyane$\r$\n$\r$\nProchaines etapes :$\r$\n1. Lancez l'assistant de configuration via le Menu Demarrer$\r$\n2. Renseignez vos parametres Azure OpenAI ou Ollama$\r$\n3. Activez le Privacy Engine RGPD$\r$\n4. Ouvrez HERMES CHU depuis le bureau$\r$\n$\r$\nDocumentation : github.com/Tarzzan/PULSAR-CHU/wiki"
 !define MUI_FINISHPAGE_RUN          "$INSTDIR\scripts\Configure-CHU.bat"
 !define MUI_FINISHPAGE_RUN_TEXT     "Lancer l'assistant de configuration CHU"
 !define MUI_FINISHPAGE_LINK         "Consulter le Wiki HERMES CHU"
-!define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/Tarzzan/HERMES-CHU/wiki"
+!define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/Tarzzan/PULSAR-CHU/wiki"
 
 ;--------------------------------
 ; Pages de l'installateur
@@ -121,7 +121,7 @@ Function PageAPropos
     ${NSD_CreateLabel} 10u 75u 100% 10u "Architecte du systeme agentique hospitalier"
     Pop $0
 
-    ${NSD_CreateLabel} 10u 88u 100% 10u "github.com/Tarzzan/HERMES-CHU"
+    ${NSD_CreateLabel} 10u 88u 100% 10u "github.com/Tarzzan/PULSAR-CHU"
     Pop $0
 
     ${NSD_CreateGroupBox} 0 115u 100% 50u "Technologie de base"
@@ -359,7 +359,7 @@ Section "HERMES CHU (requis)" SecMain
         SW_SHOWNORMAL "" "Installer les prerequis (Node.js, Python, Git)"
 
     CreateShortcut "$SMPROGRAMS\HERMES CHU\Documentation Wiki.lnk" \
-        "https://github.com/Tarzzan/HERMES-CHU/wiki" "" "" 0
+        "https://github.com/Tarzzan/PULSAR-CHU/wiki" "" "" 0
 
     CreateShortcut "$SMPROGRAMS\HERMES CHU\Desinstaller HERMES CHU.lnk" \
         "$INSTDIR\Uninstall.exe" "" "" 0
@@ -385,10 +385,10 @@ Section "HERMES CHU (requis)" SecMain
         "InstallLocation"      "$INSTDIR"
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
-        "URLInfoAbout"         "https://github.com/Tarzzan/HERMES-CHU"
+        "URLInfoAbout"         "https://github.com/Tarzzan/PULSAR-CHU"
     WriteRegStr HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
-        "HelpLink"             "https://github.com/Tarzzan/HERMES-CHU/wiki"
+        "HelpLink"             "https://github.com/Tarzzan/PULSAR-CHU/wiki"
     WriteRegDWORD HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\HERMES CHU" \
         "NoModify" 1

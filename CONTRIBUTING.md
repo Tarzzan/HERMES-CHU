@@ -17,7 +17,7 @@ Ce projet est développé en interne pour les besoins du CHU. Les contributeurs 
 
 ### 2. Environnement de Développement
 
-1. Clonez le dépôt : `git clone https://github.com/Tarzzan/HERMES-CHU.git`
+1. Clonez le dépôt : `git clone https://github.com/Tarzzan/PULSAR-CHU.git`
 2. Installez les dépendances locales (Python 3.12, Node.js 20+).
 3. Lancez l'environnement de développement via Docker : `docker compose -f infrastructure/docker/docker-compose.dev.yml up -d`
 
@@ -38,7 +38,7 @@ Ce projet est développé en interne pour les besoins du CHU. Les contributeurs 
 
 ## Architecture et Documentation
 
-Avant de contribuer, veuillez lire attentivement la documentation dans le [Wiki](https://github.com/Tarzzan/HERMES-CHU/wiki) (ou dans `docs/wiki/`), en particulier :
+Avant de contribuer, veuillez lire attentivement la documentation dans le [Wiki](https://github.com/Tarzzan/PULSAR-CHU/wiki) (ou dans `docs/wiki/`), en particulier :
 - L'Architecture Technique
 - Le SAS d'Anonymisation
 - Le Système de Garde-Fous

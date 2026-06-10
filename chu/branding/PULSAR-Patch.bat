@@ -7,7 +7,7 @@
 
 setlocal
 set "TMP_PY=%TEMP%\patch_pulsar_%RANDOM%.py"
-set "GITHUB_RAW=https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/patch_pulsar.py"
+set "GITHUB_RAW=https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/patch_pulsar.py"
 
 echo.
 echo   PULSAR -- Patch Sources TypeScript

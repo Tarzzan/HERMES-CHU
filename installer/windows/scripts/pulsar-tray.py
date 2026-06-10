@@ -128,7 +128,7 @@ def action_apropos(icon, item):
     import ctypes
     ctypes.windll.user32.MessageBoxW(
         0,
-        "PULSAR v2.3.0\n\nPlateforme Unifiée de Liaison,\nde Surveillance et d'Assistance\nen temps Réel\n\nDSIO - CHU de Guyane\nWilliam MERI\n\nhttps://github.com/Tarzzan/HERMES-CHU",
+        "PULSAR v2.3.0\n\nPlateforme Unifiée de Liaison,\nde Surveillance et d'Assistance\nen temps Réel\n\nDSIO - CHU de Guyane\nWilliam MERI\n\nhttps://github.com/Tarzzan/PULSAR-CHU",
         "À propos de PULSAR",
         0x40,  # MB_ICONINFORMATION
     )

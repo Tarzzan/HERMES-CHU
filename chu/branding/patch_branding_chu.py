@@ -18,7 +18,7 @@ BRANDING = {
     "brand": "HERMES CHU",
     "brand_short": "CHU",
     "footer_org": "William MERI · CHU de Guyane",
-    "footer_url": "https://github.com/Tarzzan/HERMES-CHU",
+    "footer_url": "https://github.com/Tarzzan/PULSAR-CHU",
     "page_title": "HERMES CHU — CHU de Guyane",
     "agent_name": "HERMES CHU",
     "welcome": "Bienvenue sur HERMES CHU — Système Agentique Hospitalier du CHU de Guyane.",
@@ -164,7 +164,7 @@ def install_skin(hermes_root: Path, script_dir: Path) -> None:
         print("  Téléchargement depuis GitHub...")
         try:
             import urllib.request
-            url = "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/chu-guyane.yaml"
+            url = "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/chu-guyane.yaml"
             urllib.request.urlretrieve(url, skins_dir / "chu-guyane.yaml")
             print(f"  [OK] Skin téléchargé : {skins_dir / 'chu-guyane.yaml'}")
         except Exception as e:
@@ -214,7 +214,7 @@ def main():
     print("  2. Relancez : hermes dashboard")
     print()
     print("Conçu par William MERI — CHU de Guyane")
-    print("https://github.com/Tarzzan/HERMES-CHU")
+    print("https://github.com/Tarzzan/PULSAR-CHU")
 
 
 if __name__ == "__main__":

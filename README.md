@@ -10,14 +10,14 @@
 
 ---
 
-[![Version](https://img.shields.io/badge/version-2.3.0-0077a8?style=flat-square)](https://github.com/Tarzzan/HERMES-CHU/releases)
+[![Version](https://img.shields.io/badge/version-2.3.0-0077a8?style=flat-square)](https://github.com/Tarzzan/PULSAR-CHU/releases)
 [![Conformité](https://img.shields.io/badge/conformité-RGPD%20%7C%20HDS%20%7C%20ISO%2027001-00897b?style=flat-square)](#conformite)
 [![Licence](https://img.shields.io/badge/licence-Apache%202.0-42A5F5?style=flat-square)](LICENSE)
 [![Auteur](https://img.shields.io/badge/auteur-William%20MERI%20%7C%20DSIO%20CHU%20de%20Guyane-1565C0?style=flat-square)](https://github.com/Tarzzan)
 
-[Documentation](https://github.com/Tarzzan/HERMES-CHU/wiki) · [Releases](https://github.com/Tarzzan/HERMES-CHU/releases) · [Roadmap](https://github.com/Tarzzan/HERMES-CHU/milestones) · [Issues](https://github.com/Tarzzan/HERMES-CHU/issues)
+[Documentation](https://github.com/Tarzzan/PULSAR-CHU/wiki) · [Releases](https://github.com/Tarzzan/PULSAR-CHU/releases) · [Roadmap](https://github.com/Tarzzan/PULSAR-CHU/milestones) · [Issues](https://github.com/Tarzzan/PULSAR-CHU/issues)
 
-> **Dépôt :** `https://github.com/Tarzzan/HERMES-CHU.git`  
+> **Dépôt :** `https://github.com/Tarzzan/PULSAR-CHU.git`  
 > **Mise à jour locale :** double-cliquer sur `installer/windows/scripts/Pulsar-Apply.bat`
 
 </div>
@@ -134,7 +134,7 @@ Le composant le plus critique de PULSAR. Il garantit que **le LLM ne traite jama
 
 ## Installation Rapide (Windows)
 
-Téléchargez et lancez **[PULSAR-Setup-2.3.0.exe](https://github.com/Tarzzan/HERMES-CHU/releases/latest)** — aucun droit administrateur requis.
+Téléchargez et lancez **[PULSAR-Setup-2.3.0.exe](https://github.com/Tarzzan/PULSAR-CHU/releases/latest)** — aucun droit administrateur requis.
 
 ```cmd
 pulsar dashboard     # Interface web (recommande)

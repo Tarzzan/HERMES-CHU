@@ -33,7 +33,7 @@ $AssetsDir    = Join-Path $HermesHome "pulsar-assets"
 $ConfigFile   = Join-Path $HermesHome "config.yaml"
 
 # ── URLs des assets PULSAR (CDN) ─────────────────────────────
-$BASE_CDN = "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/pulsar-assets"
+$BASE_CDN = "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/pulsar-assets"
 
 $Assets = @{
     "pulsar-theme.yaml"        = "$BASE_CDN/pulsar-theme.yaml"
@@ -191,7 +191,7 @@ if ($WebDist) {
 
         # Remplacements textuels
         $content = $content -replace "Nous Research",         "DSIO CHU de Guyane"
-        $content = $content -replace "nousresearch\.com",     "github.com/Tarzzan/HERMES-CHU"
+        $content = $content -replace "nousresearch\.com",     "github.com/Tarzzan/PULSAR-CHU"
         $content = $content -replace "Messenger of the Digital Gods", "Systeme Agentique Medical"
         $content = $content -replace "Hermes Agent",          "PULSAR"
         $content = $content -replace "HERMES-AGENT",          "PULSAR"

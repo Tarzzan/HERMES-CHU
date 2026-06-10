@@ -26,7 +26,7 @@ set "CHU_DIR=%PULSAR_DIR%\chu"
 set "PRIVACY_DIR=%CHU_DIR%\privacy_engine"
 set "API_DIR=%CHU_DIR%\api"
 set "CHU_API_PORT=8001"
-set "GITHUB_RAW=https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main"
+set "GITHUB_RAW=https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main"
 
 :: ── Etape 1 : Verifier Python ─────────────────────────────────
 echo   [1/6] Verification de Python...

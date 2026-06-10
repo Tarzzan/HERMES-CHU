@@ -269,7 +269,7 @@ Write-Host ""
 Write-Host "  Prochaines etapes :" -ForegroundColor White
 Write-Host "  1. Lancez 'Demarrer l API CHU' depuis le menu Demarrer" -ForegroundColor White
 Write-Host "  2. Ouvrez HERMES CHU depuis le bureau" -ForegroundColor White
-Write-Host "  3. Wiki : github.com/Tarzzan/HERMES-CHU/wiki" -ForegroundColor Cyan
+Write-Host "  3. Wiki : github.com/Tarzzan/PULSAR-CHU/wiki" -ForegroundColor Cyan
 Write-Host ""
 
 if (-not $Silent) {

@@ -5,7 +5,7 @@
 # Uses uv for fast Python provisioning and package management.
 #
 # Usage:
-#   iex (irm https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/installer/windows/install-chu.ps1)
+#   iex (irm https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/installer/windows/install-chu.ps1)
 #
 # Or download and run with options:
 #   .\install.ps1 -NoVenv -SkipSetup
@@ -92,8 +92,8 @@ try {
 # Configuration
 # ============================================================================
 
-$RepoUrlSsh = "git@github.com:Tarzzan/HERMES-CHU.git"
-$RepoUrlHttps = "https://github.com/Tarzzan/HERMES-CHU.git"
+$RepoUrlSsh = "git@github.com:Tarzzan/PULSAR-CHU.git"
+$RepoUrlHttps = "https://github.com/Tarzzan/PULSAR-CHU.git"
 $PythonVersion = "3.11"
 $NodeVersion = "22"
 
@@ -2940,7 +2940,7 @@ function Stage-ChuPatches {
     $sidebarFooter = Join-Path $hermesAgentDir "web\src\components\SidebarFooter.tsx"
     if (Test-Path $sidebarFooter) {
         $c = Get-Content $sidebarFooter -Raw -Encoding UTF8
-        $c = $c -replace 'href="https://nousresearch\.com"', 'href="https://github.com/Tarzzan/HERMES-CHU"'
+        $c = $c -replace 'href="https://nousresearch\.com"', 'href="https://github.com/Tarzzan/PULSAR-CHU"'
         $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($sidebarFooter, $c, $utf8NoBom)
         Write-Success "SidebarFooter patched"
@@ -3215,7 +3215,7 @@ try {
     Write-Err "Installation failed: $_"
     Write-Host ""
     Write-Info "If the error is unclear, try downloading and running the script directly:"
-    Write-Host "  Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/installer/windows/install-chu.ps1' -OutFile install.ps1" -ForegroundColor Yellow
+    Write-Host "  Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/installer/windows/install-chu.ps1' -OutFile install.ps1" -ForegroundColor Yellow
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
     Write-Host ""
 }

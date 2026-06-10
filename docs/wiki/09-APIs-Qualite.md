@@ -92,4 +92,4 @@ Toutes les APIs sont protégées par :
 
 ## Spécification OpenAPI
 
-La spécification complète est disponible dans le fichier [`src/api-quality/openapi_qualite.yaml`](https://github.com/Tarzzan/HERMES-CHU/blob/main/src/api-quality/openapi_qualite.yaml) et peut être visualisée via Swagger UI à l'adresse `/api/docs` une fois le système déployé.
+La spécification complète est disponible dans le fichier [`src/api-quality/openapi_qualite.yaml`](https://github.com/Tarzzan/PULSAR-CHU/blob/main/src/api-quality/openapi_qualite.yaml) et peut être visualisée via Swagger UI à l'adresse `/api/docs` une fois le système déployé.

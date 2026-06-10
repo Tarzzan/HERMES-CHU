@@ -48,7 +48,7 @@ if /i "%~1"=="patch" (
     echo.
     echo   PULSAR -- Application des patches visuels...
     echo.
-    set "PATCH_URL=https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/Patch-PULSAR-Sources.bat"
+    set "PATCH_URL=https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/Patch-PULSAR-Sources.bat"
     set "PATCH_TMP=%TEMP%\Patch-PULSAR-Sources.bat"
     curl -L "!PATCH_URL!" -o "!PATCH_TMP!" --silent --show-error
     if exist "!PATCH_TMP!" (
@@ -82,7 +82,7 @@ if /i "%~1"=="api" (
     if not defined API_SCRIPT (
         echo [ERREUR] serveur_chu.py non trouve.
         echo Installez PULSAR complet depuis :
-        echo https://github.com/Tarzzan/HERMES-CHU/releases
+        echo https://github.com/Tarzzan/PULSAR-CHU/releases
         goto :end
     )
     start "PULSAR-API" /min python "!API_SCRIPT!" --port %CHU_API_PORT%
@@ -147,7 +147,7 @@ if /i "%~1"=="update" (
     hermes update
     echo.
     echo   [INFO] Re-application des patches PULSAR apres mise a jour...
-    set "PATCH_URL=https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/Patch-PULSAR-Sources.bat"
+    set "PATCH_URL=https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/Patch-PULSAR-Sources.bat"
     set "PATCH_TMP=%TEMP%\Patch-PULSAR-Sources.bat"
     curl -L "!PATCH_URL!" -o "!PATCH_TMP!" --silent
     if exist "!PATCH_TMP!" call "!PATCH_TMP!"

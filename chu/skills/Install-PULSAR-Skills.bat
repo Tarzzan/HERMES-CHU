@@ -19,7 +19,7 @@ echo   PULSAR -- Installation des Skills Agents CHU
 echo   ============================================================
 echo.
 
-set "GITHUB_RAW=https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/skills"
+set "GITHUB_RAW=https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/skills"
 set "HERMES_SKILLS_DIR=%LOCALAPPDATA%\hermes\skills\chu"
 set "HERMES_BIN=%LOCALAPPDATA%\hermes\hermes-agent\venv\Scripts\hermes.exe"
 

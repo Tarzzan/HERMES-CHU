@@ -8,7 +8,7 @@ L'infrastructure de HERMES CHU est conçue pour un déploiement sur un cluster K
 
 ## Architecture de Déploiement
 
-<img src="https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/docs/architecture/deployment_diagram.png" alt="Diagramme de Déploiement" width="100%" />
+<img src="https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/docs/architecture/deployment_diagram.png" alt="Diagramme de Déploiement" width="100%" />
 
 ## Namespaces Kubernetes
 

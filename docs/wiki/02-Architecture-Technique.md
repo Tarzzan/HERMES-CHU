@@ -49,7 +49,7 @@ L'architecture HERMES CHU s'organise en cinq couches distinctes, chacune isolée
 
 L'image ci-dessous illustre comment une requête utilisateur traverse les différentes couches de sécurité avant d'atteindre le cœur agentique.
 
-<img src="https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/docs/architecture/architecture_diagram.png" alt="Diagramme d'Architecture" width="100%" />
+<img src="https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/docs/architecture/architecture_diagram.png" alt="Diagramme d'Architecture" width="100%" />
 
 ## 3. Choix Technologiques Clés
 

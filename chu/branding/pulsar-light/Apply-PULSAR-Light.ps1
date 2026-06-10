@@ -28,7 +28,7 @@ $ThemesDir  = Join-Path $HermesHome "dashboard-themes"
 $AssetsDir  = Join-Path $HermesHome "pulsar-light-assets"
 $ConfigFile = Join-Path $HermesHome "config.yaml"
 
-$BASE_CDN = "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/pulsar-light"
+$BASE_CDN = "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/pulsar-light"
 
 $Assets = @{
     "pulsar-light-theme.yaml"        = "$BASE_CDN/pulsar-light-theme.yaml"

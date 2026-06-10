@@ -73,7 +73,7 @@ if (-not (Test-Path $skinSource)) {
     # Telecharger depuis GitHub si absent
     Write-Host "  Telechargement du skin depuis GitHub..." -ForegroundColor Gray
     try {
-        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/chu/branding/chu-guyane.yaml" `
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/chu/branding/chu-guyane.yaml" `
             -OutFile "$skinsDir\chu-guyane.yaml" -UseBasicParsing
         Write-Host "  [OK] Skin telecharge" -ForegroundColor Green
     } catch {
@@ -148,7 +148,7 @@ $sidebarFooter = "$hermesRoot\web\src\components\SidebarFooter.tsx"
 if (Test-Path $sidebarFooter) {
     $content = Get-Content $sidebarFooter -Raw -Encoding UTF8
     # Remplacer le lien nousresearch.com par le lien GitHub CHU
-    $content = $content -replace 'href="https://nousresearch\.com"', 'href="https://github.com/Tarzzan/HERMES-CHU"'
+    $content = $content -replace 'href="https://nousresearch\.com"', 'href="https://github.com/Tarzzan/PULSAR-CHU"'
     # Remplacer target="_blank" rel="noopener noreferrer" (garder)
     Set-Content $sidebarFooter $content -Encoding UTF8 -NoNewline
     Write-Host "  [OK] Modifie : $sidebarFooter" -ForegroundColor Green
@@ -252,6 +252,6 @@ Write-Host "  1. Fermez hermes dashboard (Ctrl+C)" -ForegroundColor White
 Write-Host "  2. Relancez : hermes dashboard" -ForegroundColor White
 Write-Host ""
 Write-Host "Concu par William MERI -- CHU de Guyane" -ForegroundColor Cyan
-Write-Host "https://github.com/Tarzzan/HERMES-CHU" -ForegroundColor Gray
+Write-Host "https://github.com/Tarzzan/PULSAR-CHU" -ForegroundColor Gray
 Write-Host ""
 Read-Host "Appuyez sur Entree pour fermer"

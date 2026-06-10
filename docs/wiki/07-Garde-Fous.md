@@ -6,7 +6,7 @@
 
 Le système de garde-fous (Guardrails) opère à quatre niveaux distincts pour garantir la sécurité et la fiabilité des actions de l'agent.
 
-<img src="https://raw.githubusercontent.com/Tarzzan/HERMES-CHU/main/docs/architecture/guardrails_diagram.png" alt="Diagramme des Garde-Fous" width="100%" />
+<img src="https://raw.githubusercontent.com/Tarzzan/PULSAR-CHU/main/docs/architecture/guardrails_diagram.png" alt="Diagramme des Garde-Fous" width="100%" />
 
 ## Niveau 1 — Filtrage des Entrées (Input Guardrails)
 
