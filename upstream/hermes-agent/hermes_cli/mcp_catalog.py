@@ -304,7 +304,7 @@ def catalog_diagnostics() -> List[tuple]:
     Returns a list of ``(entry_name, kind, message)`` tuples where ``kind``
     is one of:
       - ``future_manifest`` — manifest_version is newer than this Hermes
-        understands. Update Hermes to install this entry.
+        comprend. Mettez à jour PULSAR pour installer cette entrée.
       - ``invalid`` — manifest is malformed in some other way (caught by
         CI for shipped manifests; user-modified manifests can hit this).
     """

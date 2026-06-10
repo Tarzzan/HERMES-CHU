@@ -1,7 +1,7 @@
 """
 Doctor command for hermes CLI.
 
-Diagnoses issues with Hermes Agent setup.
+Diagnostique les problèmes de configuration de PULSAR.
 """
 
 import os
@@ -1109,9 +1109,9 @@ def run_doctor(args):
         if should_fix:
             soul_path.parent.mkdir(parents=True, exist_ok=True)
             soul_path.write_text(
-                "# Hermes Agent Persona\n\n"
-                "<!-- Edit this file to customize how Hermes communicates. -->\n\n"
-                "You are Hermes, a helpful AI assistant.\n",
+                "# Persona PULSAR\n\n"
+                "<!-- Éditez ce fichier pour personnaliser la communication de PULSAR. -->\n\n"
+                "Tu es PULSAR, un assistant IA médical et technique développé par le DSIO du CHU de Guyane.\n",
                 encoding="utf-8",
             )
             check_ok(f"Created {_DHH}/SOUL.md with basic template")

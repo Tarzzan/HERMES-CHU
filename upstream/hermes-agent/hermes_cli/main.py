@@ -5665,7 +5665,7 @@ _warn_stale_dashboard_processes = _kill_stale_dashboard_processes
 
 
 def _update_via_zip(args):
-    """Update Hermes Agent by downloading a ZIP archive.
+    """Mettre à jour PULSAR en téléchargeant une archive ZIP.
 
     Used on Windows when git file I/O is broken (antivirus, NTFS filter
     drivers causing 'Invalid argument' errors on file creation).
@@ -6237,7 +6237,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
         # Ask user if they want to add upstream
         print()
         print("ℹ Your fork is not tracking the official Hermes repository.")
-        print("  This means you may miss updates from NousResearch/hermes-agent.")
+        print("  Cela signifie que vous pourriez manquer des mises à jour de PULSAR.")
         print()
         try:
             response = (
@@ -6251,7 +6251,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
             print("→ Adding upstream remote...")
             if _add_upstream_remote(git_cmd, cwd):
                 print(
-                    "  ✓ Added upstream: https://github.com/NousResearch/hermes-agent.git"
+                    "  ✓ Upstream ajouté : https://github.com/Tarzzan/HERMES-CHU.git"
                 )
                 has_upstream = True
             else:
@@ -6259,7 +6259,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
                 return
         else:
             print(
-                "  Skipped. Run 'git remote add upstream https://github.com/NousResearch/hermes-agent.git' to add later."
+                "  Ignoré. Exécutez 'git remote add upstream https://github.com/Tarzzan/HERMES-CHU.git' pour l'ajouter plus tard."
             )
             _mark_skip_upstream_prompt()
             return
@@ -7814,7 +7814,7 @@ def _discard_lockfile_churn(git_cmd, repo_root):
 
 
 def cmd_update(args):
-    """Update Hermes Agent to the latest version.
+    """Mettre à jour PULSAR vers la dernière version.
 
     Thin wrapper around ``_cmd_update_impl``: installs hangup protection,
     runs the update, then restores stdio on the way out (even on
@@ -7828,7 +7828,7 @@ def cmd_update(args):
     )
 
     if is_managed():
-        managed_error("update Hermes Agent")
+        managed_error("mettre à jour PULSAR")
         return
 
     # Docker users can't ``git pull`` — the image excludes ``.git`` from
@@ -7864,7 +7864,7 @@ def cmd_update(args):
 
 
 def _cmd_update_pip(args):
-    """Update Hermes via pip (for PyPI installs)."""
+    """Mettre à jour PULSAR via pip (installations PyPI)."""
     from hermes_cli import __version__
     from hermes_cli.config import is_uv_tool_install
 
