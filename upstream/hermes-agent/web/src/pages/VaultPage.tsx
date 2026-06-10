@@ -20,6 +20,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardCopy,
+  Cookie,
   Eye,
   EyeOff,
   KeyRound,
@@ -39,6 +40,7 @@ import { api } from "@/lib/api";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn } from "@/lib/utils";
+import { CookieVaultSection } from "@/components/CookieVaultSection";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -188,6 +190,7 @@ export function VaultPage() {
   const [types, setTypes]             = useState<Record<string, string>>({});
   const [auditLog, setAuditLog]       = useState<AuditEntry[]>([]);
   const [showAudit, setShowAudit]     = useState(false);
+  const [showCookies, setShowCookies] = useState(false);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState<string | null>(null);
 
@@ -581,6 +584,27 @@ export function VaultPage() {
           ))}
         </div>
       )}
+
+      {/* ================================================================
+          ONGLET COOKIES DE SESSION
+          ================================================================ */}
+      <div className="rounded-xl border border-border overflow-hidden">
+        <button
+          onClick={() => setShowCookies(!showCookies)}
+          className="w-full flex items-center gap-3 px-4 py-3 bg-muted/20 hover:bg-muted/40 transition-colors text-left"
+        >
+          <Cookie className="w-4 h-4 text-amber-400" />
+          <span className="font-medium text-sm">Sessions cookies (2FA)</span>
+          <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
+            {showCookies ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+          </span>
+        </button>
+        {showCookies && (
+          <div className="p-4">
+            <CookieVaultSection />
+          </div>
+        )}
+      </div>
 
       {/* Journal d'audit */}
       {showAudit && (

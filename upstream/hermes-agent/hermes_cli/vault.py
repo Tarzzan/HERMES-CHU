@@ -46,13 +46,17 @@ except ImportError:
     _CRYPTO_AVAILABLE = False
 
 CREDENTIAL_TYPES = {
-    "api_key":     "Clé API",
-    "token":       "Token d'accès",
-    "ssh_key":     "Clé SSH privée",
-    "password":    "Mot de passe",
-    "certificate": "Certificat / Clé TLS",
-    "custom":      "Variable personnalisée",
+    "api_key":        "Clé API",
+    "token":          "Token d'accès",
+    "ssh_key":        "Clé SSH privée",
+    "password":       "Mot de passe",
+    "certificate":    "Certificat / Clé TLS",
+    "cookie_session": "Session / Cookies (2FA)",
+    "custom":         "Variable personnalisée",
 }
+
+# Champs spécifiques aux cookies de session
+COOKIE_FIELDS = ["name", "value", "domain", "path", "expires", "httpOnly", "secure", "sameSite"]
 
 # ---------------------------------------------------------------------------
 # Helpers chemins
@@ -357,6 +361,259 @@ def vault_audit_log(limit: int = 50) -> List[Dict[str, Any]]:
         except Exception:
             pass
     return list(reversed(entries))  # plus récent en premier
+
+
+# ---------------------------------------------------------------------------
+# Gestion des cookies de session
+# ---------------------------------------------------------------------------
+
+def _cookies_data_path() -> Path:
+    """Fichier chiffré dédié aux cookies de session."""
+    return _pulsar_home() / "vault_cookies.enc"
+
+
+def _load_cookies_vault() -> Dict[str, Any]:
+    """Charge le coffre de cookies (séparé du coffre principal)."""
+    data_path = _cookies_data_path()
+    if not data_path.exists():
+        return {"sessions": [], "version": 1}
+    try:
+        f = _get_fernet()
+        raw = f.decrypt(data_path.read_bytes())
+        return json.loads(raw.decode("utf-8"))
+    except Exception as exc:
+        logger.error("Erreur chargement cookies vault : %s", exc)
+        raise
+
+
+def _save_cookies_vault(data: Dict[str, Any]) -> None:
+    """Chiffre et sauvegarde le coffre de cookies."""
+    data_path = _cookies_data_path()
+    data_path.parent.mkdir(parents=True, exist_ok=True)
+    f = _get_fernet()
+    encrypted = f.encrypt(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+    data_path.write_bytes(encrypted)
+    data_path.chmod(stat.S_IRUSR | stat.S_IWUSR)
+
+
+def _parse_netscape_cookies(text: str) -> List[Dict[str, Any]]:
+    """
+    Parse le format Netscape cookies.txt (exporté par EditThisCookie, Cookie-Editor, etc.).
+    Format : domain\tinclude_subdomains\tpath\tsecure\texpires\tname\tvalue
+    """
+    cookies = []
+    for line in text.strip().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split("\t")
+        if len(parts) < 7:
+            continue
+        try:
+            expires_raw = int(parts[4]) if parts[4].strip().lstrip("-").isdigit() else 0
+            cookies.append({
+                "domain":     parts[0].lstrip("."),
+                "path":       parts[2],
+                "secure":     parts[3].upper() == "TRUE",
+                "expires":    expires_raw,
+                "name":       parts[5],
+                "value":      parts[6],
+                "httpOnly":   False,
+                "sameSite":   "Lax",
+            })
+        except Exception:
+            continue
+    return cookies
+
+
+def _export_netscape_cookies(cookies: List[Dict[str, Any]]) -> str:
+    """Exporte les cookies au format Netscape cookies.txt."""
+    lines = ["# Netscape HTTP Cookie File", "# Exporté par PULSAR Vault", ""]
+    for c in cookies:
+        include_sub = "TRUE" if c.get("domain", "").startswith(".") else "FALSE"
+        domain = c.get("domain", "")
+        path = c.get("path", "/")
+        secure = "TRUE" if c.get("secure") else "FALSE"
+        expires = str(int(c.get("expires", 0)))
+        name = c.get("name", "")
+        value = c.get("value", "")
+        lines.append(f"{domain}\t{include_sub}\t{path}\t{secure}\t{expires}\t{name}\t{value}")
+    return "\n".join(lines)
+
+
+def _cookie_session_status(cookies: List[Dict[str, Any]]) -> str:
+    """Détermine le statut d'expiration d'une session cookie."""
+    if not cookies:
+        return "empty"
+    now = time.time()
+    session_cookies = [c for c in cookies if c.get("expires", 0) == 0]
+    expiring = [c for c in cookies if c.get("expires", 0) > 0]
+    if not expiring:
+        return "session"  # cookies de session (sans expiration)
+    expired = [c for c in expiring if c["expires"] < now]
+    if len(expired) == len(expiring):
+        return "expired"
+    soon = [c for c in expiring if 0 < c["expires"] - now < 86400 * 7]  # < 7 jours
+    if soon:
+        return "expiring_soon"
+    return "valid"
+
+
+def cookie_session_list() -> List[Dict[str, Any]]:
+    """Liste toutes les sessions cookies stockées (sans les valeurs des cookies)."""
+    data = _load_cookies_vault()
+    result = []
+    for sess in data.get("sessions", []):
+        cookies = sess.get("cookies", [])
+        domains = list({c.get("domain", "") for c in cookies if c.get("domain")})
+        result.append({
+            "id":          sess["id"],
+            "label":       sess["label"],
+            "alias":       sess.get("alias", ""),
+            "description": sess.get("description", ""),
+            "domains":     domains,
+            "cookie_count": len(cookies),
+            "status":      _cookie_session_status(cookies),
+            "created_at":  sess.get("created_at", ""),
+            "updated_at":  sess.get("updated_at", ""),
+        })
+    return result
+
+
+def cookie_session_add(
+    label: str,
+    cookies_json: Optional[str] = None,
+    cookies_netscape: Optional[str] = None,
+    alias: str = "",
+    description: str = "",
+) -> Dict[str, Any]:
+    """
+    Ajoute une session cookies dans le coffre.
+    Accepte soit du JSON (format EditThisCookie/Chrome DevTools)
+    soit du texte Netscape cookies.txt.
+    """
+    if not label.strip():
+        raise ValueError("Le label ne peut pas être vide.")
+
+    # Parser les cookies
+    cookies: List[Dict[str, Any]] = []
+    if cookies_json:
+        try:
+            parsed = json.loads(cookies_json)
+            if isinstance(parsed, list):
+                cookies = parsed
+            elif isinstance(parsed, dict):
+                cookies = [parsed]
+            else:
+                raise ValueError("Format JSON invalide : liste ou objet attendu.")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"JSON invalide : {e}")
+    elif cookies_netscape:
+        cookies = _parse_netscape_cookies(cookies_netscape)
+        if not cookies:
+            raise ValueError("Aucun cookie valide trouvé dans le format Netscape.")
+    else:
+        raise ValueError("Fournissez cookies_json ou cookies_netscape.")
+
+    # Normaliser les champs
+    normalized = []
+    for c in cookies:
+        normalized.append({
+            "name":     str(c.get("name", "")),
+            "value":    str(c.get("value", "")),
+            "domain":   str(c.get("domain", "")),
+            "path":     str(c.get("path", "/")),
+            "expires":  float(c.get("expires", c.get("expirationDate", 0)) or 0),
+            "httpOnly": bool(c.get("httpOnly", False)),
+            "secure":   bool(c.get("secure", False)),
+            "sameSite": str(c.get("sameSite", "Lax")),
+        })
+
+    data = _load_cookies_vault()
+
+    # Générer alias
+    if not alias:
+        alias = label.lower().replace(" ", "_").replace("-", "_")
+        existing = {s.get("alias") for s in data.get("sessions", [])}
+        base = alias
+        i = 2
+        while alias in existing:
+            alias = f"{base}_{i}"
+            i += 1
+
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    sess_id = secrets.token_hex(8)
+
+    new_sess = {
+        "id":          sess_id,
+        "label":       label.strip(),
+        "alias":       alias.strip(),
+        "description": description.strip(),
+        "cookies":     normalized,
+        "created_at":  now,
+        "updated_at":  now,
+    }
+
+    data.setdefault("sessions", []).append(new_sess)
+    _save_cookies_vault(data)
+    _audit("cookie_add", sess_id, label)
+
+    return {
+        "id":          sess_id,
+        "label":       label.strip(),
+        "alias":       alias.strip(),
+        "description": description.strip(),
+        "cookie_count": len(normalized),
+        "domains":     list({c["domain"] for c in normalized if c["domain"]}),
+        "status":      _cookie_session_status(normalized),
+        "created_at":  now,
+        "updated_at":  now,
+    }
+
+
+def cookie_session_delete(sess_id: str) -> bool:
+    """Supprime une session cookies du coffre."""
+    data = _load_cookies_vault()
+    original = data.get("sessions", [])
+    remaining = [s for s in original if s["id"] != sess_id]
+    if len(remaining) == len(original):
+        raise KeyError(f"Session introuvable : {sess_id}")
+    deleted = next(s for s in original if s["id"] == sess_id)
+    data["sessions"] = remaining
+    _save_cookies_vault(data)
+    _audit("cookie_delete", sess_id, deleted["label"])
+    return True
+
+
+def cookie_session_get_cookies(sess_id: str, source_ip: str = "local") -> List[Dict[str, Any]]:
+    """Retourne les cookies d'une session (audit loggé)."""
+    data = _load_cookies_vault()
+    for sess in data.get("sessions", []):
+        if sess["id"] == sess_id:
+            _audit("cookie_reveal", sess_id, sess["label"], source_ip)
+            return sess.get("cookies", [])
+    raise KeyError(f"Session introuvable : {sess_id}")
+
+
+def cookie_session_export_netscape(sess_id: str) -> str:
+    """Exporte une session au format Netscape cookies.txt."""
+    cookies = cookie_session_get_cookies(sess_id)
+    return _export_netscape_cookies(cookies)
+
+
+def cookie_session_export_json(sess_id: str) -> List[Dict[str, Any]]:
+    """Exporte une session au format JSON (Chrome DevTools / EditThisCookie)."""
+    return cookie_session_get_cookies(sess_id)
+
+
+def cookie_session_resolve_alias(alias: str) -> Optional[List[Dict[str, Any]]]:
+    """Résout un alias de session cookies (pour injection dans les agents browser)."""
+    data = _load_cookies_vault()
+    for sess in data.get("sessions", []):
+        if sess.get("alias") == alias:
+            _audit("cookie_resolve", sess["id"], sess["label"], "agent")
+            return sess.get("cookies", [])
+    return None
 
 
 def vault_export_aliases() -> List[Dict[str, str]]:

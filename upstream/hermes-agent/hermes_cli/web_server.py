@@ -2861,6 +2861,12 @@ try:
         vault_audit_log as _vault_audit_log,
         vault_export_aliases as _vault_export_aliases,
         CREDENTIAL_TYPES as _CREDENTIAL_TYPES,
+        cookie_session_list as _cookie_session_list,
+        cookie_session_add as _cookie_session_add,
+        cookie_session_delete as _cookie_session_delete,
+        cookie_session_get_cookies as _cookie_session_get_cookies,
+        cookie_session_export_netscape as _cookie_session_export_netscape,
+        cookie_session_export_json as _cookie_session_export_json,
     )
     _VAULT_AVAILABLE = True
 except ImportError:
@@ -3001,6 +3007,94 @@ async def post_vault_reveal(body: VaultRevealBody, request: Request):
         client_ip = request.client.host if request.client else "unknown"
         value = _vault_reveal_value(body.id, source_ip=client_ip)
         return {"id": body.id, "value": value}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+
+# ---------------------------------------------------------------------------
+# Vault — Cookies de session (2FA)
+# ---------------------------------------------------------------------------
+
+class CookieSessionAddBody(BaseModel):
+    label: str
+    alias: str = ""
+    description: str = ""
+    cookies_json: Optional[str] = None
+    cookies_netscape: Optional[str] = None
+
+
+@app.get("/api/vault/cookies")
+async def get_cookie_sessions(request: Request):
+    """Liste toutes les sessions cookies (sans les valeurs)."""
+    _require_vault(request)
+    try:
+        return {"sessions": _cookie_session_list()}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/api/vault/cookies")
+async def post_cookie_session_add(body: CookieSessionAddBody, request: Request):
+    """Importe une session cookies (JSON ou Netscape) dans le coffre."""
+    _require_vault(request)
+    try:
+        meta = _cookie_session_add(
+            label=body.label,
+            cookies_json=body.cookies_json,
+            cookies_netscape=body.cookies_netscape,
+            alias=body.alias,
+            description=body.description,
+        )
+        return {"session": meta}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.delete("/api/vault/cookies/{sess_id}")
+async def delete_cookie_session(sess_id: str, request: Request):
+    """Supprime une session cookies du coffre."""
+    _require_vault(request)
+    try:
+        _cookie_session_delete(sess_id)
+        return {"deleted": True}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/vault/cookies/{sess_id}/json")
+async def get_cookie_session_json(sess_id: str, request: Request):
+    """Exporte une session cookies au format JSON."""
+    _require_vault(request)
+    try:
+        client_ip = request.client.host if request.client else "unknown"
+        cookies = _cookie_session_get_cookies(sess_id, source_ip=client_ip)
+        return {"cookies": cookies}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/api/vault/cookies/{sess_id}/netscape")
+async def get_cookie_session_netscape(sess_id: str, request: Request):
+    """Exporte une session cookies au format Netscape cookies.txt."""
+    _require_vault(request)
+    try:
+        client_ip = request.client.host if request.client else "unknown"
+        text = _cookie_session_export_netscape(sess_id)
+        from fastapi.responses import PlainTextResponse
+        return PlainTextResponse(
+            content=text,
+            media_type="text/plain",
+            headers={"Content-Disposition": f'attachment; filename="cookies_{sess_id}.txt"'},
+        )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     except Exception as exc:
