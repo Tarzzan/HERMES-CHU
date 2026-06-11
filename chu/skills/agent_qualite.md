@@ -90,11 +90,15 @@ Répondre en français professionnel qualité. Utiliser des tableaux pour les ma
 ## Accès API Qualité CHU
 
 ```
-GET  http://localhost:8001/api/chu/metriques          → Métriques d'usage
-GET  http://localhost:8001/api/chu/audit               → Journal d'audit ISO 27001
+# API CHU (port 8001)
+GET  http://localhost:8001/api/chu/metriques           → Métriques d'usage
+GET  http://localhost:8001/api/chu/audit/journal       → Journal d'audit ISO 27001
 GET  http://localhost:8001/api/chu/anonymisation/stats → Statistiques Privacy Engine
-GET  http://localhost:8001/api/chu/agents/performance  → Performance des agents
-POST http://localhost:8001/api/chu/incidents           → Déclaration d'incident
+GET  http://localhost:8001/api/chu/insights            → Insights qualité agrégés
+
+# API Qualité (port 8002)
+GET  http://localhost:8002/api/v1/metriques/agents     → Performance des agents
+POST http://localhost:8002/api/v1/incidents            → Déclaration d'incident
 ```
 
 ## Exemples de tâches

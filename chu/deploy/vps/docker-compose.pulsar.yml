@@ -8,8 +8,9 @@ version: "3.8"
 services:
   pulsar:
     build:
-      context: /home/ubuntu/hermes
-      dockerfile: /home/ubuntu/hermes/Dockerfile.pulsar
+      # Contexte = racine du depot (lancer depuis chu/deploy/vps/)
+      context: ../../..
+      dockerfile: chu/deploy/vps/Dockerfile.pulsar
     image: pulsar-chu:2.3.0
     container_name: pulsar-chu
     restart: unless-stopped

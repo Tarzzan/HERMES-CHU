@@ -314,9 +314,10 @@ memoire:
       - "chu/skills/agent_logistique.md"
       - "chu/skills/agent_recherche.md"
       - "chu/skills/agent_qualite.md"
+      - "chu/skills/agent_formation.md"
     # Skills protégés (jamais modifiés par le Curator)
     skills_proteges:
-      - "upstream/hermes-agent/**"      # Tous les skills NousResearch
+      - "upstream/pulsar-agent/**"      # Tous les skills du moteur upstream
     # Seuil de confiance pour une mise à jour automatique (0.0 à 1.0)
     seuil_confiance: 0.8
     # Journaliser chaque modification du Curator

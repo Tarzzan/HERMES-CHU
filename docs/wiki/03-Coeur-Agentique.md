@@ -63,4 +63,4 @@ Le system prompt de l'Agent Pilote est rédigé intégralement en français et d
 - Son périmètre d'action (outils autorisés selon le contexte)
 - Les règles de délégation (quand et à qui déléguer)
 
-Ce prompt est versionné dans le dépôt et toute modification nécessite une revue par le RSSI.
+Ce prompt est versionné dans le dépôt (`docs/securite/prompt-systeme-pilote.md`, source canonique : `src/orchestrator/orchestrateur_pilote.py`) et toute modification nécessite une revue par le RSSI.

@@ -15,6 +15,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+# Garantit l'import quel que soit le répertoire de lancement
+# (python serveur.py, uvicorn serveur:app, python -m src.orchestrator.main)
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent))
+
 from orchestrateur_pilote import OrchestratorPilote, SessionAgent, TypeMessage
 
 logger = logging.getLogger("hermes.serveur")

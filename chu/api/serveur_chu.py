@@ -14,6 +14,9 @@ Endpoints :
   POST /api/chu/privacy/anonymiser  → Anonymiser un texte (test)
   GET  /api/chu/audit/journal       → Journal d'audit ISO 27001
   GET  /api/chu/audit/export        → Export du journal (CSV/JSON)
+  GET  /api/chu/metriques           → Métriques d'usage (Agent Qualité)
+  GET  /api/chu/anonymisation/stats → Statistiques du Privacy Engine
+  GET  /api/chu/insights            → Insights qualité agrégés
   GET  /api/chu/sante               → Healthcheck du système
 """
 
@@ -244,6 +247,89 @@ async def exporter_journal(format: str = "json") -> Any:
         content={"journal": entrees, "exporte_le": datetime.now(timezone.utc).isoformat()},
         headers={"Content-Disposition": "attachment; filename=audit_hermes_chu.json"},
     )
+
+
+# ---------------------------------------------------------------------------
+# Endpoints Métriques & Insights (Agent Qualité)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/chu/metriques", tags=["Métriques"])
+async def get_metriques() -> Dict[str, Any]:
+    """Métriques d'usage du système — consommées par l'Agent Qualité."""
+    engine = get_privacy_engine()
+    entrees = get_journal_audit().exporter()
+
+    compteurs: Dict[str, int] = {}
+    for e in entrees:
+        compteurs[e["type"]] = compteurs.get(e["type"], 0) + 1
+
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "privacy_engine_actif": engine.actif,
+        "sessions_glass_break_actives": len(engine._sessions_glass_break),
+        "audit_entrees_total": len(entrees),
+        "evenements_par_type": compteurs,
+        "anonymisations_effectuees": compteurs.get("ANONYMISATION_EFFECTUEE", 0),
+        "glass_breaks_actives_total": compteurs.get("GLASS_BREAK_ACTIVE", 0),
+        "phi_residuels_sortie_llm": compteurs.get("phi_residuel_sortie_llm", 0),
+    }
+
+
+@app.get("/api/chu/anonymisation/stats", tags=["Métriques"])
+async def get_stats_anonymisation() -> Dict[str, Any]:
+    """Statistiques détaillées du Privacy Engine (types de PHI, sessions)."""
+    entrees = get_journal_audit().exporter()
+    evenements_anonymisation = [
+        e for e in entrees if e["type"] == "ANONYMISATION_EFFECTUEE"
+    ]
+
+    entites_par_type: Dict[str, int] = {}
+    total_entites = 0
+    taux_cumules: List[float] = []
+    for e in evenements_anonymisation:
+        details = e.get("details", {})
+        total_entites += details.get("nb_entites", 0)
+        taux_cumules.append(details.get("taux_anonymisation", 0.0))
+        for type_phi in details.get("types", []):
+            entites_par_type[type_phi] = entites_par_type.get(type_phi, 0) + 1
+
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "total_anonymisations": len(evenements_anonymisation),
+        "total_entites_phi_detectees": total_entites,
+        "occurrences_par_type_phi": entites_par_type,
+        "taux_anonymisation_moyen": (
+            round(sum(taux_cumules) / len(taux_cumules), 2) if taux_cumules else 0.0
+        ),
+        "sessions_avec_phi": len({e["session"] for e in evenements_anonymisation}),
+        "contournements_glass_break": sum(
+            1 for e in entrees if e["type"] == "ANONYMISATION_CONTOURNEE_GLASS_BREAK"
+        ),
+    }
+
+
+@app.get("/api/chu/insights", tags=["Métriques"])
+async def get_insights() -> Dict[str, Any]:
+    """Insights qualité agrégés — export vers l'API Qualité (config insights.api_qualite_url)."""
+    metriques = await get_metriques()
+    stats = await get_stats_anonymisation()
+    alertes: List[str] = []
+    if metriques["phi_residuels_sortie_llm"] > 0:
+        alertes.append(
+            f"{metriques['phi_residuels_sortie_llm']} PHI résiduels détectés en sortie LLM — "
+            "réviser le prompt système"
+        )
+    if metriques["sessions_glass_break_actives"] > 0:
+        alertes.append(
+            f"{metriques['sessions_glass_break_actives']} session(s) glass-break active(s) — "
+            "anonymisation contournée"
+        )
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "metriques": metriques,
+        "anonymisation": stats,
+        "alertes": alertes,
+    }
 
 
 # ---------------------------------------------------------------------------

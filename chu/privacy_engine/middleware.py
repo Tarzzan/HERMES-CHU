@@ -273,6 +273,22 @@ class PrivacyEngine:
             timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
+    def scanner_phi(self, texte: str, session_id: str = "scan") -> ResultatAnonymisation:
+        """
+        Scanne un texte pour détecter les PHI SANS le modifier.
+        Utilisé par les patches (patch_hermes.py) pour vérifier les sorties LLM
+        et par l'API métriques. Le texte retourné est inchangé.
+        """
+        entites = self._detecter_phi(texte)
+        taux = len(entites) / max(len(texte.split()), 1) * 100
+        return ResultatAnonymisation(
+            texte_anonymise=texte,
+            entites_detectees=entites,
+            taux_anonymisation=round(taux, 2),
+            session_id=session_id,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+
     def controle_sortie(self, texte: str, session_id: str) -> str:
         """
         Garde-fou Niveau 3 : rescanne la sortie du LLM pour détecter
@@ -284,9 +300,7 @@ class PrivacyEngine:
                 "[GARDE-FOU-N3] %d PHI résiduels détectés en sortie LLM — masquage forcé",
                 len(entites_residuelles),
             )
-            texte, _ = self.anonymiser.__wrapped__(texte, session_id) if hasattr(
-                self.anonymiser, "__wrapped__"
-            ) else (self._remplacer_phi(texte, entites_residuelles, session_id), None)
+            texte = self._remplacer_phi(texte, entites_residuelles, session_id)
         return texte
 
     def activer_glass_break(

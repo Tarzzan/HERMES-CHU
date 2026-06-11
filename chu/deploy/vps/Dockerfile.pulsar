@@ -4,6 +4,11 @@ FROM ubuntu:24.04
 #  Plateforme Unifiee de Liaison, de Surveillance et
 #  d'Assistance en temps Reel
 #  DSIO -- CHU de Guyane | William MERI
+#
+#  Construction (contexte = racine du depot) :
+#    docker build -t pulsar-chu:2.3.0 \
+#      -f chu/deploy/vps/Dockerfile.pulsar .
+#  Ou : docker compose -f chu/deploy/vps/docker-compose.pulsar.yml build
 # ============================================================
 ENV DEBIAN_FRONTEND=noninteractive
 LABEL maintainer="William MERI <william.meri@chu-guyane.fr>"
@@ -51,7 +56,8 @@ RUN VIRTUAL_ENV=/home/pulsar/hermes-agent/venv \
 RUN cd web && npm install && npm run build
 
 # Appliquer les patches PULSAR sur les sources compilees
-COPY --chown=pulsar:pulsar patches/ /tmp/pulsar-patches/
+# (les patches de branding vivent dans chu/branding/ du depot)
+COPY --chown=pulsar:pulsar chu/branding/ /tmp/pulsar-patches/
 RUN if [ -f /tmp/pulsar-patches/apply_patches.py ]; then \
         python3 /tmp/pulsar-patches/apply_patches.py /home/pulsar/hermes-agent; \
     fi
@@ -78,7 +84,7 @@ RUN mkdir -p /home/pulsar/.hermes/skills/chu && \
 RUN mkdir -p /home/pulsar/.hermes/dashboard-themes && \
     mkdir -p /home/pulsar/.hermes/skins
 
-COPY --chown=pulsar:pulsar entrypoint-pulsar.sh /home/pulsar/entrypoint.sh
+COPY --chown=pulsar:pulsar chu/deploy/vps/entrypoint-pulsar.sh /home/pulsar/entrypoint.sh
 RUN chmod +x /home/pulsar/entrypoint.sh
 
 VOLUME ["/home/pulsar/.hermes"]

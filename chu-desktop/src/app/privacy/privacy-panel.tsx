@@ -24,8 +24,47 @@ interface PrivacyStatus {
   nb_entites_anonymisees_total: number
 }
 
+// Bridge IPC exposé par electron/chu-preload.cjs (absent en mode web)
+declare global {
+  interface Window {
+    hermeschu?: {
+      privacy: {
+        status: () => Promise<{ ok: boolean; data?: any; error?: string }>
+        toggle: (actif: boolean) => Promise<{ ok: boolean; data?: any; error?: string }>
+        glassBreak: (args: { justification: string; duree_minutes: number }) => Promise<{ ok: boolean; data?: any; error?: string }>
+      }
+      metrics: {
+        anonymisation: () => Promise<{ ok: boolean; data?: any; error?: string }>
+      }
+    }
+  }
+}
+
+// Fallback HTTP quand le bridge IPC n'est pas disponible (mode web / dev)
+const API_BASE =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_CHU_API_BASE) ||
+  'http://localhost:8001'
+
+// L'API renvoie { actif, glass_break, glass_break_details, journal_entrees } —
+// on la normalise vers la forme attendue par le panneau.
+function normaliserStatut(brut: any, stats?: any): PrivacyStatus {
+  const details = brut?.glass_break_details
+  let expireDans: number | undefined
+  if (details?.debut && details?.duree_secondes) {
+    expireDans = Math.max(0, details.debut + details.duree_secondes - Date.now() / 1000)
+  }
+  return {
+    actif: Boolean(brut?.actif),
+    glass_break_actif: Boolean(brut?.glass_break),
+    glass_break_justification: details?.justification,
+    glass_break_expire_dans: expireDans,
+    nb_sessions_actives: stats?.sessions_avec_phi ?? 0,
+    nb_entites_anonymisees_total: stats?.total_entites_phi_detectees ?? 0,
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Hook — Communication avec l'API CHU (localhost:8001)
+// Hook — Communication avec l'API CHU (bridge IPC ou HTTP)
 // ---------------------------------------------------------------------------
 
 function usePrivacyEngine() {
@@ -35,9 +74,24 @@ function usePrivacyEngine() {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch('http://localhost:8001/api/chu/privacy/statut')
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      setStatus(await res.json())
+      let brut: any
+      let stats: any
+      if (window.hermeschu) {
+        const [resStatut, resStats] = await Promise.all([
+          window.hermeschu.privacy.status(),
+          window.hermeschu.metrics.anonymisation(),
+        ])
+        if (!resStatut.ok) throw new Error(resStatut.error)
+        brut = resStatut.data
+        stats = resStats.ok ? resStats.data : undefined
+      } else {
+        const res = await fetch(`${API_BASE}/api/chu/privacy/statut`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        brut = await res.json()
+        const resStats = await fetch(`${API_BASE}/api/chu/anonymisation/stats`)
+        stats = resStats.ok ? await resStats.json() : undefined
+      }
+      setStatus(normaliserStatut(brut, stats))
       setError(null)
     } catch (e) {
       setError('API CHU indisponible — vérifiez que le serveur est démarré')
@@ -47,7 +101,12 @@ function usePrivacyEngine() {
   }
 
   const toggle = async (actif: boolean) => {
-    const res = await fetch('http://localhost:8001/api/chu/privacy/toggle', {
+    if (window.hermeschu) {
+      const res = await window.hermeschu.privacy.toggle(actif)
+      if (res.ok) fetchStatus()
+      return
+    }
+    const res = await fetch(`${API_BASE}/api/chu/privacy/toggle`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ actif }),
@@ -56,7 +115,12 @@ function usePrivacyEngine() {
   }
 
   const activerGlassBreak = async (justification: string, duree: number) => {
-    const res = await fetch('http://localhost:8001/api/chu/privacy/glass-break', {
+    if (window.hermeschu) {
+      const res = await window.hermeschu.privacy.glassBreak({ justification, duree_minutes: duree })
+      if (res.ok) fetchStatus()
+      return res.ok
+    }
+    const res = await fetch(`${API_BASE}/api/chu/privacy/glass-break`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ justification, duree_minutes: duree }),

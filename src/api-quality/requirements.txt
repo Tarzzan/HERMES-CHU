@@ -1,0 +1,15 @@
+# HERMES CHU — API Qualité
+# Dépendances Python
+
+# Framework web
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+
+# Base de données (journal d'audit PostgreSQL en production)
+sqlalchemy[asyncio]==2.0.30
+asyncpg==0.29.0
+
+# Logging structuré
+structlog==24.1.0
+python-json-logger==2.0.7

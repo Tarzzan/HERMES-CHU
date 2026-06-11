@@ -28,7 +28,7 @@
 
 **PULSAR** est une plateforme agentique médicale développée par la **Direction des Systèmes d'Information et de l'Organisation (DSIO) du CHU de Guyane**. Elle orchestre des agents IA spécialisés pour assister les professionnels de santé dans leurs missions cliniques, administratives, logistiques et qualité — dans le strict respect du secret médical, du RGPD et des exigences HDS.
 
-PULSAR est un **produit à part entière**, conçu pour et par le milieu hospitalier. Son moteur agentique est basé sur [hermes-agent (NousResearch)](https://github.com/NousResearch/hermes-agent), intégré de manière non-destructive dans `upstream/`. La couche PULSAR (`chu/`) s'y greffe via un système de middleware et de skills natifs sans modifier le code source original.
+PULSAR est un **produit à part entière**, conçu pour et par le milieu hospitalier. Son moteur agentique est un **fork maintenu** de [hermes-agent (NousResearch)](https://github.com/NousResearch/hermes-agent), rebaptisé `pulsar-agent` dans `upstream/`. Les modifications du fork se limitent au rebranding (identité PULSAR) ; toute la logique hospitalière (Privacy Engine, agents, garde-fous) est isolée dans la couche `chu/`, greffée via middleware et skills natifs.
 
 > **Principe fondateur :** Une pulsation régulière réveille des agents vigilants. PULSAR émet l'impulsion — les agents répondent.
 
@@ -68,7 +68,7 @@ PULSAR est un **produit à part entière**, conçu pour et par le milieu hospita
 | **Humain dans la boucle** | Toute action critique nécessite une validation explicite du professionnel de santé. |
 | **Transparence** | Chaque décision de l'agent est traçable, auditable et explicable. |
 | **Francisation complète** | Interface, prompts, documentation, messages d'erreur — tout en français. |
-| **Non-destructivité** | Le code source NousResearch n'est jamais modifié. Les patches sont isolés dans `chu/`. |
+| **Séparation des couches** | La logique métier upstream (`upstream/pulsar-agent`) n'est jamais modifiée — seul le rebranding y est appliqué. Toute la couche hospitalière est isolée dans `chu/`. |
 
 ---
 

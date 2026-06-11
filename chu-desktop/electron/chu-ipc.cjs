@@ -14,6 +14,9 @@
  *   chu:config:get          → GET /api/chu/config
  *   chu:config:save         → POST /api/chu/config
  *   chu:audit:journal       → GET /api/chu/audit/journal
+ *   chu:metriques           → GET /api/chu/metriques
+ *   chu:anonymisation:stats → GET /api/chu/anonymisation/stats
+ *   chu:insights            → GET /api/chu/insights
  *   chu:health              → GET /api/chu/sante
  */
 
@@ -157,6 +160,35 @@ function registerCHUIpcHandlers() {
       const qs = new URLSearchParams({ limite: String(limite) })
       if (type_evenement) qs.set('type_evenement', type_evenement)
       const { data } = await apiCHU('GET', `/api/chu/audit/journal?${qs}`)
+      return { ok: true, data }
+    } catch (e) {
+      return { ok: false, error: e.message }
+    }
+  })
+
+  // --- Métriques & Insights (Agent Qualité) ---
+
+  ipcMain.handle('chu:metriques', async () => {
+    try {
+      const { data } = await apiCHU('GET', '/api/chu/metriques')
+      return { ok: true, data }
+    } catch (e) {
+      return { ok: false, error: e.message }
+    }
+  })
+
+  ipcMain.handle('chu:anonymisation:stats', async () => {
+    try {
+      const { data } = await apiCHU('GET', '/api/chu/anonymisation/stats')
+      return { ok: true, data }
+    } catch (e) {
+      return { ok: false, error: e.message }
+    }
+  })
+
+  ipcMain.handle('chu:insights', async () => {
+    try {
+      const { data } = await apiCHU('GET', '/api/chu/insights')
       return { ok: true, data }
     } catch (e) {
       return { ok: false, error: e.message }
