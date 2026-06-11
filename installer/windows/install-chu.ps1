@@ -97,6 +97,17 @@ $RepoUrlHttps = "https://github.com/Tarzzan/PULSAR-CHU.git"
 $PythonVersion = "3.11"
 $NodeVersion = "22"
 
+# --- Disposition "wrapper" de PULSAR-CHU -------------------------------------
+# Le dépôt cloné contient la couche hospitalière sous chu/ et le moteur agent
+# (pyproject.toml, uv.lock, hermes_cli, web, apps/desktop) sous
+# upstream/pulsar-agent. On clone le dépôt COMPLET dans $RepoRoot, mais toutes
+# les opérations Python (venv, dépendances, build web, raccourcis, marqueurs)
+# ciblent le sous-projet -- on fait donc pointer $InstallDir dessus. Les rares
+# étapes qui agissent sur la racine (clone git, patches chu/) réutilisent
+# explicitement $RepoRoot.
+$RepoRoot = $InstallDir
+$InstallDir = Join-Path $RepoRoot "upstream\pulsar-agent"
+
 # Stage-protocol version.  Bumped only for genuinely breaking changes to the
 # manifest schema, stage-name set semantics, or stdout JSON shape.  Adding a
 # new stage does NOT bump this -- drivers iterate the manifest dynamically.
@@ -1051,6 +1062,9 @@ function Install-SystemPackages {
 # ============================================================================
 
 function Install-Repository {
+    # Cette étape agit sur la RACINE du dépôt (clone git, .git, sauvegardes),
+    # pas sur le sous-projet agent.
+    $InstallDir = $RepoRoot
     Write-Info "Installing to $InstallDir..."
 
     $didUpdate = $false
@@ -2856,7 +2870,9 @@ function Stage-ChuPatches {
     Write-Info "Application des patches PULSAR CHU (Privacy Engine RGPD, skills CHU, branding)..."
 
     # --- Privacy Engine patch ---
-    $patchScript = Join-Path $InstallDir "chu\privacy_engine\patch_hermes.py"
+    # La couche hospitalière chu/ vit à la racine du dépôt ($RepoRoot),
+    # pas dans le sous-projet agent ($InstallDir).
+    $patchScript = Join-Path $RepoRoot "chu\privacy_engine\patch_hermes.py"
     if (Test-Path $patchScript) {
         Write-Success "CHU Privacy Engine patch found"
     } else {
@@ -2864,9 +2880,9 @@ function Stage-ChuPatches {
     }
 
     # --- .env.chu ---
-    $envChu = Join-Path $InstallDir ".env.chu"
+    $envChu = Join-Path $RepoRoot ".env.chu"
     if (-not (Test-Path $envChu)) {
-        $envExample = Join-Path $InstallDir ".env.chu.exemple"
+        $envExample = Join-Path $RepoRoot ".env.chu.exemple"
         if (Test-Path $envExample) {
             Copy-Item $envExample $envChu
             Write-Success "CHU configuration file created: $envChu"
@@ -2881,7 +2897,7 @@ function Stage-ChuPatches {
     # 1. Installer le skin chu-guyane.yaml
     $skinsDir = "$PulsarHome\skins"
     New-Item -ItemType Directory -Force -Path $skinsDir | Out-Null
-    $skinSource = Join-Path $InstallDir "chu\branding\chu-guyane.yaml"
+    $skinSource = Join-Path $RepoRoot "chu\branding\chu-guyane.yaml"
     if (Test-Path $skinSource) {
         Copy-Item $skinSource "$skinsDir\chu-guyane.yaml" -Force
         Write-Success "CHU skin installed: $skinsDir\chu-guyane.yaml"
@@ -2913,10 +2929,8 @@ function Stage-ChuPatches {
     }
 
     # 3. Modifier les fichiers i18n (brand, footer)
-    $hermesAgentDir = Join-Path $InstallDir "pulsar-chu"
-    if (-not (Test-Path $hermesAgentDir)) {
-        $hermesAgentDir = $InstallDir
-    }
+    # Le moteur (web/, hermes_cli/) est le sous-projet agent = $InstallDir.
+    $hermesAgentDir = $InstallDir
     $i18nFiles = @(
         (Join-Path $hermesAgentDir "web\src\i18n\fr.ts"),
         (Join-Path $hermesAgentDir "web\src\i18n\en.ts")
@@ -2985,6 +2999,7 @@ function Get-InstallStage {
 }
 
 function Step-OutOfInstallDir {
+    $InstallDir = $RepoRoot   # on agit sur la racine du dépôt (suppression/re-clone)
     # Windows refuses to delete a directory any shell is currently cd'd
     # inside -- and silently leaves orphan files behind, which then wedge
     # "is this a valid git repo" probes on re-install.  Harmless when the
