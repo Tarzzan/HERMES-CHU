@@ -1,6 +1,6 @@
 /**
  * PULSAR CHU — Traductions françaises complètes
- * Basé sur la structure i18n de hermes-agent (DSIO CHU de Guyane)
+ * Basé sur la structure i18n de pulsar-agent (DSIO CHU de Guyane)
  * Adapté pour le contexte hospitalier CHU
  *
  * Couvre tous les flux d'authentification :
@@ -65,7 +65,7 @@ export const fr: Translations = {
       loadingSettings: 'Chargement des paramètres CHU',
       loadingSessions: 'Chargement des sessions sécurisées',
       startingDesktopConnection: 'Démarrage de la connexion bureau',
-      startingHermesDesktop: 'Démarrage de PULSAR CHU…',
+      startingPULSARDesktop: 'Démarrage de PULSAR CHU…',
     },
     errors: {
       backgroundExited: 'Le processus en arrière-plan s\'est arrêté.',
@@ -215,11 +215,11 @@ export const fr: Translations = {
     // Flux Device Code — ChatGPT (abonnement Plus / Team / Enterprise)
     //
     // Fonctionnement :
-    //   1. hermes-agent appelle l'endpoint OAuth de ChatGPT
+    //   1. pulsar-agent appelle l'endpoint OAuth de ChatGPT
     //   2. Un code OTP (ex: "ABCD-1234") est retourné et affiché dans l'UI
     //   3. L'utilisateur se rend sur chatgpt.com/link et saisit ce code
-    //   4. hermes-agent poll l'endpoint jusqu'à validation
-    //   5. Un access_token JWT est stocké dans ~/.hermes/auth.json
+    //   4. pulsar-agent poll l'endpoint jusqu'à validation
+    //   5. Un access_token JWT est stocké dans ~/.pulsar/auth.json
     //   6. Toutes les requêtes suivantes passent par chatgpt.com/backend-api/codex
     //
     // Le même flux s'applique au provider "nous" (Nous Portal).
@@ -279,7 +279,7 @@ export const fr: Translations = {
       apiKeyLabel: 'Clé API (optionnel)',
       apiKeyPlaceholder: 'Laissez vide si non requis',
       modelLabel: 'Modèle par défaut',
-      modelPlaceholder: 'Hermes-3-Llama-3.1-70B, mistral-7b…',
+      modelPlaceholder: 'PULSAR-3-Llama-3.1-70B, mistral-7b…',
       sovereignNote:
         '🏥 Mode souverain : les données ne quittent pas votre infrastructure.',
     },
@@ -455,9 +455,9 @@ export const fr: Translations = {
           authType: 'Clé API (OPENAI_API_KEY)',
         },
         nous: {
-          name: 'Nous Portal (Hermes natif)',
+          name: 'Nous Portal (PULSAR natif)',
           description:
-            'Accès aux modèles Hermes via le portail DSIO CHU de Guyane. Authentification OAuth device_code.',
+            'Accès aux modèles PULSAR via le portail DSIO CHU de Guyane. Authentification OAuth device_code.',
           authType: 'OAuth (code d\'appairage)',
         },
         ollama: {
@@ -469,7 +469,7 @@ export const fr: Translations = {
         vllm: {
           name: 'vLLM (auto-hébergé)',
           description:
-            'Endpoint vLLM auto-hébergé. Compatible Hermes-3, Mistral, LLaMA…',
+            'Endpoint vLLM auto-hébergé. Compatible PULSAR-3, Mistral, LLaMA…',
           authType: 'Clé API optionnelle',
         },
         openrouter: {
@@ -538,7 +538,7 @@ export const fr: Translations = {
     about: {
       title: 'À propos de PULSAR CHU',
       version: 'Version',
-      basedOn: 'Basé sur Hermes Agent (DSIO CHU de Guyane)',
+      basedOn: 'Basé sur PULSAR Agent (DSIO CHU de Guyane)',
       license: 'Licence Apache 2.0',
       compliance: 'Conformité ISO 27001 & HDS',
       github: 'Dépôt GitHub',

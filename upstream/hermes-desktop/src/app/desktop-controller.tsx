@@ -12,7 +12,7 @@ import { useMediaQuery } from '@/hooks/use-media-query'
 import { useSkinCommand } from '@/themes/use-skin-command'
 
 import { formatRefValue } from '../components/assistant-ui/directive-text'
-import { getCronJobs, getSessionMessages, listAllProfileSessions, type SessionInfo, triggerCronJob } from '../hermes'
+import { getCronJobs, getSessionMessages, listAllProfileSessions, type SessionInfo, triggerCronJob } from '../pulsar'
 import { preserveLocalAssistantErrors, toChatMessages } from '../lib/chat-messages'
 import {
   isMessagingSource,
@@ -101,7 +101,7 @@ import { CRON_ROUTE, NEW_CHAT_ROUTE, routeSessionId, sessionRoute, SETTINGS_ROUT
 import { SessionSwitcher } from './session-switcher'
 import { useContextSuggestions } from './session/hooks/use-context-suggestions'
 import { useCwdActions } from './session/hooks/use-cwd-actions'
-import { useHermesConfig } from './session/hooks/use-hermes-config'
+import { usePULSARConfig } from './session/hooks/use-pulsar-config'
 import { useMessageStream } from './session/hooks/use-message-stream'
 import { useModelControls } from './session/hooks/use-model-controls'
 import { usePreviewRouting } from './session/hooks/use-preview-routing'
@@ -252,12 +252,12 @@ export function DesktopController() {
   const { connectionRef, gatewayRef, requestGateway } = useGatewayRequest()
 
   useEffect(() => {
-    window.hermesDesktop?.setPreviewShortcutActive?.(Boolean(chatOpen && (filePreviewTarget || previewTarget)))
+    window.pulsarDesktop?.setPreviewShortcutActive?.(Boolean(chatOpen && (filePreviewTarget || previewTarget)))
   }, [chatOpen, filePreviewTarget, previewTarget])
 
   useEffect(() => {
     startUpdatePoller()
-    const unsubscribe = window.hermesDesktop?.onOpenUpdatesRequested?.(() => openUpdatesWindow())
+    const unsubscribe = window.pulsarDesktop?.onOpenUpdatesRequested?.(() => openUpdatesWindow())
 
     return () => {
       unsubscribe?.()
@@ -278,7 +278,7 @@ export function DesktopController() {
       }
     }
 
-    const unsubscribe = window.hermesDesktop?.onClosePreviewRequested?.(closeActiveRightRailTab)
+    const unsubscribe = window.pulsarDesktop?.onClosePreviewRequested?.(closeActiveRightRailTab)
 
     window.addEventListener('keydown', onKeyDown, { capture: true })
 
@@ -475,7 +475,7 @@ export function DesktopController() {
     requestGateway
   })
 
-  const { refreshHermesConfig, sttEnabled, voiceMaxRecordingSeconds } = useHermesConfig({
+  const { refreshPULSARConfig, sttEnabled, voiceMaxRecordingSeconds } = usePULSARConfig({
     activeSessionIdRef,
     refreshProjectBranch
   })
@@ -551,7 +551,7 @@ export function DesktopController() {
     activeSessionIdRef,
     hydrateFromStoredSession,
     queryClient,
-    refreshHermesConfig,
+    refreshPULSARConfig,
     refreshSessions,
     updateSessionState
   })
@@ -708,7 +708,7 @@ export function DesktopController() {
     onGatewayReady: g => {
       gatewayRef.current = g
     },
-    refreshHermesConfig,
+    refreshPULSARConfig,
     refreshSessions
   })
 
@@ -814,7 +814,7 @@ export function DesktopController() {
         <DesktopOnboardingOverlay
           enabled={gatewayState === 'open'}
           onCompleted={() => {
-            void refreshHermesConfig()
+            void refreshPULSARConfig()
             void refreshCurrentModel()
             void queryClient.invalidateQueries({ queryKey: ['model-options'] })
           }}
@@ -835,7 +835,7 @@ export function DesktopController() {
             gateway={gatewayRef.current}
             onClose={closeOverlayToPreviousRoute}
             onConfigSaved={() => {
-              void refreshHermesConfig()
+              void refreshPULSARConfig()
               void refreshCurrentModel()
               void queryClient.invalidateQueries({ queryKey: ['model-options'] })
             }}

@@ -1,5 +1,5 @@
 {
-  "name": "@hermes/shared",
+  "name": "@pulsar/shared",
   "version": "0.16.0",
   "private": true,
   "main": "./src/index.ts",

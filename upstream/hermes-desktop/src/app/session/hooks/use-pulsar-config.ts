@@ -1,6 +1,6 @@
 import { type MutableRefObject, useCallback, useState } from 'react'
 
-import { getHermesConfig, getHermesConfigDefaults } from '@/hermes'
+import { getPULSARConfig, getPULSARConfigDefaults } from '@/pulsar'
 import { BUILTIN_PERSONALITIES, normalizePersonalityValue, personalityNamesFromConfig } from '@/lib/chat-runtime'
 import {
   $currentCwd,
@@ -20,18 +20,18 @@ function recordingLimit(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : DEFAULT_VOICE_SECONDS
 }
 
-interface HermesConfigOptions {
+interface PULSARConfigOptions {
   activeSessionIdRef: MutableRefObject<string | null>
   refreshProjectBranch: (cwd: string) => Promise<void>
 }
 
-export function useHermesConfig({ activeSessionIdRef, refreshProjectBranch }: HermesConfigOptions) {
+export function usePULSARConfig({ activeSessionIdRef, refreshProjectBranch }: PULSARConfigOptions) {
   const [voiceMaxRecordingSeconds, setVoiceMaxRecordingSeconds] = useState(DEFAULT_VOICE_SECONDS)
   const [sttEnabled, setSttEnabled] = useState(true)
 
-  const refreshHermesConfig = useCallback(async () => {
+  const refreshPULSARConfig = useCallback(async () => {
     try {
-      const [config, defaults] = await Promise.all([getHermesConfig(), getHermesConfigDefaults().catch(() => ({}))])
+      const [config, defaults] = await Promise.all([getPULSARConfig(), getPULSARConfigDefaults().catch(() => ({}))])
 
       const personality = normalizePersonalityValue(
         typeof config.display?.personality === 'string' ? config.display.personality : ''
@@ -70,5 +70,5 @@ export function useHermesConfig({ activeSessionIdRef, refreshProjectBranch }: He
     }
   }, [activeSessionIdRef, refreshProjectBranch])
 
-  return { refreshHermesConfig, sttEnabled, voiceMaxRecordingSeconds }
+  return { refreshPULSARConfig, sttEnabled, voiceMaxRecordingSeconds }
 }

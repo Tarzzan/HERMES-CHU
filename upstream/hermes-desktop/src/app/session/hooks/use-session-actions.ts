@@ -2,7 +2,7 @@ import type { MutableRefObject } from 'react'
 import { useCallback, useRef } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
 
-import { deleteSession, getSessionMessages, setSessionArchived } from '@/hermes'
+import { deleteSession, getSessionMessages, setSessionArchived } from '@/pulsar'
 import { useI18n } from '@/i18n'
 import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
 import { normalizePersonalityValue } from '@/lib/chat-runtime'
@@ -45,7 +45,7 @@ import {
   setYoloActive
 } from '@/store/session'
 import { reportBackendContract } from '@/store/updates'
-import type { SessionCreateResponse, SessionInfo, SessionResumeResponse, UsageStats } from '@/types/hermes'
+import type { SessionCreateResponse, SessionInfo, SessionResumeResponse, UsageStats } from '@/types/pulsar'
 
 import { NEW_CHAT_ROUTE, sessionRoute, SETTINGS_ROUTE } from '../../routes'
 import type { ClientSessionState, SidebarNavItem } from '../../types'
