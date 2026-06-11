@@ -1,6 +1,6 @@
-# Contribuer à HERMES CHU
+# Contribuer à PULSAR
 
-Merci de l'intérêt que vous portez à HERMES CHU ! En tant que système agentique manipulant des données de santé, nous appliquons des règles strictes pour garantir la sécurité, la souveraineté et la conformité ISO 27001 / HDS.
+Merci de l'intérêt que vous portez à PULSAR ! En tant que système agentique manipulant des données de santé, nous appliquons des règles strictes pour garantir la sécurité, la souveraineté et la conformité ISO 27001 / HDS.
 
 ## Code de Conduite
 

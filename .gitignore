@@ -1,3 +1,5 @@
 upstream/hermes-desktop/release/
 upstream/hermes-desktop/node_modules/
 upstream/hermes-desktop/dist/
+upstream/hermes-desktop/node_modules/
+upstream/hermes-desktop/release/
