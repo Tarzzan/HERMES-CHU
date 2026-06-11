@@ -42,7 +42,7 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
     prefix: 'NOUS_',
     name: 'Nous Portal',
     description: 'Hosted Hermes & Nous-trained models',
-    docsUrl: 'https://portal.nousresearch.com',
+    docsUrl: 'https://github.com/Tarzzan/PULSAR-CHU',
     priority: 0
   },
   {

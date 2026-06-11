@@ -1,10 +1,10 @@
 {
-  "name": "hermes",
-  "productName": "Hermes",
+  "name": "pulsar-chu",
+  "productName": "PULSAR",
   "private": true,
   "version": "0.15.1",
-  "description": "Native desktop shell for Hermes Agent.",
-  "author": "Nous Research",
+  "description": "PULSAR — Systeme Agentique Medical DSIO CHU de Guyane",
+  "author": "DSIO - CHU de Guyane",
   "type": "module",
   "main": "electron/main.cjs",
   "engines": {
@@ -130,8 +130,8 @@
   },
   "build": {
     "electronVersion": "40.9.3",
-    "appId": "com.nousresearch.hermes",
-    "productName": "Hermes",
+    "appId": "fr.chu-guyane.pulsar",
+    "productName": "PULSAR",
     "executableName": "Hermes",
     "artifactName": "Hermes-${version}-${os}-${arch}.${ext}",
     "icon": "assets/icon",
