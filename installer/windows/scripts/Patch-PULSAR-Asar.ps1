@@ -178,6 +178,24 @@ foreach ($file in $files) {
 }
 Write-OK "$patchedCount fichier(s) patche(s)"
 
+# --- Desactiver l'auto-update NousResearch ----------------------------------
+Write-Step "Desactivation de l'auto-update NousResearch..."
+$updateFiles = Get-ChildItem -Path $extractDir -Recurse -Include "*.js","*.cjs" -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match "update|autoUpdate|electron-updater" }
+foreach ($f in $updateFiles) {
+    try {
+        $c = [System.IO.File]::ReadAllText($f.FullName, [System.Text.Encoding]::UTF8)
+        # Neutraliser les URLs de mise a jour NousResearch
+        $c = $c -replace 'https://[^"''\s]*nousresearch[^"''\s]*', 'https://github.com/Tarzzan/PULSAR-CHU/releases'
+        $c = $c -replace 'https://[^"''\s]*hermes-desktop[^"''\s]*releases[^"''\s]*', 'https://github.com/Tarzzan/PULSAR-CHU/releases'
+        # Desactiver la verification automatique au demarrage
+        $c = $c.Replace('autoUpdater.checkForUpdatesAndNotify()', '/* auto-update disabled */ void 0')
+        $c = $c.Replace('autoUpdater.checkForUpdates()', '/* auto-update disabled */ void 0')
+        $c = $c.Replace('checkForUpdatesAndNotify()', '/* auto-update disabled */ void 0')
+        [System.IO.File]::WriteAllText($f.FullName, $c, [System.Text.Encoding]::UTF8)
+    } catch { }
+}
+Write-OK "Auto-update NousResearch desactive"
+
 # --- Remplacer l'icone si disponible -----------------------------------------
 $iconSrc = Join-Path $PSScriptRoot "pulsar.ico"
 if (Test-Path $iconSrc) {
