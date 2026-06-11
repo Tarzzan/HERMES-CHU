@@ -2,7 +2,7 @@
   "name": "hermes",
   "productName": "Hermes",
   "private": true,
-  "version": "0.15.1",
+  "version": "0.16.0",
   "description": "Native desktop shell for Hermes Agent.",
   "author": "Nous Research",
   "type": "module",
@@ -131,9 +131,9 @@
   "build": {
     "electronVersion": "40.9.3",
     "appId": "com.nousresearch.hermes",
-    "productName": "Hermes",
-    "executableName": "Hermes",
-    "artifactName": "Hermes-${version}-${os}-${arch}.${ext}",
+    "productName": "PULSAR",
+    "executableName": "PULSAR",
+    "artifactName": "PULSAR-${version}-${os}-${arch}.${ext}",
     "icon": "assets/icon",
     "directories": {
       "output": "release"
@@ -210,7 +210,7 @@
       ]
     },
     "win": {
-      "legalTrademarks": "Hermes",
+      "legalTrademarks": "PULSAR - CHU de Guyane",
       "target": [
         "nsis",
         "msi"
@@ -231,8 +231,8 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "perMachine": false,
-      "shortcutName": "Hermes",
-      "uninstallDisplayName": "Hermes",
+      "shortcutName": "PULSAR",
+      "uninstallDisplayName": "PULSAR",
       "warningsAsErrors": false
     }
   }

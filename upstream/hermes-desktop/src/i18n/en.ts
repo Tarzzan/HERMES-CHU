@@ -43,25 +43,25 @@ export const en: Translations = {
   },
 
   boot: {
-    ready: 'Hermes Desktop is ready',
+    ready: 'PULSAR est prêt',
     desktopBootFailedWithMessage: message => `Desktop boot failed: ${message}`,
     steps: {
       connectingGateway: 'Connecting live desktop gateway',
       loadingSettings: 'Loading Hermes settings',
       loadingSessions: 'Loading recent sessions',
       startingDesktopConnection: 'Starting desktop connection',
-      startingHermesDesktop: 'Starting Hermes Desktop…'
+      startingHermesDesktop: 'Démarrage de PULSAR…'
     },
     errors: {
-      backgroundExited: 'Hermes background process exited.',
-      backgroundExitedDuringStartup: 'Hermes background process exited during startup.',
+      backgroundExited: 'Le processus PULSAR s\'est arrêté.',
+      backgroundExitedDuringStartup: 'Le processus PULSAR s\'est arrêté au démarrage.',
       backendStopped: 'Backend stopped',
       desktopBootFailed: 'Desktop boot failed',
       gatewaySignInRequired: 'Gateway sign-in required',
       ipcBridgeUnavailable: 'Desktop IPC bridge is unavailable.'
     },
     failure: {
-      title: "Hermes couldn't start",
+      title: "PULSAR n'a pas pu démarrer",
       description:
         "The background gateway didn't come up. Try one of the recovery steps below. Nothing here deletes your chats or settings.",
       remoteTitle: 'Remote gateway sign-in required',
@@ -99,7 +99,7 @@ export const en: Translations = {
     backendOutOfDateTitle: 'Backend out of date',
     backendOutOfDateMessage:
       'Your Hermes backend is older than this desktop build and may not work correctly. Update to align them.',
-    updateHermes: 'Update Hermes',
+    updateHermes: 'Mettre à jour PULSAR',
     updateReadyTitle: 'Update ready',
     updateReadyMessage: count => `${count} new change${count === 1 ? '' : 's'} available.`,
     seeWhatsNew: "See what's new",
@@ -107,7 +107,7 @@ export const en: Translations = {
       elevenLabsNeedsKey: 'ElevenLabs STT needs ELEVENLABS_API_KEY.',
       elevenLabsRejectedKey: 'ElevenLabs rejected the API key (401).',
       methodNotAllowed:
-        'The desktop backend rejected that request (405 Method Not Allowed). Try restarting Hermes Desktop.',
+        'Le moteur a rejeté cette requête (405). Essayez de redémarrer PULSAR.',
       microphonePermission: 'Microphone permission was denied.',
       openaiRejectedApiKey: 'OpenAI rejected the API key.',
       openaiRejectedApiKeyWithStatus: status => `OpenAI rejected the API key (${status} invalid_api_key).`,
@@ -276,7 +276,7 @@ export const en: Translations = {
       advanced: 'Advanced'
     },
     searchPlaceholder: {
-      about: 'About Hermes Desktop',
+      about: 'À propos de PULSAR',
       config: 'Search settings...',
       gateway: 'Gateway connection...',
       keys: 'Search API keys...',
@@ -317,7 +317,7 @@ export const en: Translations = {
     fieldLabels: FIELD_LABELS,
     fieldDescriptions: FIELD_DESCRIPTIONS,
     about: {
-      heading: 'Hermes Desktop',
+      heading: 'PULSAR Desktop',
       version: value => `Version ${value}`,
       versionUnavailable: 'Version unavailable',
       updates: 'Updates',
@@ -335,7 +335,7 @@ export const en: Translations = {
       justNowSuffix: ' · just now',
       automaticUpdates: 'Automatic updates',
       automaticUpdatesDesc:
-        'Hermes checks for updates automatically in the background and lets you know when one is ready.',
+        'PULSAR vérifie automatiquement les mises à jour en arrière-plan.',
       branchCommit: (branch, commit) => `Branch ${branch} · Commit ${commit}`,
       never: 'never',
       justNow: 'just now',
@@ -385,7 +385,7 @@ export const en: Translations = {
       title: 'Gateway Connection',
       envOverride: 'env override',
       intro:
-        'Hermes Desktop starts its own local gateway by default. Use a remote gateway when you want this app to control an already-running Hermes backend on another machine or behind a trusted proxy. Pick a profile below to give it its own remote host.',
+        'PULSAR démarre sa propre passerelle locale par défaut. Utilisez une passerelle distante pour contrôler un moteur PULSAR déjà en cours sur une autre machine.',
       appliesTo: 'Applies to',
       allProfiles: 'All profiles',
       defaultConnection: 'Default connection for every profile that has no override of its own.',
@@ -432,7 +432,7 @@ export const en: Translations = {
       enterUrlFirst: 'Enter a remote URL first.',
       restartingTitle: 'Gateway connection restarting',
       savedTitle: 'Gateway settings saved',
-      restartingMessage: 'Hermes Desktop will reconnect using the saved settings.',
+      restartingMessage: 'PULSAR va se reconnecter avec les paramètres sauvegardés.',
       savedMessage: 'Saved for the next restart.',
       connectedTo: (baseUrl, version) => `Connected to ${baseUrl}${version ? ` · Hermes ${version}` : ''}`,
       reachableTitle: 'Remote gateway reachable',
@@ -692,7 +692,7 @@ export const en: Translations = {
     gatewayStopped: 'Messaging gateway stopped',
     hermesActiveSessions: (version, count) => `Hermes ${version} · Active sessions ${count}`,
     restartMessaging: 'Restart messaging',
-    updateHermes: 'Update Hermes',
+    updateHermes: 'Mettre à jour PULSAR',
     actionRunning: 'running',
     actionDone: 'done',
     actionFailed: 'failed',
@@ -1128,7 +1128,7 @@ export const en: Translations = {
   composer: {
     message: 'Message',
     wakingProfile: profile => `Waking up ${profile}…`,
-    placeholderStarting: 'Starting Hermes...',
+    placeholderStarting: 'Démarrage de PULSAR...',
     placeholderReconnecting: 'Reconnecting to Hermes…',
     placeholderFollowUp: 'Send follow-up',
     newSessionPlaceholders: [
@@ -1194,7 +1194,7 @@ export const en: Translations = {
       '↑ / ↓': 'cycle popover / history'
     },
     attachUrlTitle: 'Attach a URL',
-    attachUrlDesc: 'Hermes will fetch the page and include it as context for this turn.',
+    attachUrlDesc: 'PULSAR va récupérer la page et l\'inclure comme contexte.',
     urlPlaceholder: 'https://example.com/post',
     urlHintPre: 'Include the full URL, e.g. ',
     attach: 'Attach',

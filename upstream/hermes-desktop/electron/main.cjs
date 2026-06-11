@@ -234,7 +234,7 @@ function resolveHermesHome() {
   return path.join(app.getPath('home'), '.hermes')
 }
 
-const HERMES_HOME = resolveHermesHome()
+const HERMES_HOME = resolveHermesHome() // PULSAR_HOME
 // ACTIVE_HERMES_ROOT — the canonical mutable Hermes install. Same path
 // install.ps1 / install.sh use, so a desktop-only user and a CLI-only user end
 // up with identical layouts and can share one install.
@@ -302,7 +302,7 @@ const BOOT_FAKE_STEP_MS = (() => {
   if (!Number.isFinite(raw) || raw <= 0) return 650
   return Math.max(120, raw)
 })()
-const APP_NAME = 'Hermes'
+const APP_NAME = 'PULSAR'
 const TITLEBAR_HEIGHT = 34
 const MACOS_TRAFFIC_LIGHTS_HEIGHT = 14
 const WINDOW_BUTTON_POSITION = {
@@ -576,7 +576,7 @@ let nativeThemeListenerInstalled = false
 let bootProgressState = {
   error: null,
   fakeMode: BOOT_FAKE_MODE,
-  message: 'Waiting to start Hermes backend',
+  message: 'Démarrage du moteur PULSAR en cours',
   phase: 'idle',
   progress: 0,
   running: false,
