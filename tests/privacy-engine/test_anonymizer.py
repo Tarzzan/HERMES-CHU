@@ -8,6 +8,9 @@ import sys
 import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src/privacy-engine"))
+# memoire_session (TestMemoireSession) vit dans src/orchestrator — chemin requis
+# pour que cette suite passe seule, sans dépendre de l'ordre d'exécution
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../src/orchestrator"))
 
 from anonymizer import PrivacyEngine, StockageMemoire, TypePHI
 

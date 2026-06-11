@@ -7,3 +7,6 @@ upstream/hermes-desktop/node_modules/
 upstream/hermes-desktop/release/
 upstream/hermes-desktop/dist/
 __pycache__/
+recette/inbox/
+recette/reponses/
+recette/checklist.json
