@@ -2889,6 +2889,18 @@ function Stage-ChuPatches {
         }
     }
 
+    # --- Plugins dashboard CHU (drop-in, sans build npm) ---
+    # Deposes dans ~/.hermes/dashboard-plugins/ : le dashboard les decouvre via
+    # GET /api/dashboard/plugins et les charge a l'execution. Aucune modif du
+    # moteur. C'est la voie native pour ajouter des fonctions web CHU.
+    $pluginsSrc = Join-Path $RepoRoot "chu\dashboard-plugins"
+    if (Test-Path $pluginsSrc) {
+        $pluginsDst = Join-Path $PulsarHome "dashboard-plugins"
+        New-Item -ItemType Directory -Force -Path $pluginsDst | Out-Null
+        Copy-Item -Path "$pluginsSrc\*" -Destination $pluginsDst -Recurse -Force
+        Write-Success "CHU dashboard plugins installed: $pluginsDst"
+    }
+
     # ================================================================
     # --- Branding CHU : skin + i18n + footer + titre HTML ---
     # ================================================================

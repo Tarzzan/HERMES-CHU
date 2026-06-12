@@ -1,0 +1,15 @@
+{
+  "name": "pulsar-chu",
+  "label": "PULSAR CHU",
+  "description": "Privacy Engine RGPD & audit ISO 27001 — métriques d'anonymisation PHI et statut, en direct depuis l'API CHU.",
+  "icon": "ShieldCheck",
+  "version": "1.0.0",
+  "tab": {
+    "path": "/pulsar-chu",
+    "position": "after:skills"
+  },
+  "entry": "index.js",
+  "css": null,
+  "has_api": false,
+  "source": "chu"
+}
