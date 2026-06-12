@@ -2,7 +2,7 @@ import { Box, Text, useStdout } from '@hermes/ink'
 import { useEffect, useState } from 'react'
 import unicodeSpinners from 'unicode-animations'
 
-import { artWidth, caduceus, CADUCEUS_WIDTH, logo, LOGO_WIDTH } from '../banner.js'
+import { artWidth, logo, LOGO_WIDTH, radarHero, RADAR_WIDTH, type Seg } from '../banner.js'
 import { flat } from '../lib/text.js'
 import type { Theme } from '../theme.js'
 import type { PanelSection, SessionInfo } from '../types.js'
@@ -34,6 +34,24 @@ export function ArtLines({ lines }: { lines: [string, string][] }) {
         <Text color={c} key={i} wrap="truncate-end">
           {text}
         </Text>
+      ))}
+    </Box>
+  )
+}
+
+// Comme ArtLines mais chaque ligne est faite de segments multicolores (rendus
+// en ligne) — nécessaire pour la croix rouge du radar au milieu des anneaux.
+export function SegArtLines({ rows }: { rows: Seg[][] }) {
+  return (
+    <Box flexDirection="column" height={rows.length} opaque width={RADAR_WIDTH}>
+      {rows.map((segs, i) => (
+        <Box flexDirection="row" key={i}>
+          {segs.map((s, j) => (
+            <Text bold={s.b} color={s.c || undefined} key={j}>
+              {s.t}
+            </Text>
+          ))}
+        </Box>
       ))}
     </Box>
   )
@@ -160,8 +178,8 @@ const TOOLSETS_MAX = 8
 export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
   const term = useStdout().stdout?.columns ?? 100
   const cols = Math.max(20, Math.min(term, maxWidth ?? term))
-  const heroLines = caduceus(t.color, t.bannerHero || undefined)
-  const leftW = Math.min((artWidth(heroLines) || CADUCEUS_WIDTH) + 4, Math.floor(cols * 0.4))
+  const heroRows = radarHero(t.color)
+  const leftW = Math.min(RADAR_WIDTH + 4, Math.floor(cols * 0.4))
   const wide = cols >= 90 && leftW + 40 < cols
   const w = Math.max(20, wide ? cols - leftW - 14 : cols - 12)
   const lineBudget = Math.max(12, w - 2)
@@ -281,7 +299,7 @@ export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
     <Box borderColor={t.color.border} borderStyle="round" marginBottom={1} paddingX={2} paddingY={1}>
       {wide && (
         <Box flexDirection="column" marginRight={2} width={leftW}>
-          <ArtLines lines={heroLines} />
+          <SegArtLines rows={heroRows} />
           <Text />
 
           <Text color={t.color.accent}>
