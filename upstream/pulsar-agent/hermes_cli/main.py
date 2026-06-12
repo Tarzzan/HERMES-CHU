@@ -10668,6 +10668,28 @@ def cmd_claw(args):
     claw_command(args)
 
 
+def _pulsar_credits():
+    """PULSAR — auteur, licence, version (sous-commande ``pulsar credits``)."""
+    try:
+        from rich.console import Console
+        c = Console()
+        c.print()
+        c.print("  [bold red]✚[/]  [bold #42A5F5]PULSAR[/] [dim]2.3.1[/]  [dim]— DSIO · CHU de Guyane[/]")
+        c.print("  [dim]Auteur [/]  [#E3F2FD]William MERI[/] [dim]— DSIO, CHU de Guyane · <william.meri@gmail.com>[/]")
+        c.print("  [dim]Licence[/]  [#90CAF9]Apache-2.0[/] [dim](libre de droit) — voir LICENSE[/]")
+        c.print("  [dim]Dépôt  [/]  [dim]https://github.com/Tarzzan/PULSAR-CHU[/]")
+        c.print("  [dim]Moteur [/]  [dim]hermes-agent © Nous Research (MIT, upstream/pulsar-agent) — voir NOTICE[/]")
+        c.print()
+    except Exception:
+        print(
+            "PULSAR 2.3.1\n"
+            "  Auteur  : William MERI — DSIO, CHU de Guyane <william.meri@gmail.com>\n"
+            "  Licence : Apache-2.0 (libre de droit) — voir LICENSE\n"
+            "  Depot   : https://github.com/Tarzzan/PULSAR-CHU\n"
+            "  Moteur  : hermes-agent (c) Nous Research (MIT, upstream/pulsar-agent) — voir NOTICE"
+        )
+
+
 def main():
     """Main entry point for hermes CLI."""
     # Cosmetic: make the process show up as 'hermes' instead of 'python3.11'
@@ -10680,6 +10702,13 @@ def main():
         configure_windows_stdio()
     except Exception:
         pass
+
+    # PULSAR — sous-commande légère « credits » (auteur · licence · version),
+    # interceptée tôt pour rester robuste, hors de l'argparse complet.
+    import sys as _sys
+    if _sys.argv[1:2] in (["credits"], ["credit"], ["--credits"]):
+        _pulsar_credits()
+        return 0
 
     # Sweep stale ``hermes.exe.old.*`` quarantine files left by previous
     # ``hermes update`` runs on Windows. Silent no-op on non-Windows or when
