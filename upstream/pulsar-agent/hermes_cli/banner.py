@@ -77,6 +77,23 @@ PULSAR_SYMBOL = """
   ╚══════════════════╝[/]
 """
 
+# Raw block-letter wordmark "PULSAR" (no color tags) so it can be recolored to
+# match the active skin's accent — keeps the logo identity-consistent while the
+# palette follows the theme.
+_PULSAR_BLOCK = [
+    "██████╗ ██╗   ██╗██╗     ███████╗ █████╗ ██████╗ ",
+    "██╔══██╗██║   ██║██║     ██╔════╝██╔══██╗██╔══██╗",
+    "██████╔╝██║   ██║██║     ███████╗███████║██████╔╝",
+    "██╔═══╝ ██║   ██║██║     ╚════██║██╔══██║██╔══██╗",
+    "██║     ╚██████╔╝███████╗███████║██║  ██║██║  ██║",
+    "╚═╝      ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝",
+]
+
+
+def _pulsar_logo(color: str) -> str:
+    """PULSAR block wordmark recolored to the active theme accent."""
+    return "\n".join(f"[bold {color}]{line}[/]" for line in _PULSAR_BLOCK)
+
 
 def _pulsar_radar_hero(accent: str, dim: str, cross: str = "#EF5350") -> str:
     """Hero radar-pulsar du CLI, colorisé par le skin actif (accent/dim) +
@@ -580,14 +597,15 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     text = _skin_color("banner_text", "#FFF8DC")
     session_color = _skin_color("session_border", "#8B8682")
 
-    # Use skin's custom caduceus art if provided
+    # PULSAR identity: always render the radar-pulsar hero in the active theme
+    # colors. We deliberately ignore the skin's banner_hero (the upstream
+    # caduceus art) so PULSAR's hero is identity-consistent across every skin.
     try:
         from hermes_cli.skin_engine import get_active_skin
         _bskin = get_active_skin()
-        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else _pulsar_radar_hero(accent, dim)
     except Exception:
         _bskin = None
-        _hero = _pulsar_radar_hero(accent, dim)
+    _hero = _pulsar_radar_hero(accent, dim)
     left_lines = ["", _hero, ""]
     model_short = model.split("/")[-1] if "/" in model else model
     if model_short.endswith(".gguf"):
@@ -799,7 +817,9 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     console.print()
     term_width = shutil.get_terminal_size().columns
     if term_width >= 95:
-        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else PULSAR_LOGO
-        console.print(_logo)
+        # PULSAR identity: always the PULSAR wordmark in the theme accent
+        # (ignore the skin's banner_logo, which carries upstream branding).
+        console.print(_pulsar_logo(title_color))
+        console.print(f"[dim {dim}]   ✚ Une pulsation réveille des agents vigilants  ·  DSIO · CHU de Guyane[/]")
         console.print()
     console.print(outer_panel)
