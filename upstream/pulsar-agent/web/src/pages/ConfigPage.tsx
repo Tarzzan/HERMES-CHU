@@ -326,7 +326,7 @@ export default function ConfigPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "pulsar-config.json";
+    a.download = "hermes-config.json";
     a.click();
     URL.revokeObjectURL(url);
   };

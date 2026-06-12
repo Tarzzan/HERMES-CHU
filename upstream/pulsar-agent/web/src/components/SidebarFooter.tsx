@@ -21,7 +21,7 @@ export function SidebarFooter({ status }: SidebarFooterProps) {
       </Typography>
 
       <a
-        href="https://www.chu-guyane.fr"
+        href="https://nousresearch.com"
         target="_blank"
         rel="noopener noreferrer"
         className={cn(

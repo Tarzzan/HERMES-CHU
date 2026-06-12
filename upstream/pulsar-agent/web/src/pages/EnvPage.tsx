@@ -44,8 +44,8 @@ import { PluginSlot } from "@/plugins";
 
 /** Map env-var key prefixes to a human-friendly provider name + ordering. */
 const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
-  // PULSAR Portal first
-  { prefix: "NOUS_", name: "PULSAR Portal", priority: 0 },
+  // Nous Portal first
+  { prefix: "NOUS_", name: "Nous Portal", priority: 0 },
   // Then alphabetical by display name
   { prefix: "ANTHROPIC_", name: "Anthropic", priority: 1 },
   { prefix: "DASHSCOPE_", name: "DashScope (Qwen)", priority: 2 },
@@ -755,7 +755,7 @@ export default function EnvPage() {
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <p className="text-sm text-muted-foreground">
-            {t.env.description} <code>~/.pulsar/.env</code>
+            {t.env.description} <code>~/.hermes/.env</code>
           </p>
           <p className="text-xs text-text-tertiary">
             {t.env.changesNote}
