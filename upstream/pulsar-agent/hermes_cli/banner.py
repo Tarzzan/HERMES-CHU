@@ -70,6 +70,7 @@ PULSAR_LOGO = """
 """
 
 PULSAR_SYMBOL = """
+[bold red]            ✚[/]
 [bold #00d4ff]  ╔══════════════════╗
   ║  PULSAR  DSIO    ║
   ║  CHU de Guyane   ║
