@@ -75,10 +75,13 @@ function getInitialLocale(): Locale {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && isLocale(stored)) return stored;
+    // PULSAR-CHU : défaut français, mais respecte la langue du navigateur.
+    const nav = (navigator.language || "").slice(0, 2);
+    if (isLocale(nav)) return nav as Locale;
   } catch {
     // SSR or privacy mode
   }
-  return "en";
+  return "fr";
 }
 
 interface I18nContextValue {
