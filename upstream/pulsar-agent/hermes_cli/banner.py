@@ -78,6 +78,46 @@ PULSAR_SYMBOL = """
 """
 
 
+def _pulsar_radar_hero(accent: str, dim: str, cross: str = "#EF5350") -> str:
+    """Hero radar-pulsar du CLI, colorisé par le skin actif (accent/dim) +
+    croix rouge médicale au cœur. Snapshot statique : cercle radar (dim),
+    anneau d'impulsion (accent) à mi-rayon, croix rouge centrale."""
+    import math
+    W, H, aspect, rout, rpulse = 23, 9, 2.05, 8.0, 5.0
+    cx, cy = W // 2, H // 2
+    g = [[" "] * W for _ in range(H)]
+
+    def ring(R, ch, over=False):
+        n = int(2 * math.pi * R) + 14
+        for i in range(n):
+            a = 2 * math.pi * i / n
+            xi = int(round(cx + R * math.cos(a)))
+            yi = int(round(cy + (R / aspect) * math.sin(a)))
+            if 0 <= yi < H and 0 <= xi < W and (over or g[yi][xi] == " "):
+                g[yi][xi] = ch
+
+    ring(rout, "·")
+    for x in range(W):
+        if abs(x - cx) <= rout and g[cy][x] == " ":
+            g[cy][x] = "·"
+    for y in range(H):
+        if abs((y - cy) * aspect) <= rout and g[y][cx] == " ":
+            g[y][cx] = "·"
+    ring(rpulse, "•", over=True)
+    for dx in (-2, -1, 0, 1, 2):
+        g[cy][cx + dx] = "X"
+    for dy in (-1, 1):
+        g[cy + dy][cx] = "X"
+
+    out = []
+    for row in g:
+        s = "".join(row)
+        s = s.replace("X", f"[/][bold {cross}]█[/][{dim}]")
+        s = s.replace("•", f"[/][bold {accent}]•[/][{dim}]")
+        out.append(f"[{dim}]  {s}[/]")
+    return "\n".join(out)
+
+
 
 # =========================================================================
 # Skills scanning
@@ -544,10 +584,10 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     try:
         from hermes_cli.skin_engine import get_active_skin
         _bskin = get_active_skin()
-        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else PULSAR_SYMBOL
+        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else _pulsar_radar_hero(accent, dim)
     except Exception:
         _bskin = None
-        _hero = PULSAR_SYMBOL
+        _hero = _pulsar_radar_hero(accent, dim)
     left_lines = ["", _hero, ""]
     model_short = model.split("/")[-1] if "/" in model else model
     if model_short.endswith(".gguf"):
