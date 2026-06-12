@@ -1,9 +1,9 @@
 {
   "name": "hermes",
-  "productName": "Hermes",
+  "productName": "PULSAR",
   "private": true,
   "version": "0.15.1",
-  "description": "Native desktop shell for Hermes Agent.",
+  "description": "Shell desktop natif pour PULSAR — CHU de Guyane.",
   "author": "Nous Research",
   "type": "module",
   "main": "electron/main.cjs",
@@ -130,7 +130,7 @@
   "build": {
     "electronVersion": "40.9.3",
     "appId": "com.nousresearch.hermes",
-    "productName": "Hermes",
+    "productName": "PULSAR",
     "executableName": "Hermes",
     "artifactName": "Hermes-${version}-${os}-${arch}.${ext}",
     "icon": "assets/icon",
