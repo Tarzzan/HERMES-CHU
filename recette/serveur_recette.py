@@ -23,6 +23,7 @@ Stockage (plat, exploitable sans le serveur) :
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import re
 import secrets
@@ -40,8 +41,17 @@ REPONSES = RACINE / "reponses"
 CHECKLIST_FICHIER = RACINE / "checklist.json"
 COMMANDES = RACINE / "commandes"
 TOKEN_FICHIER = RACINE / "agent-token.txt"
+MODE_FICHIER = RACINE / "mode.json"
+REGISTRE = RACINE / "registre-actions.jsonl"
 
 VERSION_RECETTE = "PULSAR-Setup-2.3.1"
+
+# Modes de gouvernance de l'exécution distante :
+#   autonome — l'agent exécute automatiquement les commandes proposées (dev).
+#   hybride  — chaque commande attend une APPROBATION humaine avant l'agent.
+#   pilote   — l'agent n'exécute RIEN ; l'admin copie-colle et exécute lui-même,
+#              puis recolle la sortie. Validation 100 % humaine (prod / ISO 27001).
+MODES = ("autonome", "hybride", "pilote")
 
 SCENARIOS_DEFAUT = [
     {"id": "sha256", "titre": "SHA256 de l'exe vérifié (e973369b…97)", "statut": "en_attente", "commentaire": ""},
@@ -135,6 +145,91 @@ def _token() -> str:
     t = secrets.token_urlsafe(24)
     TOKEN_FICHIER.write_text(t, encoding="utf-8")
     return t
+
+
+# ---------------------------------------------------------------------------
+# Gouvernance : mode d'exécution + journal d'audit
+# ---------------------------------------------------------------------------
+
+def _mode() -> str:
+    if MODE_FICHIER.exists():
+        try:
+            m = json.loads(MODE_FICHIER.read_text(encoding="utf-8")).get("mode")
+            if m in MODES:
+                return m
+        except Exception:
+            pass
+    return "autonome"
+
+
+def _set_mode(m: str) -> None:
+    if m not in MODES:
+        raise HTTPException(400, f"Mode inconnu : {m}")
+    MODE_FICHIER.write_text(
+        json.dumps({"mode": m, "depuis": datetime.now().isoformat(timespec="seconds")},
+                   ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _journaliser(evenement: str, detail: dict) -> str:
+    """Ajoute une entrée au registre d'audit hash-chaîné (ISO 27001).
+    Chaque entrée scelle la précédente : toute altération casse la chaîne."""
+    prec = "0" * 64
+    if REGISTRE.exists():
+        lignes = REGISTRE.read_text(encoding="utf-8").strip().splitlines()
+        if lignes:
+            try:
+                prec = json.loads(lignes[-1])["hash"]
+            except Exception:
+                pass
+    entree = {
+        "horodatage": datetime.now().isoformat(timespec="seconds"),
+        "evenement": evenement,
+        "detail": detail,
+        "prec": prec,
+    }
+    sceau = json.dumps(entree, ensure_ascii=False, sort_keys=True)
+    entree["hash"] = hashlib.sha256((prec + sceau).encode("utf-8")).hexdigest()
+    with REGISTRE.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entree, ensure_ascii=False) + "\n")
+    return entree["hash"]
+
+
+def _decoder_ps(script: str) -> str:
+    """Décode le wrapper Invoke-Expression(FromBase64String('…')) → script lisible.
+    La transparence (voir ce qu'on approuve) est la base de la validation humaine."""
+    m = re.search(r"FromBase64String\('([A-Za-z0-9+/=]+)'\)", script or "")
+    if m:
+        try:
+            return base64.b64decode(m.group(1)).decode("utf-16-le")
+        except Exception:
+            return script
+    return script
+
+
+def _commande_lisible(d: dict) -> str:
+    """Représentation humaine d'une commande (ce que l'admin exécuterait)."""
+    action = d.get("action")
+    p = d.get("params", {}) or {}
+    if action == "shell":
+        return _decoder_ps(p.get("script", "")).strip()
+    if action == "download":
+        return (f"# Téléchargement de fichier\n"
+                f"Invoke-WebRequest -Uri '{p.get('url')}' -OutFile '{p.get('dest')}' -UseBasicParsing")
+    if action == "screenshot":
+        return "# Capture d'écran du poste (aucune commande à exécuter)"
+    if action == "tail":
+        return f"Get-Content '{p.get('path')}' -Tail {p.get('lignes', 40)}"
+    if action == "exists":
+        return f"Test-Path '{p.get('path')}'"
+    if action == "sha256":
+        return f"Get-FileHash '{p.get('path')}' -Algorithm SHA256"
+    if action == "http":
+        return f"Invoke-WebRequest -Uri '{p.get('url')}' -UseBasicParsing"
+    if action == "installer":
+        return f"Start-Process '{p.get('path')}' {('-ArgumentList ' + str(p.get('args'))) if p.get('args') else ''}"
+    return json.dumps({"action": action, "params": p}, ensure_ascii=False, indent=2)
 
 
 # ---------------------------------------------------------------------------
@@ -243,6 +338,8 @@ class Commande(BaseModel):
     machine: str = ""      # poste cible (vide = n'importe quel agent)
     libelle: str = ""
     scenario: str = ""
+    explication: str = ""  # ce que fait la commande + pourquoi (validation humaine)
+    risque: str = "faible" # faible | moyen | eleve
 
 
 @app.post("/api/agent/commande")
@@ -262,25 +359,42 @@ async def poster_commande(cmd: Commande, request: Request):
         "machine": cmd.machine,
         "libelle": cmd.libelle,
         "scenario": cmd.scenario,
+        "explication": cmd.explication,
+        "risque": cmd.risque if cmd.risque in ("faible", "moyen", "eleve") else "faible",
+        "lisible": _commande_lisible({"action": cmd.action, "params": cmd.params}),
         "etat": "en_attente",
+        "approuve_agent": False,
+        "decision": None,
     }
     (COMMANDES / f"{cid}.json").write_text(
         json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    return {"ok": True, "id": cid}
+    _journaliser("commande_proposee", {
+        "commande": cid, "libelle": cmd.libelle, "risque": data["risque"], "mode": _mode(),
+    })
+    return {"ok": True, "id": cid, "mode": _mode()}
 
 
 @app.get("/api/agent/commandes")
 async def recuperer_commandes(token: str = "", machine: str = ""):
-    """L'agent récupère ses commandes en attente (et les marque délivrées)."""
+    """L'agent récupère ses commandes à exécuter — selon le MODE de gouvernance.
+
+    - autonome : toutes les commandes en attente.
+    - hybride  : seulement celles approuvées par un humain.
+    - pilote   : aucune (l'admin exécute lui-même et recolle la sortie)."""
     if token != _token():
         raise HTTPException(401, "Jeton invalide")
     COMMANDES.mkdir(exist_ok=True)
+    mode = _mode()
+    if mode == "pilote":
+        return {"commandes": [], "mode": mode}
     a_faire = []
     for f in sorted(COMMANDES.glob("C*.json")):
         d = json.loads(f.read_text(encoding="utf-8"))
         if d["etat"] != "en_attente":
             continue
+        if mode == "hybride" and not d.get("approuve_agent"):
+            continue  # attend l'approbation humaine
         if d["machine"] and machine and d["machine"] != machine:
             continue
         d["etat"] = "delivree"
@@ -289,7 +403,7 @@ async def recuperer_commandes(token: str = "", machine: str = ""):
             "id": d["id"], "action": d["action"], "params": d["params"],
             "libelle": d["libelle"], "scenario": d["scenario"],
         })
-    return {"commandes": a_faire}
+    return {"commandes": a_faire, "mode": mode}
 
 
 @app.post("/api/agent/resultat")
@@ -369,6 +483,120 @@ async def capture_agent(request: Request, token: str = "", ticket: str = "", nom
 
 
 # ---------------------------------------------------------------------------
+# Gouvernance : mode, validation humaine, registre d'audit
+# ---------------------------------------------------------------------------
+
+@app.get("/api/mode")
+async def lire_mode():
+    return {"mode": _mode(), "modes": list(MODES)}
+
+
+@app.post("/api/mode")
+async def changer_mode(mode: str = Form(...)):
+    _set_mode(mode)
+    _journaliser("changement_mode", {"mode": mode})
+    return {"ok": True, "mode": mode}
+
+
+@app.get("/api/commandes/proposees")
+async def commandes_proposees():
+    """Liste des commandes proposées par l'assistant, en clair, pour la console."""
+    COMMANDES.mkdir(exist_ok=True)
+    cmds = []
+    for f in sorted(COMMANDES.glob("C*.json"), reverse=True)[:40]:
+        d = json.loads(f.read_text(encoding="utf-8"))
+        cmds.append({
+            "id": d["id"],
+            "horodatage": d.get("horodatage", ""),
+            "libelle": d.get("libelle", ""),
+            "explication": d.get("explication", ""),
+            "risque": d.get("risque", "faible"),
+            "etat": d.get("etat", "en_attente"),
+            "decision": d.get("decision"),
+            "machine": d.get("machine") or "",
+            "ticket": d.get("ticket"),
+            "lisible": d.get("lisible") or _commande_lisible(d),
+        })
+    return {"mode": _mode(), "commandes": cmds}
+
+
+def _charger_commande(cid: str) -> tuple:
+    cf = COMMANDES / f"{_nom_sur(cid)}.json"
+    if not cf.exists():
+        raise HTTPException(404, "Commande introuvable")
+    return cf, json.loads(cf.read_text(encoding="utf-8"))
+
+
+@app.post("/api/commandes/{cid}/resultat-manuel")
+async def resultat_manuel(cid: str, sortie: str = Form("")):
+    """L'admin a exécuté la commande lui-même et colle la sortie → devient un
+    ticket que l'assistant lit (comme un résultat d'agent), traçé dans le registre."""
+    cf, d = _charger_commande(cid)
+    entete = f"[HUMAIN {d.get('machine') or 'poste'}] {d.get('libelle', '')}".strip()
+    corps = entete + (("\n\n" + sortie) if sortie.strip() else "\n\n(commande exécutée — aucune sortie collée)")
+    ticket_id, _ = _ecrire_ticket(
+        corps, d.get("scenario", ""), d.get("machine", ""),
+        extra={"origine": "manuel", "commande_id": cid},
+    )
+    d["etat"] = "terminee"
+    d["ticket"] = ticket_id
+    d["decision"] = "execute_manuel"
+    cf.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    _journaliser("execution_manuelle", {"commande": cid, "ticket": ticket_id})
+    return {"ok": True, "ticket": ticket_id}
+
+
+@app.post("/api/commandes/{cid}/approuver")
+async def approuver_commande(cid: str):
+    """Mode hybride : l'humain autorise l'agent à exécuter cette commande."""
+    cf, d = _charger_commande(cid)
+    d["approuve_agent"] = True
+    d["decision"] = "approuve_agent"
+    cf.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    _journaliser("approbation", {"commande": cid, "libelle": d.get("libelle", "")})
+    return {"ok": True}
+
+
+@app.post("/api/commandes/{cid}/refuser")
+async def refuser_commande(cid: str, motif: str = Form("")):
+    """L'humain refuse la commande ; l'assistant en est informé par un ticket."""
+    cf, d = _charger_commande(cid)
+    d["etat"] = "refusee"
+    d["decision"] = "refuse"
+    d["motif"] = motif
+    cf.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    _journaliser("refus", {"commande": cid, "motif": motif})
+    _ecrire_ticket(
+        f"[REFUS HUMAIN] Commande refusée : {d.get('libelle', '')}"
+        + (f"\nMotif : {motif}" if motif else ""),
+        d.get("scenario", ""), d.get("machine", ""),
+        extra={"origine": "refus", "commande_id": cid},
+    )
+    return {"ok": True}
+
+
+@app.get("/api/registre", response_class=PlainTextResponse)
+async def exporter_registre(verif: bool = False):
+    """Registre d'audit hash-chaîné. ?verif=1 vérifie l'intégrité de la chaîne."""
+    if not REGISTRE.exists():
+        return "Registre d'audit vide."
+    lignes = REGISTRE.read_text(encoding="utf-8").strip().splitlines()
+    if not verif:
+        return "\n".join(lignes)
+    prec = "0" * 64
+    for i, ligne in enumerate(lignes, 1):
+        e = json.loads(ligne)
+        h = e.pop("hash", "")
+        recompute = hashlib.sha256(
+            (prec + json.dumps(e, ensure_ascii=False, sort_keys=True)).encode("utf-8")
+        ).hexdigest()
+        if e.get("prec") != prec or recompute != h:
+            return f"⚠️ INTÉGRITÉ ROMPUE à l'entrée {i} ({e.get('horodatage')}). Le registre a été altéré."
+        prec = h
+    return f"✅ Registre intègre — {len(lignes)} entrées, chaîne de hachage vérifiée."
+
+
+# ---------------------------------------------------------------------------
 # Interface web
 # ---------------------------------------------------------------------------
 
@@ -410,10 +638,37 @@ select,input[type=text]{border:1px solid #c4ccd6;border-radius:6px;padding:7px;f
 .scn.est-ok .titre{color:var(--ok)}.scn.est-ko .titre{color:var(--ko)}
 .scn .etat{width:26px;text-align:center}
 #notif{position:fixed;bottom:18px;right:18px;background:#1b1f24;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:.3s}
+.modebar{display:flex;gap:6px;margin-left:auto;align-items:center}
+.modebar .lbl{font-size:11px;opacity:.85;margin-right:2px}
+.modebar button{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:5px 11px;font-size:12px}
+.modebar button.actif{background:#fff;color:var(--bleu);font-weight:700}
+.modeinfo{font-size:12px;background:#eef4ff;border:1px solid #cfe0ff;border-radius:8px;padding:8px 11px;margin-bottom:12px;color:#243b53}
+.cmd{border:1px solid #d8dee6;border-radius:9px;padding:11px 13px;margin-bottom:11px;background:#fff;border-left:4px solid #c4ccd6}
+.cmd.en_attente{border-left-color:#f0a500}.cmd.delivree{border-left-color:var(--bleu)}.cmd.terminee{border-left-color:var(--ok)}.cmd.refusee{border-left-color:var(--ko);opacity:.65}
+.cmd .tete{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:3px}
+.cmd .expl{font-size:12px;color:#44505f;margin:2px 0 8px}
+.cmd pre{white-space:pre-wrap;font:12px/1.45 ui-monospace,monospace;background:#0d1117;color:#e6edf3;padding:10px 12px;border-radius:7px;max-height:240px;overflow:auto;margin:0}
+.cmd .barre{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.cmd .barre button{padding:5px 11px;font-size:12px}
+.cmd textarea{min-height:64px;margin-top:7px}
+.rq{display:inline-block;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase}
+.rq.faible{background:#d6f5dd;color:var(--ok)}.rq.moyen{background:#fff3cd;color:#7a5b00}.rq.eleve{background:#fde2dd;color:var(--ko)}
+.copybtn{background:#e3e8ef;color:#1b1f24}
+.cmd .et{font-size:11px;color:#5a6b80;margin-left:auto;font-weight:400}
 </style></head><body>
-<header><h1>⚡ PULSAR — Banc de Recette</h1><span>__VERSION__ · les dépôts sont transmis à l'assistant en temps réel</span></header>
+<header><h1>⚡ PULSAR — Banc de Recette</h1><span>__VERSION__</span>
+ <div class="modebar"><span class="lbl">Exécution :</span>
+  <button data-mode="autonome" onclick="setMode('autonome')">🤖 Autonome</button>
+  <button data-mode="hybride" onclick="setMode('hybride')">⚖️ Hybride</button>
+  <button data-mode="pilote" onclick="setMode('pilote')">🛡️ Piloté</button>
+ </div></header>
 <main>
 <section>
+  <div class="carte" id="carte-cmd">
+    <h2>Commandes proposées par l'assistant <span id="cmd-compteur" style="font-weight:400;color:#5a6b80"></span></h2>
+    <div id="modeinfo" class="modeinfo"></div>
+    <div id="commandes">Chargement…</div>
+  </div>
   <div class="carte">
     <h2>Déposer un retour de test</h2>
     <div style="display:flex;gap:8px;margin-bottom:8px">
@@ -437,6 +692,14 @@ select,input[type=text]{border:1px solid #c4ccd6;border-radius:6px;padding:7px;f
       <a href="/api/pv" target="_blank"><button class="sec">📄 Exporter le PV de recette</button></a>
     </div>
   </div>
+  <div class="carte">
+    <h2>🔒 Journal d'audit ISO 27001</h2>
+    <p style="font-size:12px;color:#5a6b80;margin:0 0 10px">Toute commande, approbation et exécution est scellée en chaîne de hachage SHA-256. Traçabilité inviolable des actions d'administration distante.</p>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <a href="/api/registre" target="_blank"><button class="sec">📑 Voir le registre</button></a>
+      <a href="/api/registre?verif=1" target="_blank"><button class="sec">✅ Vérifier l'intégrité</button></a>
+    </div>
+  </div>
 </aside>
 </main>
 <div id="notif"></div>
@@ -448,7 +711,9 @@ function ajouterPiece(fichier){pieces.push(fichier);const d=document.createEleme
  else d.textContent='📄 '+fichier.name;$('#apercus').appendChild(d)}
 document.addEventListener('paste',e=>{for(const it of e.clipboardData.items){if(it.kind==='file'){
  const f=it.getAsFile();const nom=f.name&&f.name!=='image.png'?f.name:'capture-'+Date.now()+'.png';
- ajouterPiece(new File([f],nom,{type:f.type}));notif('Capture ajoutée — clique Envoyer')}}});
+ ajouterPiece(new File([f],nom,{type:f.type}));notif('Capture ajoutée — clique Envoyer')}}
+ const txt=e.clipboardData.getData('text');
+ if(txt&&document.activeElement!==$('#message')){e.preventDefault();const m=$('#message');m.value+=(m.value?'\\n':'')+txt;m.focus();notif('Texte collé dans le message')}});
 const z=$('#zone');
 z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('actif')});
 z.addEventListener('dragleave',()=>z.classList.remove('actif'));
@@ -488,7 +753,56 @@ async function majScn(id,statut){const fd=new FormData();fd.append('statut',stat
  if(statut==='ko'&&c){const fd2=new FormData();fd2.append('message','[Checklist KO] '+c);fd2.append('scenario',id);
   await fetch('/api/tickets',{method:'POST',body:fd2})}
  charger()}
-charger();setInterval(charger,4000);
+// ── Gouvernance : mode + commandes proposées ──
+let MODE='autonome';
+const INFO_MODE={
+ autonome:"🤖 <b>Autonome</b> — l'agent exécute automatiquement les commandes proposées. Environnement de confiance / développement.",
+ hybride:"⚖️ <b>Hybride</b> — chaque commande attend votre <b>approbation</b> avant d'être exécutée par l'agent. Automatisation sous contrôle.",
+ pilote:"🛡️ <b>Piloté</b> — l'agent n'exécute <b>rien</b>. Vous copiez chaque commande, l'exécutez vous-même, et recollez la sortie. Validation 100% humaine (production / ISO 27001)."};
+async function chargerMode(){const {mode}=await(await fetch('/api/mode')).json();MODE=mode;
+ document.querySelectorAll('.modebar button').forEach(b=>b.classList.toggle('actif',b.dataset.mode===mode));
+ $('#modeinfo').innerHTML=INFO_MODE[mode]||'';}
+async function setMode(m){const fd=new FormData();fd.append('mode',m);await fetch('/api/mode',{method:'POST',body:fd});
+ notif('Mode : '+m);await chargerMode();chargerCommandes();}
+function copier(id){const el=document.getElementById('src-'+id);
+ navigator.clipboard.writeText(el.textContent).then(()=>notif('📋 Commande copiée — exécute-la puis recolle la sortie'),
+  ()=>{const r=document.createRange();r.selectNode(el);getSelection().removeAllRanges();getSelection().addRange(r);notif('Sélectionnée — Ctrl+C pour copier')});}
+function toggleZone(id){const z=document.getElementById('zone-'+id);z.style.display=z.style.display==='block'?'none':'block';if(z.style.display==='block')document.getElementById('res-'+id).focus()}
+async function approuver(id){await fetch('/api/commandes/'+id+'/approuver',{method:'POST'});notif('✅ Approuvée — l\\'agent va l\\'exécuter');chargerCommandes()}
+async function refuser(id){const m=prompt('Motif du refus (optionnel) :')||'';const fd=new FormData();fd.append('motif',m);
+ await fetch('/api/commandes/'+id+'/refuser',{method:'POST',body:fd});notif('✋ Commande refusée');chargerCommandes()}
+async function envoyerResultat(id){const ta=document.getElementById('res-'+id);const fd=new FormData();fd.append('sortie',ta.value);
+ const r=await fetch('/api/commandes/'+id+'/resultat-manuel',{method:'POST',body:fd});
+ if(r.ok){notif('📨 Sortie transmise à l\\'assistant');chargerCommandes();charger()}else notif('⚠️ '+(await r.json()).detail)}
+async function chargerCommandes(){
+ const {commandes}=await(await fetch('/api/commandes/proposees')).json();
+ const enc=commandes.filter(c=>c.etat==='en_attente'||c.etat==='delivree').length;
+ $('#cmd-compteur').textContent=enc?'('+enc+' en cours)':'';
+ $('#commandes').innerHTML=commandes.length?commandes.map(c=>{
+  const att=c.etat==='en_attente';
+  let actions='';
+  if(att&&MODE==='pilote')actions=`<button class="copybtn" onclick="copier('${c.id}')">📋 Copier</button>
+   <button onclick="toggleZone('${c.id}')">📥 Coller la sortie</button>
+   <button class="sec" onclick="refuser('${c.id}')">✋ Refuser</button>`;
+  else if(att&&MODE==='hybride')actions=`<button onclick="approuver('${c.id}')">✅ Exécuter via l'agent</button>
+   <button class="copybtn" onclick="copier('${c.id}')">📋 Je l'exécute</button>
+   <button onclick="toggleZone('${c.id}')">📥 Coller la sortie</button>
+   <button class="sec" onclick="refuser('${c.id}')">✋ Refuser</button>`;
+  else actions=`<button class="copybtn" onclick="copier('${c.id}')">📋 Copier</button>`;
+  const etiq={en_attente:'⏳ en attente',delivree:'⏳ envoyée à l\\'agent',terminee:'✅ terminée',refusee:'✋ refusée'}[c.etat]||c.etat;
+  return `<div class="cmd ${c.etat}">
+   <div class="tete"><span class="rq ${c.risque}">${c.risque}</span>${echap(c.libelle||c.id)}<span class="et">${etiq}${c.ticket?' · '+c.ticket:''}</span></div>
+   ${c.explication?'<div class="expl">'+echap(c.explication)+'</div>':''}
+   <pre id="src-${c.id}">${echap(c.lisible)}</pre>
+   <div class="barre">${actions}</div>
+   <div id="zone-${c.id}" style="display:none">
+    <textarea id="res-${c.id}" placeholder="Colle ici la sortie de la commande exécutée…"></textarea>
+    <div class="barre"><button onclick="envoyerResultat('${c.id}')">📨 Transmettre la sortie à l'assistant</button></div>
+   </div>
+  </div>`}).join(''):'<i style="color:#5a6b80;font-size:13px">Aucune commande proposée pour l\\'instant.</i>';
+}
+chargerMode();charger();chargerCommandes();
+setInterval(()=>{charger();chargerCommandes();chargerMode()},4000);
 </script></body></html>"""
 
 
