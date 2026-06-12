@@ -1,0 +1,25 @@
+PULSAR — Plateforme Unifiée de Liaison, de Surveillance et d'Assistance en temps Réel
+Copyright 2026 William MERI — DSIO, CHU de Guyane
+
+Ce produit (la couche hospitalière « PULSAR CHU » : chu/, branding, installeurs,
+documentation, scripts d'orchestration) est distribué sous licence Apache 2.0.
+Voir le fichier LICENSE.
+
+================================================================================
+Composant tiers embarqué
+================================================================================
+
+Ce produit intègre, sans le modifier sur le fond, le moteur agentique
+hermes-agent de NousResearch, vendorisé sous upstream/pulsar-agent/.
+
+    hermes-agent
+    Copyright (c) 2025 Nous Research
+    Licensed under the MIT License.
+    https://github.com/NousResearch/hermes-agent
+    Texte de licence complet : upstream/pulsar-agent/LICENSE
+
+Conformément à la licence MIT, cette mention de copyright et la licence MIT
+sont conservées. La licence Apache 2.0 de PULSAR CHU et la licence MIT du
+moteur embarqué sont compatibles. Le rebranding PULSAR appliqué au moteur ne
+porte que sur l'identité visible (nom, couleurs, icônes) ; les en-têtes et la
+licence d'origine des sources NousResearch sont préservés.

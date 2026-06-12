@@ -1,66 +1,62 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 William MERI — DSIO, CHU de Guyane
 """
-PULSAR — Animation d'accueil « pulsation »
-==========================================
-Art ASCII ANIMÉ : une onde radiale rayonne depuis la croix rouge médicale
-(CHU), s'élargit en anneaux ronds, porte le wordmark PULSAR, puis se résout
-en bloc d'identité. Incarne le nom (pulsar = pulsation) et le principe
-fondateur : « Une pulsation régulière réveille des agents vigilants. »
+PULSAR — Animation d'accueil « radar »
+======================================
+Écran radar de TAILLE FIXE : cercle radar + croix rouge + crosshair restent
+immobiles ; seul un anneau d'impulsion s'élargit du cœur vers le bord, en
+boucle. Aucun changement d'alignement. Incarne le nom (pulsar = pulsation) et
+le principe fondateur : « Une pulsation régulière réveille des agents vigilants. »
 
-    python3 chu/branding/pulse_intro.py            # storyboard (frames figées)
-    python3 chu/branding/pulse_intro.py --animate  # animation dans le terminal
+    python3 chu/branding/pulse_intro.py            # storyboard
+    python3 chu/branding/pulse_intro.py --animate  # animation terminal
 
-Couleurs (rich) : ✚ rouge, anneaux cyan (vifs au cœur, doux au bord),
-wordmark cyan vif. Sans rich : repli texte brut.
+Couleurs (rich) : ✚ rouge ; cadre radar cyan sombre ; impulsion cyan vif.
 """
 from __future__ import annotations
 import math
 import sys
 import time
 
-W, H = 29, 11          # largeur / hauteur de la scène
-CX, CY = W // 2, H // 2
-ASPECT = 2.05          # une cellule est ~2x plus haute que large -> anneaux ronds
+W, H = 33, 15            # scène FIXE (cellules)
+CX, CY = W // 2, H // 2  # centre
+ASPECT = 2.05            # cellule ~2x plus haute que large -> cercles ronds
+ROUT = 13.0              # rayon du cercle radar (unités x)
 
-GLYPH_NEAR = "•"       # anneau proche (dense)
-GLYPH_FAR = "·"        # anneau lointain (léger)
+PULSES = [2.0, 3.5, 5.0, 6.5, 8.0, 9.5, 11.0, 12.5]  # rayons successifs de l'onde
 
 
-def _blank():
+def _grid():
     return [[" "] * W for _ in range(H)]
 
 
-def _ring(radius: float, soft: bool = False):
-    g = _blank()
-    glyph = GLYPH_FAR if soft else GLYPH_NEAR
+def _ring(g, R, glyph, overwrite=False):
+    steps = int(2 * math.pi * R) + 16
+    for i in range(steps):
+        a = 2 * math.pi * i / steps
+        xi = int(round(CX + R * math.cos(a)))
+        yi = int(round(CY + (R / ASPECT) * math.sin(a)))
+        if 0 <= yi < H and 0 <= xi < W and (overwrite or g[yi][xi] == " "):
+            g[yi][xi] = glyph
+
+
+def _crosshair(g):
+    for x in range(W):
+        if abs(x - CX) <= ROUT and g[CY][x] == " ":
+            g[CY][x] = "·"
     for y in range(H):
-        for x in range(W):
-            dx = x - CX
-            dy = (y - CY) * ASPECT
-            if abs(math.hypot(dx, dy) - radius) < 0.95:
-                g[y][x] = glyph
-    g[CY][CX] = "✚"
+        if abs((y - CY) * ASPECT) <= ROUT and g[y][CX] == " ":
+            g[y][CX] = "·"
+
+
+def _radar(rpulse: float):
+    g = _grid()
+    _ring(g, ROUT, "·")          # cercle radar (fixe, sombre)
+    _crosshair(g)                 # crosshair (fixe, sombre)
+    _ring(g, rpulse, "•", overwrite=True)   # impulsion (mobile, vif)
+    g[CY][CX] = "✚"              # croix rouge au cœur (fixe)
     return g
-
-
-def _overlay_center(g, text):
-    start = CX - len(text) // 2
-    for i, ch in enumerate(text):
-        x = start + i
-        if 0 <= x < W:
-            g[CY][x] = ch
-    return g
-
-
-def _box():
-    """Bloc d'identité final (compact), avec la croix rouge au sommet."""
-    return [
-        "[bold red]              ✚[/]",
-        "[bold #00d4ff]       ╔══════════════════╗[/]",
-        "[bold #00d4ff]       ║  PULSAR  DSIO    ║[/]",
-        "[bold #00d4ff]       ║  CHU de Guyane   ║[/]",
-        "[bold #00d4ff]       ╚══════════════════╝[/]",
-    ]
 
 
 def _colorize(grid):
@@ -68,30 +64,14 @@ def _colorize(grid):
     for row in grid:
         s = "".join(row)
         s = s.replace("✚", "[bold red]✚[/]")
-        s = s.replace("•", "[#00d4ff]•[/]")
-        s = s.replace("·", "[dim cyan]·[/]")
-        # wordmark si présent au centre
-        if "PULSAR" in s:
-            s = s.replace("PULSAR", "[bold #00d4ff]PULSAR[/]")
+        s = s.replace("•", "[bold #3bdcff]•[/]")
+        s = s.replace("·", "[#1d5e78]·[/]")
         out.append(s)
     return out
 
 
 def _build_frames():
-    frames = []
-    # battement 1 : onde courte
-    for r in (1.5, 4.0, 6.5):
-        frames.append(_colorize(_ring(r)))
-    # battement 2 : onde pleine + anneau doux trailing
-    for r in (2.0, 5.0, 8.0, 11.0):
-        frames.append(_colorize(_ring(r)))
-    # l'onde porte le nom
-    g = _ring(11.5, soft=True)
-    _overlay_center(g, "PULSAR")
-    frames.append(_colorize(g))
-    # résolution
-    frames.append(_box())
-    return frames
+    return [_colorize(_radar(r)) for r in PULSES]
 
 
 FRAMES = _build_frames()
@@ -108,12 +88,15 @@ def _render(frame, console):
 
 def animate(console):
     clear = "\033[2J\033[H"
-    rythme = [0.32, 0.22, 0.30, 0.30, 0.22, 0.18, 0.16, 0.45, 0.0]
-    for i, frame in enumerate(FRAMES):
-        sys.stdout.write(clear)
-        sys.stdout.flush()
-        _render(frame, console)
-        time.sleep(rythme[i] if i < len(rythme) else 0.25)
+    try:
+        while True:
+            for r, frame in enumerate(FRAMES):
+                sys.stdout.write(clear)
+                sys.stdout.flush()
+                _render(frame, console)
+                time.sleep(0.12 if r < len(FRAMES) - 1 else 0.6)
+    except KeyboardInterrupt:
+        pass
 
 
 def storyboard(console):

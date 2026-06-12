@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 William MERI — DSIO, CHU de Guyane
 # ============================================================================
 # PULSAR CHU Installer for Windows - William MERI (CHU de Guyane)
 # ============================================================================

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 William MERI — DSIO, CHU de Guyane
 """
 PULSAR — Banc de Recette
 =========================
@@ -20,6 +22,7 @@ Stockage (plat, exploitable sans le serveur) :
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import secrets
@@ -29,11 +32,14 @@ from typing import List, Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
+from pydantic import BaseModel
 
 RACINE = Path(__file__).parent
 INBOX = RACINE / "inbox"
 REPONSES = RACINE / "reponses"
 CHECKLIST_FICHIER = RACINE / "checklist.json"
+COMMANDES = RACINE / "commandes"
+TOKEN_FICHIER = RACINE / "agent-token.txt"
 
 VERSION_RECETTE = "PULSAR-Setup-2.3.1"
 
@@ -89,6 +95,48 @@ def _lister_tickets() -> List[dict]:
     return tickets
 
 
+def _ecrire_ticket(message, scenario, machine, fichiers=(), extra=None):
+    """Crée un ticket sur disque. fichiers = liste de (nom, octets).
+    meta.json est écrit en DERNIER : signal 'ticket complet' pour le moniteur."""
+    horodatage = datetime.now()
+    ticket_id = f"T{horodatage:%Y%m%d-%H%M%S}-{secrets.token_hex(2)}"
+    dossier = INBOX / ticket_id
+    dossier.mkdir(parents=True)
+
+    noms = []
+    for nom, contenu in fichiers:
+        if len(contenu) > 25 * 1024 * 1024:
+            continue  # garde-fou 25 Mo par fichier
+        nom = _nom_sur(nom)
+        (dossier / nom).write_bytes(contenu)
+        noms.append(nom)
+
+    if message and message.strip():
+        (dossier / "message.txt").write_text(message, encoding="utf-8")
+
+    meta = {
+        "id": ticket_id,
+        "horodatage": horodatage.isoformat(timespec="seconds"),
+        "machine": machine or "inconnue",
+        "scenario": scenario or "",
+        "version": VERSION_RECETTE,
+    }
+    if extra:
+        meta.update(extra)
+    (dossier / "meta.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    return ticket_id, noms
+
+
+def _token() -> str:
+    if TOKEN_FICHIER.exists():
+        return TOKEN_FICHIER.read_text(encoding="utf-8").strip()
+    t = secrets.token_urlsafe(24)
+    TOKEN_FICHIER.write_text(t, encoding="utf-8")
+    return t
+
+
 # ---------------------------------------------------------------------------
 # API tickets
 # ---------------------------------------------------------------------------
@@ -103,34 +151,9 @@ async def creer_ticket(
     if not message.strip() and not fichiers:
         raise HTTPException(400, "Ticket vide : message ou fichier requis")
 
-    horodatage = datetime.now()
-    ticket_id = f"T{horodatage:%Y%m%d-%H%M%S}-{secrets.token_hex(2)}"
-    dossier = INBOX / ticket_id
-    dossier.mkdir(parents=True)
-
-    noms = []
-    for f in fichiers:
-        nom = _nom_sur(f.filename)
-        contenu = await f.read()
-        if len(contenu) > 25 * 1024 * 1024:
-            continue  # garde-fou 25 Mo par fichier
-        (dossier / nom).write_bytes(contenu)
-        noms.append(nom)
-
-    if message.strip():
-        (dossier / "message.txt").write_text(message, encoding="utf-8")
-
-    meta = {
-        "id": ticket_id,
-        "horodatage": horodatage.isoformat(timespec="seconds"),
-        "machine": request.client.host if request.client else "inconnue",
-        "scenario": scenario,
-        "version": VERSION_RECETTE,
-    }
-    # meta.json écrit en dernier : c'est le signal "ticket complet" pour le moniteur
-    (dossier / "meta.json").write_text(
-        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    lus = [(f.filename, await f.read()) for f in fichiers]
+    machine = request.client.host if request.client else "inconnue"
+    ticket_id, noms = _ecrire_ticket(message, scenario, machine, lus)
     return {"ok": True, "id": ticket_id, "fichiers": noms}
 
 
@@ -204,6 +227,145 @@ async def exporter_pv():
     pv = "\n".join(lignes) + "\n"
     (RACINE / f"PV-recette-{date:%Y%m%d-%H%M}.md").write_text(pv, encoding="utf-8")
     return pv
+
+
+# ---------------------------------------------------------------------------
+# API agent — file de commandes bidirectionnelle (recette automatisée)
+# ---------------------------------------------------------------------------
+# Flux : l'assistant (depuis Abux, en local) POSTe une commande → l'agent
+# PowerShell du poste de test la récupère (jeton), l'exécute, et renvoie le
+# résultat (texte + captures) qui devient un ticket visible sur le tableau.
+
+
+class Commande(BaseModel):
+    action: str
+    params: dict = {}
+    machine: str = ""      # poste cible (vide = n'importe quel agent)
+    libelle: str = ""
+    scenario: str = ""
+
+
+@app.post("/api/agent/commande")
+async def poster_commande(cmd: Commande, request: Request):
+    """Dépose une commande pour l'agent. Réservé au serveur local (l'assistant)."""
+    hote = request.client.host if request.client else ""
+    if hote not in ("127.0.0.1", "::1", "localhost"):
+        raise HTTPException(403, "Commande autorisée uniquement en local (Abux)")
+    COMMANDES.mkdir(exist_ok=True)
+    horod = datetime.now()
+    cid = f"C{horod:%Y%m%d-%H%M%S}-{secrets.token_hex(2)}"
+    data = {
+        "id": cid,
+        "horodatage": horod.isoformat(timespec="seconds"),
+        "action": cmd.action,
+        "params": cmd.params,
+        "machine": cmd.machine,
+        "libelle": cmd.libelle,
+        "scenario": cmd.scenario,
+        "etat": "en_attente",
+    }
+    (COMMANDES / f"{cid}.json").write_text(
+        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    return {"ok": True, "id": cid}
+
+
+@app.get("/api/agent/commandes")
+async def recuperer_commandes(token: str = "", machine: str = ""):
+    """L'agent récupère ses commandes en attente (et les marque délivrées)."""
+    if token != _token():
+        raise HTTPException(401, "Jeton invalide")
+    COMMANDES.mkdir(exist_ok=True)
+    a_faire = []
+    for f in sorted(COMMANDES.glob("C*.json")):
+        d = json.loads(f.read_text(encoding="utf-8"))
+        if d["etat"] != "en_attente":
+            continue
+        if d["machine"] and machine and d["machine"] != machine:
+            continue
+        d["etat"] = "delivree"
+        f.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+        a_faire.append({
+            "id": d["id"], "action": d["action"], "params": d["params"],
+            "libelle": d["libelle"], "scenario": d["scenario"],
+        })
+    return {"commandes": a_faire}
+
+
+@app.post("/api/agent/resultat")
+async def resultat_agent(request: Request):
+    """L'agent renvoie le résultat d'une commande → devient un ticket.
+    Parsing manuel en utf-8-sig : PowerShell 5.1 préfixe souvent le corps
+    d'un BOM UTF-8 que le décodeur JSON strict refuserait (→ 400)."""
+    brut = await request.body()
+    payload = None
+    # PowerShell 5.1 encode le corps en cp1252 (codepage Windows), parfois avec
+    # un BOM. On tente UTF-8(+BOM) puis cp1252 puis latin-1 (qui ne lève jamais).
+    for enc in ("utf-8-sig", "cp1252", "latin-1"):
+        try:
+            payload = json.loads(brut.decode(enc))
+            break
+        except Exception:
+            continue
+    if payload is None:
+        with (RACINE / "debug-agent.log").open("a", encoding="utf-8") as dbg:
+            dbg.write(f"\n--- {datetime.now().isoformat()} PARSE FAIL (toutes encodages)\n")
+            dbg.write(f"content-type: {request.headers.get('content-type')}\n")
+            dbg.write(f"len={len(brut)} premiers_octets={brut[:48]!r}\n")
+        raise HTTPException(400, "Corps JSON illisible (encodage)")
+    if payload.get("token") != _token():
+        raise HTTPException(401, "Jeton invalide")
+    cid = payload.get("commande_id", "")
+    machine = payload.get("machine") or (request.client.host if request.client else "agent")
+    libelle = payload.get("libelle", "")
+    scenario = payload.get("scenario", "")
+    message = payload.get("message", "")
+
+    # Allègement : l'agent préfixe la sortie shell de "PS> <script>". Pour nos
+    # commandes le script est un one-liner Invoke-Expression(...base64...) qui
+    # pèse des milliers de tokens à chaque résultat. On retire cet écho ; seule
+    # la VRAIE sortie est conservée.
+    message = re.sub(
+        r"^PS> .*?FromBase64String\([^\n]*\)\)\)\s*\n+", "", message, flags=re.DOTALL
+    )
+
+    fichiers = []
+    for img in payload.get("captures", []):
+        try:
+            fichiers.append((img.get("nom", "capture.png"), base64.b64decode(img["b64"])))
+        except Exception:
+            pass
+
+    entete = f"[AGENT {machine}] {libelle}".strip()
+    corps = entete + (("\n\n" + message) if message else "")
+    ticket_id, _ = _ecrire_ticket(
+        corps, scenario, machine, fichiers,
+        extra={"origine": "agent", "commande_id": cid},
+    )
+
+    cf = COMMANDES / f"{cid}.json"
+    if cf.exists():
+        d = json.loads(cf.read_text(encoding="utf-8"))
+        d["etat"] = "terminee"
+        d["ticket"] = ticket_id
+        cf.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"ok": True, "ticket": ticket_id}
+
+
+@app.post("/api/agent/capture")
+async def capture_agent(request: Request, token: str = "", ticket: str = "", nom: str = "capture.png"):
+    """Upload binaire brut d'une capture, rattachée à un ticket existant.
+    Évite le base64-dans-JSON (limite MaxJsonLength de PowerShell 5.1)."""
+    if token != _token():
+        raise HTTPException(401, "Jeton invalide")
+    dossier = (INBOX / _nom_sur(ticket)).resolve()
+    if not str(dossier).startswith(str(INBOX.resolve())) or not dossier.exists():
+        raise HTTPException(404, "Ticket introuvable")
+    data = await request.body()
+    if len(data) > 25 * 1024 * 1024:
+        raise HTTPException(413, "Capture trop volumineuse (>25 Mo)")
+    (dossier / _nom_sur(nom)).write_bytes(data)
+    return {"ok": True, "octets": len(data)}
 
 
 # ---------------------------------------------------------------------------
@@ -340,5 +502,8 @@ if __name__ == "__main__":
 
     INBOX.mkdir(exist_ok=True)
     REPONSES.mkdir(exist_ok=True)
+    COMMANDES.mkdir(exist_ok=True)
     _charger_checklist()
+    print(f"[recette] jeton agent : {_token()}")
+    print("[recette] console : http://0.0.0.0:9333  ·  API agent active")
     uvicorn.run(app, host="0.0.0.0", port=9333, log_level="warning")

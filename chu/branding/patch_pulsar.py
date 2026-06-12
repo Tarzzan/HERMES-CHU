@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 William MERI — DSIO, CHU de Guyane
 # ============================================================
 #  PULSAR -- Patch Sources TypeScript
 #  Plateforme Unifiee de Liaison, de Surveillance et

@@ -4,6 +4,7 @@
   "private": true,
   "version": "0.15.1",
   "description": "Shell desktop natif pour PULSAR — CHU de Guyane.",
+  "license": "Apache-2.0",
   "author": "Nous Research",
   "type": "module",
   "main": "electron/main.cjs",

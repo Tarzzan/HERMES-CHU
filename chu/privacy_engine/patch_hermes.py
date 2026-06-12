@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 William MERI — DSIO, CHU de Guyane
 """
 HERMES CHU — Patch d'intégration du Privacy Engine sur hermes-agent
 ====================================================================

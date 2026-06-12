@@ -225,3 +225,28 @@ Le moteur agentique (`upstream/hermes-agent/`) est la propriété de NousResearc
 *PULSAR CHU v2.3.0 — DSIO CHU de Guyane — William MERI*
 
 </div>
+
+## Auteur & Licence
+
+**Auteur :** William MERI — DSIO, CHU de Guyane · <william.meri@gmail.com>
+
+**Licence :** [Apache License 2.0](LICENSE) (libre de droit). La couche
+hospitalière PULSAR (`chu/`, branding, installeurs, documentation, scripts) est
+© 2026 William MERI. Les fichiers sources portent un en-tête SPDX
+(`SPDX-License-Identifier: Apache-2.0`).
+
+**Composant embarqué :** le moteur agentique [hermes-agent](https://github.com/NousResearch/hermes-agent)
+© Nous Research est intégré sous `upstream/pulsar-agent/` sous **licence MIT**,
+préservée (voir [`NOTICE`](NOTICE)). Apache 2.0 et MIT sont compatibles.
+
+**Citation :** ce dépôt fournit un [`CITATION.cff`](CITATION.cff) — utilisez le
+bouton « Cite this repository » de GitHub.
+
+**Identité & paternité reproductibles** — un seul outil ré-applique tout après
+chaque mise à jour upstream :
+
+```bash
+python3 chu/branding/pulsar_identity.py --apply     # identité visuelle PULSAR
+python3 chu/branding/pulsar_authorship.py --apply   # SPDX + métadonnées auteur
+python3 chu/branding/pulsar_authorship.py --credits # auteur · licence · version
+```

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 William MERI — DSIO, CHU de Guyane
 # -*- coding: utf-8 -*-
 """
 patch_pulsar_full.py — Patch global PULSAR v3.0

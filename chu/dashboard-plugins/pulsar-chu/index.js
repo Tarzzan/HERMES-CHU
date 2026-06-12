@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 William MERI — DSIO, CHU de Guyane
 /*
  * Plugin web "PULSAR CHU" — preuve de concept.
  * ---------------------------------------------------------------------------
