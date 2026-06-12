@@ -2,53 +2,99 @@
 """
 PULSAR — Animation d'accueil « pulsation »
 ==========================================
-Art ASCII ANIMÉ : une pulsation rayonne depuis la croix rouge médicale (CHU),
-puis fait apparaître le wordmark PULSAR. Incarne le nom (pulsar = pulsation)
-et le principe fondateur : « Une pulsation régulière réveille des agents
-vigilants. »
+Art ASCII ANIMÉ : une onde radiale rayonne depuis la croix rouge médicale
+(CHU), s'élargit en anneaux ronds, porte le wordmark PULSAR, puis se résout
+en bloc d'identité. Incarne le nom (pulsar = pulsation) et le principe
+fondateur : « Une pulsation régulière réveille des agents vigilants. »
 
-Démo storyboard (étapes figées) :
-    python3 chu/branding/pulse_intro.py
+    python3 chu/branding/pulse_intro.py            # storyboard (frames figées)
+    python3 chu/branding/pulse_intro.py --animate  # animation dans le terminal
 
-Jouer l'animation dans un terminal :
-    python3 chu/branding/pulse_intro.py --animate
-
-Couleurs (balises rich) : ✚ en rouge, anneaux en cyan, wordmark en cyan vif.
-Sans rich, repli en texte brut.
+Couleurs (rich) : ✚ rouge, anneaux cyan (vifs au cœur, doux au bord),
+wordmark cyan vif. Sans rich : repli texte brut.
 """
 from __future__ import annotations
+import math
 import sys
 import time
 
-# Chaque frame : (lignes). Balises rich pour la couleur ; centrées sur la croix.
-FRAMES = [
-    # 1 — la croix seule (le cœur CHU)
-    [r"                     ",
-     r"          [bold red]✚[/]          ",
-     r"                     "],
-    # 2 — premier anneau
-    [r"                     ",
-     r"         [cyan]·[/][bold red]✚[/][cyan]·[/]         ",
-     r"                     "],
-    # 3 — l'onde s'écarte
-    [r"          [cyan]·[/]          ",
-     r"        [cyan]([/] [bold red]✚[/] [cyan])[/]        ",
-     r"          [cyan]·[/]          "],
-    # 4 — pulsation pleine
-    [r"        [cyan].·°·.[/]        ",
-     r"      [cyan]((  [/][bold red]✚[/][cyan]  ))[/]      ",
-     r"        [cyan]`·°·`[/]        "],
-    # 5 — l'onde porte le nom
-    [r"      [cyan].·°‹ ›°·.[/]      ",
-     r"     [cyan](( [/][bold #00d4ff]PULSAR[/][cyan] ))[/]     ",
-     r"      [cyan]`·°‹ ›°·`[/]      "],
-    # 6 — résolution : le bloc d'identité
-    [r"          [bold red]✚[/]          ",
-     r"  [bold #00d4ff]╔══════════════════╗[/]",
-     r"  [bold #00d4ff]║  PULSAR  DSIO    ║[/]",
-     r"  [bold #00d4ff]║  CHU de Guyane   ║[/]",
-     r"  [bold #00d4ff]╚══════════════════╝[/]"],
-]
+W, H = 29, 11          # largeur / hauteur de la scène
+CX, CY = W // 2, H // 2
+ASPECT = 2.05          # une cellule est ~2x plus haute que large -> anneaux ronds
+
+GLYPH_NEAR = "•"       # anneau proche (dense)
+GLYPH_FAR = "·"        # anneau lointain (léger)
+
+
+def _blank():
+    return [[" "] * W for _ in range(H)]
+
+
+def _ring(radius: float, soft: bool = False):
+    g = _blank()
+    glyph = GLYPH_FAR if soft else GLYPH_NEAR
+    for y in range(H):
+        for x in range(W):
+            dx = x - CX
+            dy = (y - CY) * ASPECT
+            if abs(math.hypot(dx, dy) - radius) < 0.95:
+                g[y][x] = glyph
+    g[CY][CX] = "✚"
+    return g
+
+
+def _overlay_center(g, text):
+    start = CX - len(text) // 2
+    for i, ch in enumerate(text):
+        x = start + i
+        if 0 <= x < W:
+            g[CY][x] = ch
+    return g
+
+
+def _box():
+    """Bloc d'identité final (compact), avec la croix rouge au sommet."""
+    return [
+        "[bold red]              ✚[/]",
+        "[bold #00d4ff]       ╔══════════════════╗[/]",
+        "[bold #00d4ff]       ║  PULSAR  DSIO    ║[/]",
+        "[bold #00d4ff]       ║  CHU de Guyane   ║[/]",
+        "[bold #00d4ff]       ╚══════════════════╝[/]",
+    ]
+
+
+def _colorize(grid):
+    out = []
+    for row in grid:
+        s = "".join(row)
+        s = s.replace("✚", "[bold red]✚[/]")
+        s = s.replace("•", "[#00d4ff]•[/]")
+        s = s.replace("·", "[dim cyan]·[/]")
+        # wordmark si présent au centre
+        if "PULSAR" in s:
+            s = s.replace("PULSAR", "[bold #00d4ff]PULSAR[/]")
+        out.append(s)
+    return out
+
+
+def _build_frames():
+    frames = []
+    # battement 1 : onde courte
+    for r in (1.5, 4.0, 6.5):
+        frames.append(_colorize(_ring(r)))
+    # battement 2 : onde pleine + anneau doux trailing
+    for r in (2.0, 5.0, 8.0, 11.0):
+        frames.append(_colorize(_ring(r)))
+    # l'onde porte le nom
+    g = _ring(11.5, soft=True)
+    _overlay_center(g, "PULSAR")
+    frames.append(_colorize(g))
+    # résolution
+    frames.append(_box())
+    return frames
+
+
+FRAMES = _build_frames()
 
 
 def _render(frame, console):
@@ -61,22 +107,21 @@ def _render(frame, console):
 
 
 def animate(console):
-    # Efface l'écran entre les frames pour l'effet de pulsation.
     clear = "\033[2J\033[H"
+    rythme = [0.32, 0.22, 0.30, 0.30, 0.22, 0.18, 0.16, 0.45, 0.0]
     for i, frame in enumerate(FRAMES):
         sys.stdout.write(clear)
         sys.stdout.flush()
         _render(frame, console)
-        time.sleep(0.45 if i < len(FRAMES) - 1 else 0.0)
+        time.sleep(rythme[i] if i < len(rythme) else 0.25)
 
 
 def storyboard(console):
     for i, frame in enumerate(FRAMES, 1):
-        label = f"--- étape {i}/{len(FRAMES)} ---"
         if console:
-            console.print(f"[dim]{label}[/]")
+            console.print(f"[dim]— frame {i}/{len(FRAMES)} —[/]")
         else:
-            print(label)
+            print(f"— frame {i}/{len(FRAMES)} —")
         _render(frame, console)
         print()
 
@@ -87,10 +132,7 @@ def main():
         console = Console()
     except ImportError:
         console = None
-    if "--animate" in sys.argv:
-        animate(console)
-    else:
-        storyboard(console)
+    (animate if "--animate" in sys.argv else storyboard)(console)
 
 
 if __name__ == "__main__":
