@@ -32,8 +32,14 @@ from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
+from fastapi.responses import (FileResponse, HTMLResponse, JSONResponse,
+                               PlainTextResponse, RedirectResponse)
 from pydantic import BaseModel
+
+import auth  # PULSAR Ops — authentification locale (mot de passe + TOTP + RBAC)
+
+COOKIE = "pulsar_session"
+PUBLIC = ("/login", "/setup", "/setup/totp", "/logout", "/favicon.ico")
 
 RACINE = Path(__file__).parent
 INBOX = RACINE / "inbox"
@@ -66,6 +72,171 @@ SCENARIOS_DEFAUT = [
 ]
 
 app = FastAPI(title="PULSAR — Banc de Recette", docs_url="/api/docs")
+
+
+# ---------------------------------------------------------------------------
+# Authentification (PULSAR Ops) — middleware + pages login / setup / 2FA
+# ---------------------------------------------------------------------------
+
+@app.middleware("http")
+async def _garde(request: Request, call_next):
+    """Protège toute la console : seul l'agent (jeton) et les pages d'auth sont
+    publics. Première utilisation → /setup. Sinon, session requise."""
+    path = request.url.path
+    if path.startswith("/api/agent/") or path in PUBLIC:
+        return await call_next(request)
+    if not auth.has_users():
+        return (await call_next(request)) if path == "/setup" else RedirectResponse("/setup", 303)
+    sess = auth.read_session(request.cookies.get(COOKIE))
+    if not sess or sess.get("r") == "_pending":
+        if path.startswith("/api/"):
+            return JSONResponse({"detail": "Authentification requise"}, status_code=401)
+        return RedirectResponse("/login", 303)
+    request.state.user = sess
+    return await call_next(request)
+
+
+def _exiger(request: Request, perm: str) -> dict:
+    u = getattr(getattr(request, "state", None), "user", None)
+    if not u:
+        raise HTTPException(401, "Authentification requise")
+    if not auth.can(u["r"], perm):
+        raise HTTPException(403, f"Droit insuffisant pour « {perm} »")
+    return u
+
+
+_AUTH_CSS = """<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+font-family:system-ui,'Segoe UI',sans-serif;background:linear-gradient(135deg,#0a1422,#0052cc);color:#1b2330}
+.card{background:#fff;border-radius:14px;box-shadow:0 12px 50px rgba(0,0,0,.35);padding:28px 32px;width:390px;max-width:94vw}
+.brand{font-weight:700;color:#0052cc;font-size:13px}.brand .cx{color:#EF5350}
+h1{font-size:20px;margin:.5em 0 .7em}
+label{display:block;font-size:12px;color:#5a6b80;margin:12px 0 4px;font-weight:600}
+input{width:100%;padding:10px 12px;border:1px solid #c4ccd6;border-radius:8px;font-size:14px}
+input:focus{outline:2px solid #0052cc55;border-color:#0052cc}
+button{width:100%;margin-top:18px;background:#0052cc;color:#fff;border:0;border-radius:9px;padding:11px;font-size:15px;cursor:pointer}
+button:hover{filter:brightness(1.08)}
+.alert{background:#fde2dd;color:#c4321e;border:1px solid #f3c0ba;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:8px}
+.hint{font-size:12px;color:#5a6b80;margin-top:6px;line-height:1.5}
+.secret{font:15px ui-monospace,monospace;background:#f1f5fb;border:1px dashed #9db3d0;border-radius:8px;padding:11px;text-align:center;letter-spacing:2px;word-break:break-all;margin:8px 0}
+a{color:#0052cc}
+</style>"""
+
+
+def _auth_html(titre, contenu, alerte=""):
+    al = f'<div class="alert">{alerte}</div>' if alerte else ""
+    return ("<!doctype html><html lang=fr><head><meta charset=utf-8>"
+            "<meta name=viewport content='width=device-width,initial-scale=1'>"
+            f"<title>{titre} — PULSAR Ops</title>" + _AUTH_CSS + "</head><body><div class=card>"
+            "<div class=\"brand\"><span class=\"cx\">✚</span> PULSAR Ops · Console d'intervention</div>"
+            f"<h1>{titre}</h1>{al}{contenu}</div></body></html>")
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def page_login(err: str = ""):
+    form = ('<form method="post" action="/login">'
+            '<label>Identifiant</label><input name="identifiant" autofocus autocomplete="username">'
+            '<label>Mot de passe</label><input name="motdepasse" type="password" autocomplete="current-password">'
+            "<label>Code 2FA (6 chiffres)</label>"
+            '<input name="code" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">'
+            "<button>Se connecter</button></form>")
+    return _auth_html("Connexion", form, "Identifiants ou code invalides." if err else "")
+
+
+@app.post("/login")
+async def faire_login(identifiant: str = Form(""), motdepasse: str = Form(""), code: str = Form("")):
+    uname = identifiant.strip().lower()
+    u = auth.load_users().get(uname)
+    ok = bool(u) and auth.verify_password(motdepasse, u["password"])
+    if ok and u.get("totp_active"):
+        ok = auth.totp_verify(u["totp"], code)
+    if not ok:
+        _journaliser("connexion_refusee", {"identifiant": uname})
+        return RedirectResponse("/login?err=1", 303)
+    resp = RedirectResponse("/", 303)
+    resp.set_cookie(COOKIE, auth.make_session(uname, u["role"]), httponly=True, samesite="lax", max_age=auth.SESSION_TTL)
+    _journaliser("connexion", {"par": uname, "role": u["role"]})
+    return resp
+
+
+@app.get("/logout")
+async def faire_logout(request: Request):
+    sess = auth.read_session(request.cookies.get(COOKIE))
+    if sess:
+        _journaliser("deconnexion", {"par": sess.get("u")})
+    resp = RedirectResponse("/login", 303)
+    resp.delete_cookie(COOKIE)
+    return resp
+
+
+@app.get("/setup", response_class=HTMLResponse)
+async def page_setup(err: str = ""):
+    if auth.has_users():
+        return RedirectResponse("/login", 303)
+    form = ('<p class="hint">Première utilisation : créez le compte administrateur. '
+            "L'étape suivante configurera la double authentification (2FA).</p>"
+            '<form method="post" action="/setup">'
+            '<label>Identifiant admin</label><input name="identifiant" autofocus value="admin">'
+            '<label>Mot de passe (8 caractères min.)</label><input name="motdepasse" type="password">'
+            '<label>Confirmer</label><input name="confirm" type="password">'
+            "<button>Créer le compte → 2FA</button></form>")
+    return _auth_html("Configuration initiale", form,
+                      "Mot de passe trop court ou non concordant." if err else "")
+
+
+@app.post("/setup")
+async def faire_setup(identifiant: str = Form(""), motdepasse: str = Form(""), confirm: str = Form("")):
+    if auth.has_users():
+        return RedirectResponse("/login", 303)
+    if len(motdepasse) < 8 or motdepasse != confirm:
+        return RedirectResponse("/setup?err=1", 303)
+    uname = identifiant.strip().lower() or "admin"
+    secret = auth.totp_new_secret()
+    auth.create_user(uname, motdepasse, role="admin", totp_secret=secret)
+    _journaliser("compte_admin_initie", {"par": uname})
+    resp = RedirectResponse("/setup/totp", 303)
+    resp.set_cookie(COOKIE, auth.make_session(uname, "_pending", ttl=600), httponly=True, samesite="lax", max_age=600)
+    return resp
+
+
+@app.get("/setup/totp", response_class=HTMLResponse)
+async def page_totp(request: Request, err: str = ""):
+    sess = auth.read_session(request.cookies.get(COOKIE))
+    if not sess or sess.get("r") != "_pending":
+        return RedirectResponse("/login", 303)
+    u = auth.load_users().get(sess["u"])
+    if not u:
+        return RedirectResponse("/setup", 303)
+    uri = auth.totp_uri(u["totp"], sess["u"]).replace("&", "&amp;")
+    contenu = ("<p class=\"hint\">Ouvrez votre application d'authentification "
+               "(Google&nbsp;Authenticator, Microsoft&nbsp;Authenticator, Authy…), ajoutez un compte par "
+               "<b>saisie manuelle de la clé</b> ci-dessous, puis entrez le code à 6 chiffres généré.</p>"
+               '<label>Clé de configuration (Base32)</label>'
+               f'<div class="secret">{u["totp"]}</div>'
+               f'<p class="hint">Compte&nbsp;: <b>{sess["u"]}</b> · Émetteur&nbsp;: <b>PULSAR Ops</b> · '
+               f'6 chiffres / 30&nbsp;s · <a href="{uri}">lien otpauth (mobile)</a></p>'
+               '<form method="post" action="/setup/totp">'
+               '<label>Code à 6 chiffres</label>'
+               '<input name="code" inputmode="numeric" autofocus placeholder="123456">'
+               "<button>Activer la 2FA et entrer</button></form>")
+    return _auth_html("Double authentification (2FA)", contenu,
+                      "Code incorrect, réessayez." if err else "")
+
+
+@app.post("/setup/totp")
+async def faire_totp(request: Request, code: str = Form("")):
+    sess = auth.read_session(request.cookies.get(COOKIE))
+    if not sess or sess.get("r") != "_pending":
+        return RedirectResponse("/login", 303)
+    u = auth.load_users().get(sess["u"])
+    if not u or not auth.totp_verify(u["totp"], code):
+        return RedirectResponse("/setup/totp?err=1", 303)
+    auth.set_totp(sess["u"], u["totp"], active=True)
+    _journaliser("compte_admin_cree", {"par": sess["u"], "2fa": "activee"})
+    resp = RedirectResponse("/", 303)
+    resp.set_cookie(COOKIE, auth.make_session(sess["u"], "admin"), httponly=True, samesite="lax", max_age=auth.SESSION_TTL)
+    return resp
+
 
 
 # ---------------------------------------------------------------------------
@@ -492,9 +663,10 @@ async def lire_mode():
 
 
 @app.post("/api/mode")
-async def changer_mode(mode: str = Form(...)):
+async def changer_mode(request: Request, mode: str = Form(...)):
+    u = _exiger(request, "mode")
     _set_mode(mode)
-    _journaliser("changement_mode", {"mode": mode})
+    _journaliser("changement_mode", {"mode": mode, "par": u["u"]})
     return {"ok": True, "mode": mode}
 
 
@@ -528,9 +700,10 @@ def _charger_commande(cid: str) -> tuple:
 
 
 @app.post("/api/commandes/{cid}/resultat-manuel")
-async def resultat_manuel(cid: str, sortie: str = Form("")):
+async def resultat_manuel(cid: str, request: Request, sortie: str = Form("")):
     """L'admin a exécuté la commande lui-même et colle la sortie → devient un
     ticket que l'assistant lit (comme un résultat d'agent), traçé dans le registre."""
+    u = _exiger(request, "executer")
     cf, d = _charger_commande(cid)
     entete = f"[HUMAIN {d.get('machine') or 'poste'}] {d.get('libelle', '')}".strip()
     corps = entete + (("\n\n" + sortie) if sortie.strip() else "\n\n(commande exécutée — aucune sortie collée)")
@@ -542,30 +715,33 @@ async def resultat_manuel(cid: str, sortie: str = Form("")):
     d["ticket"] = ticket_id
     d["decision"] = "execute_manuel"
     cf.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
-    _journaliser("execution_manuelle", {"commande": cid, "ticket": ticket_id})
+    _journaliser("execution_manuelle", {"commande": cid, "ticket": ticket_id, "par": u["u"]})
     return {"ok": True, "ticket": ticket_id}
 
 
 @app.post("/api/commandes/{cid}/approuver")
-async def approuver_commande(cid: str):
+async def approuver_commande(cid: str, request: Request):
     """Mode hybride : l'humain autorise l'agent à exécuter cette commande."""
+    u = _exiger(request, "approuver")
     cf, d = _charger_commande(cid)
     d["approuve_agent"] = True
     d["decision"] = "approuve_agent"
+    d["approuve_par"] = u["u"]
     cf.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
-    _journaliser("approbation", {"commande": cid, "libelle": d.get("libelle", "")})
+    _journaliser("approbation", {"commande": cid, "libelle": d.get("libelle", ""), "par": u["u"]})
     return {"ok": True}
 
 
 @app.post("/api/commandes/{cid}/refuser")
-async def refuser_commande(cid: str, motif: str = Form("")):
+async def refuser_commande(cid: str, request: Request, motif: str = Form("")):
     """L'humain refuse la commande ; l'assistant en est informé par un ticket."""
+    u = _exiger(request, "approuver")
     cf, d = _charger_commande(cid)
     d["etat"] = "refusee"
     d["decision"] = "refuse"
     d["motif"] = motif
     cf.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
-    _journaliser("refus", {"commande": cid, "motif": motif})
+    _journaliser("refus", {"commande": cid, "motif": motif, "par": u["u"]})
     _ecrire_ticket(
         f"[REFUS HUMAIN] Commande refusée : {d.get('libelle', '')}"
         + (f"\nMotif : {motif}" if motif else ""),
@@ -661,7 +837,8 @@ select,input[type=text]{border:1px solid #c4ccd6;border-radius:6px;padding:7px;f
   <button data-mode="autonome" onclick="setMode('autonome')">🤖 Autonome</button>
   <button data-mode="hybride" onclick="setMode('hybride')">⚖️ Hybride</button>
   <button data-mode="pilote" onclick="setMode('pilote')">🛡️ Piloté</button>
- </div></header>
+ </div>
+ <span class="userbox" style="margin-left:16px;font-size:12px;opacity:.95;white-space:nowrap">__USER__</span></header>
 <main>
 <section>
   <div class="carte" id="carte-cmd">
@@ -704,6 +881,7 @@ select,input[type=text]{border:1px solid #c4ccd6;border-radius:6px;padding:7px;f
 </main>
 <div id="notif"></div>
 <script>
+const _f=window.fetch;window.fetch=async(...a)=>{const r=await _f(...a);if(r.status===401){location.href='/login';}return r};
 const $=s=>document.querySelector(s);let pieces=[];
 function notif(t){const n=$('#notif');n.textContent=t;n.style.opacity=1;setTimeout(()=>n.style.opacity=0,2500)}
 function ajouterPiece(fichier){pieces.push(fichier);const d=document.createElement('div');d.className='pj';
@@ -807,8 +985,11 @@ setInterval(()=>{charger();chargerCommandes();chargerMode()},4000);
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index():
-    return PAGE.replace("__VERSION__", VERSION_RECETTE)
+async def index(request: Request):
+    u = getattr(getattr(request, "state", None), "user", None) or {"u": "?", "r": "?"}
+    badge = (f'👤 {u["u"]} · <b>{u["r"]}</b> · '
+             '<a href="/logout" style="color:#fff;text-decoration:underline">Déconnexion</a>')
+    return PAGE.replace("__VERSION__", VERSION_RECETTE).replace("__USER__", badge)
 
 
 if __name__ == "__main__":
