@@ -16,20 +16,11 @@ $Intervalle = 3
 
 # Relay en HTTPS avec certificat auto-signe (LAN interne) : lui faire confiance.
 # (Chiffrement du canal ; le pinning/mTLS sera la prochaine etape de durcissement.)
-if ($PSVersionTable.PSVersion.Major -ge 6) {
+try { [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 } catch {}
+try { [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true } } catch {}  # PS 5.1
+if ($PSVersionTable.PSVersion.Major -ge 6) {  # PS 6+/7 (HttpClient)
     $PSDefaultParameterValues['Invoke-RestMethod:SkipCertificateCheck'] = $true
     $PSDefaultParameterValues['Invoke-WebRequest:SkipCertificateCheck']  = $true
-} else {
-    try {
-        Add-Type -TypeDefinition @"
-using System.Net; using System.Security.Cryptography.X509Certificates;
-public class PulsarTrustAll : ICertificatePolicy {
-  public bool CheckValidationResult(ServicePoint s, X509Certificate c, WebRequest r, int p) { return true; }
-}
-"@ -ErrorAction SilentlyContinue
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object PulsarTrustAll
-    } catch {}
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 }
 
 # Instance unique : terminer d'eventuels anciens agents (utile lors d'une bascule).
