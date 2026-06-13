@@ -999,6 +999,10 @@ if __name__ == "__main__":
     REPONSES.mkdir(exist_ok=True)
     COMMANDES.mkdir(exist_ok=True)
     _charger_checklist()
+    _cert, _key = RACINE / "tls" / "cert.pem", RACINE / "tls" / "key.pem"
+    _tls = ({"ssl_certfile": str(_cert), "ssl_keyfile": str(_key)}
+            if _cert.exists() and _key.exists() else {})
+    _proto = "https" if _tls else "http"
     print(f"[recette] jeton agent : {_token()}")
-    print("[recette] console : http://0.0.0.0:9333  ·  API agent active")
-    uvicorn.run(app, host="0.0.0.0", port=9333, log_level="warning")
+    print(f"[recette] console : {_proto}://0.0.0.0:9333  ·  TLS {'ACTIVÉ' if _tls else 'désactivé'}")
+    uvicorn.run(app, host="0.0.0.0", port=9333, log_level="warning", **_tls)
