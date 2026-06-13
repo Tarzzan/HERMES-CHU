@@ -10,6 +10,8 @@
 //
 // Destinée à être contribuée au projet d'origine (hermes-agent, Nous Research).
 
+import { FIELD_DESCRIPTIONS_FR, FIELD_LABELS_FR } from '@/app/settings/field-copy-fr'
+
 import { en } from './en'
 import type { Translations } from './types'
 
@@ -260,6 +262,8 @@ export const fr: Translations = {
 
   settings: {
     ...en.settings,
+    fieldLabels: FIELD_LABELS_FR,
+    fieldDescriptions: FIELD_DESCRIPTIONS_FR,
     closeSettings: 'Fermer les paramètres',
     exportConfig: 'Exporter la configuration',
     importConfig: 'Importer la configuration',
